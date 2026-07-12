@@ -14,13 +14,18 @@ button { padding: 15px 40px; font-size: 18px; border: none; border-radius: 8px; 
 .btn-primary { background: #00E5FF; color: black; font-weight: bold; }
 .btn-danger { background: red; color: white; }
 .btn-secondary { background: #333; color: white; }
+.btn-auto { background: #9b59b6; color: white; }
+
+/* Style pour la fenêtre secrète Admin */
+.modal-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 100; }
+.modal-box { background: #111; padding: 40px; border-radius: 12px; border: 2px solid red; text-align: center; }
 </style>
 </head>
 <body>
 
-<!-- ECRAN 1 : CONNEXION -->
+<!-- ECRAN 1 : CONNEXION UTILISATEUR -->
 <div id="login-screen" class="section">
-<h1 style="color:#00E5FF; font-size:60px; margin-bottom:20px;">CHAPDOLO</h1>
+<h1 id="main-logo" style="color:#00E5FF; font-size:60px; margin-bottom:20px; cursor:pointer; user-select:none;">CHAPDOLO</h1>
 <p style="color:grey; font-size:20px; margin-bottom:40px;">Accès réservé</p>
 <input type="text" id="login-user" placeholder="Nom d'utilisateur"><br>
 <input type="password" id="login-pass" placeholder="Mot de passe"><br>
@@ -28,14 +33,27 @@ button { padding: 15px 40px; font-size: 18px; border: none; border-radius: 8px; 
 <p id="login-error" style="color:red; margin-top:20px;"></p>
 </div>
 
-<!-- ECRAN 2 : ADMINISTRATION -->
+<!-- FENETRE SECRETE ADMIN (Cachée par défaut) -->
+<div id="admin-modal" class="modal-bg hidden">
+<div class="modal-box">
+<h2 style="color:red; margin-top:0;">Accès Administrateur</h2>
+<input type="password" id="admin-pass-modal" placeholder="Mot de passe Admin"><br>
+<button class="btn-danger" onclick="verifyAdmin()">Valider</button>
+<button class="btn-secondary" onclick="closeAdminModal()">Annuler</button>
+</div>
+</div>
+
+<!-- ECRAN 2 : PANNEAU ADMINISTRATION -->
 <div id="admin-screen" class="section hidden">
 <h1 style="color:#00E5FF; margin-bottom:30px;">Panneau Administrateur</h1>
 <h3>Créer un accès utilisateur</h3>
-<input type="text" id="new-username" placeholder="Nouvel utilisateur"><br>
-<input type="text" id="new-password" placeholder="Nouveau mot de passe"><br>
-<button class="btn-primary" onclick="generateUser()">Générer l'accès</button>
-<p id="admin-message" style="color:#0f0; margin-top:20px;"></p>
+<input type="text" id="new-username" placeholder="Nom d'utilisateur"><br>
+
+<input type="text" id="new-password" placeholder="Mot de passe (Manuel)" style="width:220px;">
+<button class="btn-auto" onclick="autoGenerate()">Auto 🔄</button><br>
+
+<button class="btn-primary" onclick="generateUser()">Créer l'accès</button>
+<p id="admin-message" style="color:#0f0; margin-top:20px; font-weight:bold;"></p>
 <br><br>
 <button class="btn-secondary" onclick="showApp()">Accéder au Streaming</button>
 <button class="btn-danger" onclick="logout()">Déconnexion</button>
@@ -62,89 +80,136 @@ button { padding: 15px 40px; font-size: 18px; border: none; border-radius: 8px; 
 </div>
 
 <script>
-let currentRole = '';
+let logoClickCount = 0;
+let logoClickTimer;
 
-async function login() {
-const username = document.getElementById('login-user').value;
-const password = document.getElementById('login-pass').value;
-const errorDisplay = document.getElementById('login-error');
-errorDisplay.innerText = '';
+// --- LOGIQUE SECRETE ADMIN (5 clics sur le logo) ---
+document.getElementById('main-logo').addEventListener('click', function() {
+    logoClickCount++;
+    clearTimeout(logoClickTimer);
 
-const response = await fetch('/api/login', {
-method: 'POST',
-headers: { 'Content-Type': 'application/json' },
-body: JSON.stringify({ username, password })
+    if (logoClickCount >= 5) {
+        logoClickCount = 0;
+        document.getElementById('admin-modal').classList.remove('hidden');
+    } else {
+        // Reset le compteur si on attend trop longtemps entre 2 clics
+        logoClickTimer = setTimeout(() => { logoClickCount = 0; }, 2000); // 2 secondes
+    }
 });
 
-const data = await response.json();
+function verifyAdmin() {
+    const pass = document.getElementById('admin-pass-modal').value;
+    if (pass === 'chapdel220605') {
+        document.getElementById('admin-modal').classList.add('hidden');
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('admin-screen').classList.remove('hidden');
+        document.getElementById('admin-pass-modal').value = ''; // on vide
+    } else {
+        alert('Mot de passe administrateur incorrect !');
+    }
+}
 
-if (data.success) {
-currentRole = data.role;
-if (currentRole === 'admin') {
-document.getElementById('login-screen').classList.add('hidden');
-document.getElementById('admin-screen').classList.remove('hidden');
-} else {
-showApp();
+function closeAdminModal() {
+    document.getElementById('admin-modal').classList.add('hidden');
+    document.getElementById('admin-pass-modal').value = '';
 }
-} else {
-errorDisplay.innerText = 'Identifiants incorrects !';
+
+// --- LOGIQUE UTILISATEUR NORMAL ---
+async function login() {
+    const username = document.getElementById('login-user').value;
+    const password = document.getElementById('login-pass').value;
+    const errorDisplay = document.getElementById('login-error');
+    errorDisplay.innerText = '';
+
+    const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+    });
+
+    const data = await response.json();
+
+    if (data.success && data.role === 'user') {
+        showApp();
+    } else {
+        errorDisplay.innerText = 'Identifiants incorrects ou accès non autorisé !';
+    }
 }
+
+// --- GENERATEUR MOT DE PASSE ---
+function autoGenerate() {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$&*";
+    let pass = "";
+    for (let i = 0; i < 10; i++) {
+        pass += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    document.getElementById('new-password').value = pass;
 }
 
 async function generateUser() {
-const newUser = document.getElementById('new-username').value;
-const newPass = document.getElementById('new-password').value;
-const messageDisplay = document.getElementById('admin-message');
+    const newUser = document.getElementById('new-username').value;
+    const newPass = document.getElementById('new-password').value;
+    const messageDisplay = document.getElementById('admin-message');
 
-const response = await fetch('/api/generate-user', {
-method: 'POST',
-headers: { 'Content-Type': 'application/json' },
-body: JSON.stringify({ adminPassword: 'chapdel220605', newUser, newPass })
-});
+    if (!newUser || !newPass) {
+        messageDisplay.style.color = 'red';
+        messageDisplay.innerText = "Veuillez remplir le nom et le mot de passe.";
+        return;
+    }
 
-const data = await response.json();
-messageDisplay.innerText = data.message;
+    const response = await fetch('/api/generate-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminPassword: 'chapdel220605', newUser, newPass })
+    });
+
+    const data = await response.json();
+    messageDisplay.style.color = '#0f0';
+    messageDisplay.innerText = data.message + "\nIdentifiants créés : " + newUser + " / " + newPass;
+    
+    // On vide les cases après création
+    document.getElementById('new-username').value = '';
+    document.getElementById('new-password').value = '';
 }
 
 function showApp() {
-document.getElementById('login-screen').classList.add('hidden');
-document.getElementById('admin-screen').classList.add('hidden');
-document.getElementById('app-screen').classList.remove('hidden');
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('admin-screen').classList.add('hidden');
+    document.getElementById('app-screen').classList.remove('hidden');
 }
 
 function logout() {
-document.getElementById('app-screen').classList.add('hidden');
-document.getElementById('admin-screen').classList.add('hidden');
-document.getElementById('login-screen').classList.remove('hidden');
-document.getElementById('login-user').value = '';
-document.getElementById('login-pass').value = '';
-currentRole = '';
+    document.getElementById('app-screen').classList.add('hidden');
+    document.getElementById('admin-screen').classList.add('hidden');
+    document.getElementById('login-screen').classList.remove('hidden');
+    document.getElementById('login-user').value = '';
+    document.getElementById('login-pass').value = '';
 }
 
 async function loadSource(sourceName) {
-document.getElementById('home-content').style.display = 'none';
-document.getElementById('source-container').style.display = 'block';
-document.getElementById('back-btn').style.display = 'block';
+    document.getElementById('home-content').style.display = 'none';
+    document.getElementById('source-container').style.display = 'block';
+    document.getElementById('back-btn').style.display = 'block';
 
-const response = await fetch('/api/config');
-const config = await response.json();
-const targetUrl = config.sources[sourceName];
+    const response = await fetch('/api/config');
+    const config = await response.json();
+    const targetUrl = config.sources[sourceName];
 
-const iframe = document.createElement('iframe');
-iframe.src = targetUrl;
-iframe.allowFullscreen = true;
-iframe.allow = "autoplay";
+    const iframe = document.createElement('iframe');
+    iframe.src = targetUrl;
+    iframe.allowFullscreen = true;
+    iframe.allow = "autoplay";
 
-const container = document.getElementById('source-container');
-container.innerHTML = '';
-container.appendChild(iframe);
+    const container = document.getElementById('source-container');
+    container.innerHTML = '';
+    container.appendChild(iframe);
 }
 
 function closeSource() {
-document.getElementById('home-content').style.display = 'block';
-document.getElementById('source-container').style.display = 'none';
-document.getElementById('source-container').innerHTML = '';
-document.getElementById('back-btn').style.display = 'none';
+    document.getElementById('home-content').style.display = 'block';
+    document.getElementById('source-container').style.display = 'none';
+    document.getElementById('source-container').innerHTML = '';
+    document.getElementById('back-btn').style.display = 'none';
 }
 </script>
 
