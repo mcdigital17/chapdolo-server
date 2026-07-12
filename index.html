@@ -1,16 +1,152 @@
 <!DOCTYPE html>
-<html lang="fr"> <head> <meta charset="UTF-8"> <meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>Chapdolo</title> <script src="https://cdn.tailwindcss.com"></script> <style> body { background-color: #0a0a0a; color: white; font-family: sans-serif; } #source-container iframe { width: 100%; height: 100%; border: none; } </style> </head> <body class="flex flex-col h-screen">
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chapdolo</title>
+<style>
+body { background-color: #0a0a0a; color: white; font-family: sans-serif; margin: 0; }
+iframe { width: 100%; height: 100%; border: none; }
+.hidden { display: none; }
+.section { text-align: center; padding: 100px 20px; }
+input { padding: 15px; margin: 10px; border-radius: 8px; border: 1px solid #333; background: #111; color: white; font-size: 18px; width: 300px; }
+button { padding: 15px 40px; font-size: 18px; border: none; border-radius: 8px; cursor: pointer; margin: 10px; }
+.btn-primary { background: #00E5FF; color: black; font-weight: bold; }
+.btn-danger { background: red; color: white; }
+.btn-secondary { background: #333; color: white; }
+</style>
+</head>
+<body>
 
-<nav id="main-nav" class="flex items-center justify-between p-4 bg-gray-900 border-b border-gray-800"> <h1 class="text-2xl font-bold text-cyan-400">CHAPDOLO</h1> <button id="back-btn" class="hidden bg-red-600 text-white font-bold py-2 px-4 rounded" onclick="closeSource()">Fermer</button> </nav>
+<!-- ECRAN 1 : CONNEXION -->
+<div id="login-screen" class="section">
+<h1 style="color:#00E5FF; font-size:60px; margin-bottom:20px;">CHAPDOLO</h1>
+<p style="color:grey; font-size:20px; margin-bottom:40px;">Accès réservé</p>
+<input type="text" id="login-user" placeholder="Nom d'utilisateur"><br>
+<input type="password" id="login-pass" placeholder="Mot de passe"><br>
+<button class="btn-primary" onclick="login()">Se Connecter</button>
+<p id="login-error" style="color:red; margin-top:20px;"></p>
+</div>
 
-<main class="flex-1 overflow-y-auto relative">
+<!-- ECRAN 2 : ADMINISTRATION -->
+<div id="admin-screen" class="section hidden">
+<h1 style="color:#00E5FF; margin-bottom:30px;">Panneau Administrateur</h1>
+<h3>Créer un accès utilisateur</h3>
+<input type="text" id="new-username" placeholder="Nouvel utilisateur"><br>
+<input type="text" id="new-password" placeholder="Nouveau mot de passe"><br>
+<button class="btn-primary" onclick="generateUser()">Générer l'accès</button>
+<p id="admin-message" style="color:#0f0; margin-top:20px;"></p>
+<br><br>
+<button class="btn-secondary" onclick="showApp()">Accéder au Streaming</button>
+<button class="btn-danger" onclick="logout()">Déconnexion</button>
+</div>
 
-<div id="home-screen" class="p-8 text-center"> <h2 class="text-5xl font-bold mb-6 text-cyan-400">Bienvenue sur Chapdolo</h2> <p class="text-gray-300 mb-10 text-xl">Profitez du Diffusion en continu sans interruption.</p> <div class="flex justify-center space-x-6"> <button onclick="loadSource('oha')" class="bg-cyan-500 text-black font-bold py-4 px-10 rounded-lg text-xl">OHA</button> <button onclick="loadSource('huhu')" class="bg-gray-700 text-white font-bold py-4 px-10 rounded-lg text-xl">HUHU</button> </div> </div>
+<!-- ECRAN 3 : APPLICATION STREAMING -->
+<div id="app-screen" class="hidden">
+<nav style="background:#111; padding:15px; display:flex; justify-content:space-between; align-items:center;">
+<h1 style="color:#00E5FF; font-size:28px; margin:0;">CHAPDOLO</h1>
+<div>
+<button style="background:transparent; color:white; border:1px solid white; padding:10px 20px; border-radius:5px; cursor:pointer;" onclick="logout()">Déconnexion</button>
+<button id="back-btn" style="display:none; background:red; color:white; padding:10px 20px; border:none; border-radius:5px; cursor:pointer; margin-left:10px;" onclick="closeSource()">Fermer la vidéo</button>
+</div>
+</nav>
 
-<div id="source-container" class="hidden absolute inset-0 bg-black"></div>
+<div id="home-content" style="text-align:center; padding:100px 20px;">
+<h2 style="color:#00E5FF; font-size:50px; margin-bottom:10px;">Bienvenue</h2>
+<p style="color:grey; font-size:20px; margin-bottom:40px;">Streaming sans interruption</p>
+<button class="btn-primary" style="font-size:20px; padding:15px 40px;" onclick="loadSource('oha')">OHA</button>
+<button class="btn-secondary" style="font-size:20px; padding:15px 40px;" onclick="loadSource('huhu')">HUHU</button>
+</div>
 
-</main>
+<div id="source-container" style="display:none; position:fixed; top:60px; left:0; right:0; bottom:0; background:black;"></div>
+</div>
 
-<script> async function loadSource(sourceName) { document.getElementById('home-screen').classList.add('hidden'); document.getElementById('source-container').classList.remove('hidden'); document.getElementById('back-btn').classList.remove('hidden'); const response = await fetch('/api/config'); const config = await response.json(); const targetUrl = config.sources[sourceName]; const iframe = document.createElement('iframe'); iframe.src = targetUrl; iframe.allowFullscreen = true; iframe.allow = "autoplay"; const container = document.getElementById('source-container'); container.innerHTML = ''; container.appendChild(iframe); } function closeSource() { document.getElementById('home-screen').classList.remove('hidden'); document.getElementById('source-container').classList.add('hidden'); document.getElementById('source-container').innerHTML = ''; document.getElementById('back-btn').classList.
+<script>
+let currentRole = '';
 
-ajouter('caché'); } </script> </body> </html>
+async function login() {
+const username = document.getElementById('login-user').value;
+const password = document.getElementById('login-pass').value;
+const errorDisplay = document.getElementById('login-error');
+errorDisplay.innerText = '';
+
+const response = await fetch('/api/login', {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({ username, password })
+});
+
+const data = await response.json();
+
+if (data.success) {
+currentRole = data.role;
+if (currentRole === 'admin') {
+document.getElementById('login-screen').classList.add('hidden');
+document.getElementById('admin-screen').classList.remove('hidden');
+} else {
+showApp();
+}
+} else {
+errorDisplay.innerText = 'Identifiants incorrects !';
+}
+}
+
+async function generateUser() {
+const newUser = document.getElementById('new-username').value;
+const newPass = document.getElementById('new-password').value;
+const messageDisplay = document.getElementById('admin-message');
+
+const response = await fetch('/api/generate-user', {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({ adminPassword: 'chapdel220605', newUser, newPass })
+});
+
+const data = await response.json();
+messageDisplay.innerText = data.message;
+}
+
+function showApp() {
+document.getElementById('login-screen').classList.add('hidden');
+document.getElementById('admin-screen').classList.add('hidden');
+document.getElementById('app-screen').classList.remove('hidden');
+}
+
+function logout() {
+document.getElementById('app-screen').classList.add('hidden');
+document.getElementById('admin-screen').classList.add('hidden');
+document.getElementById('login-screen').classList.remove('hidden');
+document.getElementById('login-user').value = '';
+document.getElementById('login-pass').value = '';
+currentRole = '';
+}
+
+async function loadSource(sourceName) {
+document.getElementById('home-content').style.display = 'none';
+document.getElementById('source-container').style.display = 'block';
+document.getElementById('back-btn').style.display = 'block';
+
+const response = await fetch('/api/config');
+const config = await response.json();
+const targetUrl = config.sources[sourceName];
+
+const iframe = document.createElement('iframe');
+iframe.src = targetUrl;
+iframe.allowFullscreen = true;
+iframe.allow = "autoplay";
+
+const container = document.getElementById('source-container');
+container.innerHTML = '';
+container.appendChild(iframe);
+}
+
+function closeSource() {
+document.getElementById('home-content').style.display = 'block';
+document.getElementById('source-container').style.display = 'none';
+document.getElementById('source-container').innerHTML = '';
+document.getElementById('back-btn').style.display = 'none';
+}
+</script>
+
+</body>
+</html>
