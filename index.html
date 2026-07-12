@@ -14,17 +14,12 @@ button { padding: 15px 40px; font-size: 18px; border: none; border-radius: 8px; 
 .btn-danger { background: red; color: white; }
 .btn-secondary { background: #333; color: white; }
 .btn-auto { background: #9b59b6; color: white; }
-
-/* Style pour la fenêtre secrète Admin */
 .modal-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 100; }
-
-/* CORRECTIF : !important force la fenêtre à rester cachée par défaut */
 .hidden { display: none !important; }
 </style>
 </head>
 <body>
 
-<!-- ECRAN 1 : CONNEXION UTILISATEUR -->
 <div id="login-screen" class="section">
 <h1 id="main-logo" style="color:#00E5FF; font-size:60px; margin-bottom:20px; cursor:pointer; user-select:none;">CHAPDOLO</h1>
 <p style="color:grey; font-size:20px; margin-bottom:40px;">Accès réservé</p>
@@ -34,9 +29,8 @@ button { padding: 15px 40px; font-size: 18px; border: none; border-radius: 8px; 
 <p id="login-error" style="color:red; margin-top:20px;"></p>
 </div>
 
-<!-- FENETRE SECRETE ADMIN (Cachée par défaut) -->
 <div id="admin-modal" class="modal-bg hidden">
-<div class="modal-box">
+<div class="modal-box" style="background:#111; padding:40px; border-radius:12px; border:2px solid red; text-align:center;">
 <h2 style="color:red; margin-top:0;">Accès Administrateur</h2>
 <input type="password" id="admin-pass-modal" placeholder="Mot de passe Admin"><br>
 <button class="btn-danger" onclick="verifyAdmin()">Valider</button>
@@ -44,23 +38,19 @@ button { padding: 15px 40px; font-size: 18px; border: none; border-radius: 8px; 
 </div>
 </div>
 
-<!-- ECRAN 2 : PANNEAU ADMINISTRATION -->
 <div id="admin-screen" class="section hidden">
 <h1 style="color:#00E5FF; margin-bottom:30px;">Panneau Administrateur</h1>
 <h3>Créer un accès utilisateur</h3>
 <input type="text" id="new-username" placeholder="Nom d'utilisateur"><br>
-
 <input type="text" id="new-password" placeholder="Mot de passe (Manuel)" style="width:220px;">
 <button class="btn-auto" onclick="autoGenerate()">Auto 🔄</button><br>
-
 <button class="btn-primary" onclick="generateUser()">Créer l'accès</button>
-<p id="admin-message" style="color:#0f0; margin-top:20px; font-weight:bold;"></p>
+<p id="admin-message" style="color:yellow; margin-top:20px; font-weight:bold;">En attente...</p>
 <br><br>
 <button class="btn-secondary" onclick="showApp()">Accéder au Streaming</button>
 <button class="btn-danger" onclick="logout()">Déconnexion</button>
 </div>
 
-<!-- ECRAN 3 : APPLICATION STREAMING -->
 <div id="app-screen" class="hidden">
 <nav style="background:#111; padding:15px; display:flex; justify-content:space-between; align-items:center;">
 <h1 style="color:#00E5FF; font-size:28px; margin:0;">CHAPDOLO</h1>
@@ -69,14 +59,12 @@ button { padding: 15px 40px; font-size: 18px; border: none; border-radius: 8px; 
 <button id="back-btn" style="display:none; background:red; color:white; padding:10px 20px; border:none; border-radius:5px; cursor:pointer; margin-left:10px;" onclick="closeSource()">Fermer la vidéo</button>
 </div>
 </nav>
-
 <div id="home-content" style="text-align:center; padding:100px 20px;">
 <h2 style="color:#00E5FF; font-size:50px; margin-bottom:10px;">Bienvenue</h2>
 <p style="color:grey; font-size:20px; margin-bottom:40px;">Streaming sans interruption</p>
 <button class="btn-primary" style="font-size:20px; padding:15px 40px;" onclick="loadSource('oha')">OHA</button>
 <button class="btn-secondary" style="font-size:20px; padding:15px 40px;" onclick="loadSource('huhu')">HUHU</button>
 </div>
-
 <div id="source-container" style="display:none; position:fixed; top:60px; left:0; right:0; bottom:0; background:black;"></div>
 </div>
 
@@ -84,17 +72,14 @@ button { padding: 15px 40px; font-size: 18px; border: none; border-radius: 8px; 
 let logoClickCount = 0;
 let logoClickTimer;
 
-// --- LOGIQUE SECRETE ADMIN (5 clics sur le logo) ---
 document.getElementById('main-logo').addEventListener('click', function() {
     logoClickCount++;
     clearTimeout(logoClickTimer);
-
     if (logoClickCount >= 5) {
         logoClickCount = 0;
         document.getElementById('admin-modal').classList.remove('hidden');
     } else {
-        // Reset le compteur si on attend trop longtemps entre 2 clics
-        logoClickTimer = setTimeout(() => { logoClickCount = 0; }, 2000); // 2 secondes
+        logoClickTimer = setTimeout(() => { logoClickCount = 0; }, 2000);
     }
 });
 
@@ -104,7 +89,7 @@ function verifyAdmin() {
         document.getElementById('admin-modal').classList.add('hidden');
         document.getElementById('login-screen').classList.add('hidden');
         document.getElementById('admin-screen').classList.remove('hidden');
-        document.getElementById('admin-pass-modal').value = ''; // on vide
+        document.getElementById('admin-pass-modal').value = '';
     } else {
         alert('Mot de passe administrateur incorrect !');
     }
@@ -115,35 +100,36 @@ function closeAdminModal() {
     document.getElementById('admin-pass-modal').value = '';
 }
 
-// --- LOGIQUE UTILISATEUR NORMAL ---
 async function login() {
     const username = document.getElementById('login-user').value;
     const password = document.getElementById('login-pass').value;
     const errorDisplay = document.getElementById('login-error');
-    errorDisplay.innerText = '';
+    errorDisplay.style.color = 'yellow';
+    errorDisplay.innerText = 'Connexion en cours...';
 
-    const response = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
-    });
-
-    const data = await response.json();
-
-    if (data.success && data.role === 'user') {
-        showApp();
-    } else {
-        errorDisplay.innerText = 'Identifiants incorrects ou accès non autorisé !';
+    try {
+        const response = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+        const data = await response.json();
+        if (data.success && data.role === 'user') {
+            showApp();
+        } else {
+            errorDisplay.style.color = 'red';
+            errorDisplay.innerText = data.message || 'Identifiants incorrects !';
+        }
+    } catch (error) {
+        errorDisplay.style.color = 'red';
+        errorDisplay.innerText = 'Erreur de connexion au serveur !';
     }
 }
 
-// --- GENERATEUR MOT DE PASSE ---
 function autoGenerate() {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$&*";
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     let pass = "";
-    for (let i = 0; i < 10; i++) {
-        pass += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
+    for (let i = 0; i < 8; i++) { pass += chars.charAt(Math.floor(Math.random() * chars.length)); }
     document.getElementById('new-password').value = pass;
 }
 
@@ -151,6 +137,8 @@ async function generateUser() {
     const newUser = document.getElementById('new-username').value;
     const newPass = document.getElementById('new-password').value;
     const messageDisplay = document.getElementById('admin-message');
+    messageDisplay.style.color = 'yellow';
+    messageDisplay.innerText = 'Création en cours...';
 
     if (!newUser || !newPass) {
         messageDisplay.style.color = 'red';
@@ -158,19 +146,26 @@ async function generateUser() {
         return;
     }
 
-    const response = await fetch('/api/generate-user', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ adminPassword: 'chapdel220605', newUser, newPass })
-    });
-
-    const data = await response.json();
-    messageDisplay.style.color = '#0f0';
-    messageDisplay.innerText = data.message + "\nIdentifiants créés : " + newUser + " / " + newPass;
-    
-    // On vide les cases après création
-    document.getElementById('new-username').value = '';
-    document.getElementById('new-password').value = '';
+    try {
+        const response = await fetch('/api/generate-user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ adminPassword: 'chapdel220605', newUser, newPass })
+        });
+        const data = await response.json();
+        if (data.success) {
+            messageDisplay.style.color = '#0f0';
+            messageDisplay.innerText = "SUCCÈS ! Identifiants : " + newUser + " / " + newPass;
+            document.getElementById('new-username').value = '';
+            document.getElementById('new-password').value = '';
+        } else {
+            messageDisplay.style.color = 'red';
+            messageDisplay.innerText = "ERREUR : " + (data.message || 'Problème inconnu');
+        }
+    } catch (error) {
+        messageDisplay.style.color = 'red';
+        messageDisplay.innerText = "ERREUR CRITIQUE : Le serveur a planté !";
+    }
 }
 
 function showApp() {
@@ -185,22 +180,21 @@ function logout() {
     document.getElementById('login-screen').classList.remove('hidden');
     document.getElementById('login-user').value = '';
     document.getElementById('login-pass').value = '';
+    document.getElementById('admin-message').innerText = 'En attente...';
+    document.getElementById('admin-message').style.color = 'yellow';
 }
 
 async function loadSource(sourceName) {
     document.getElementById('home-content').style.display = 'none';
     document.getElementById('source-container').style.display = 'block';
     document.getElementById('back-btn').style.display = 'block';
-
     const response = await fetch('/api/config');
     const config = await response.json();
     const targetUrl = config.sources[sourceName];
-
     const iframe = document.createElement('iframe');
     iframe.src = targetUrl;
     iframe.allowFullscreen = true;
     iframe.allow = "autoplay";
-
     const container = document.getElementById('source-container');
     container.innerHTML = '';
     container.appendChild(iframe);
@@ -213,6 +207,5 @@ function closeSource() {
     document.getElementById('back-btn').style.display = 'none';
 }
 </script>
-
 </body>
 </html>
