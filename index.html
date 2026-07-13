@@ -7,15 +7,21 @@
 <style>
 body { background-color: #0a0a0a; color: white; font-family: sans-serif; margin: 0; }
 iframe { width: 100%; height: 100%; border: none; }
-.section { text-align: center; padding: 100px 20px; }
+.section { text-align: center; padding: 40px 20px; }
 input { padding: 15px; margin: 10px; border-radius: 8px; border: 1px solid #333; background: #111; color: white; font-size: 18px; width: 300px; }
 button { padding: 15px 40px; font-size: 18px; border: none; border-radius: 8px; cursor: pointer; margin: 10px; }
 .btn-primary { background: #00E5FF; color: black; font-weight: bold; }
 .btn-danger { background: red; color: white; }
 .btn-secondary { background: #333; color: white; }
 .btn-auto { background: #9b59b6; color: white; }
+.btn-warn { background: #f39c12; color: black; }
+.btn-success { background: #2ecc71; color: black; }
 .modal-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 100; }
 .hidden { display: none !important; }
+.user-card { background: #111; border: 1px solid #333; padding: 20px; margin: 10px auto; max-width: 500px; border-radius: 10px; text-align: left; display: flex; justify-content: space-between; align-items: center; }
+.user-info h4 { margin: 0 0 5px 0; color: #00E5FF; }
+.user-info p { margin: 0; font-size: 14px; color: #aaa; }
+.user-actions button { padding: 8px 12px; font-size: 12px; margin: 2px; }
 </style>
 </head>
 <body>
@@ -40,14 +46,23 @@ button { padding: 15px 40px; font-size: 18px; border: none; border-radius: 8px; 
 
 <div id="admin-screen" class="section hidden">
 <h1 style="color:#00E5FF; margin-bottom:30px;">Panneau Administrateur</h1>
-<h3>Créer un accès utilisateur</h3>
-<input type="text" id="new-username" placeholder="Nom d'utilisateur"><br>
-<input type="text" id="new-password" placeholder="Mot de passe (Manuel)" style="width:220px;">
-<button class="btn-auto" onclick="autoGenerate()">Auto 🔄</button><br>
-<button class="btn-primary" onclick="generateUser()">Créer l'accès</button>
-<p id="admin-message" style="color:yellow; margin-top:20px; font-weight:bold;">En attente...</p>
-<br><br>
-<button class="btn-secondary" onclick="showApp()">Accéder au Streaming</button>
+<div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px;">
+   <div style="background:#111; padding:20px; border-radius:10px; width: 300px;">
+      <h3>Créer un accès</h3>
+      <input type="text" id="new-username" placeholder="Nom d'utilisateur" style="width:220px;"><br>
+      <input type="text" id="new-password" placeholder="Mot de passe" style="width:150px;">
+      <button class="btn-auto" onclick="autoGenerate()">Auto</button><br>
+      <button class="btn-primary" onclick="generateUser()">Créer l'accès</button>
+      <p id="admin-message" style="color:yellow; font-size:14px; font-weight:bold;">En attente...</p>
+   </div>
+   <div style="background:#111; padding:20px; border-radius:10px; width: 600px;">
+      <h3>Utilisateurs créés</h3>
+      <button class="btn-secondary" onclick="loadUsers()" style="font-size:14px;"> Rafraîchir la liste</button>
+      <div id="user-list" style="margin-top:10px; max-height: 300px; overflow-y: auto;"></div>
+   </div>
+</div>
+<br>
+<button class="btn-primary" onclick="showApp()">Accéder au Streaming</button>
 <button class="btn-danger" onclick="logout()">Déconnexion</button>
 </div>
 
@@ -69,103 +84,121 @@ button { padding: 15px 40px; font-size: 18px; border: none; border-radius: 8px; 
 </div>
 
 <script>
-let logoClickCount = 0;
-let logoClickTimer;
+let currentLoggedUser = '';
 
 document.getElementById('main-logo').addEventListener('click', function() {
-    logoClickCount++;
-    clearTimeout(logoClickTimer);
-    if (logoClickCount >= 5) {
-        logoClickCount = 0;
+    let count = parseInt(this.dataset.clicks || 0);
+    count++;
+    this.dataset.clicks = count;
+    clearTimeout(window.logoClickTimer);
+    if (count >= 5) {
+        this.dataset.clicks = 0;
         document.getElementById('admin-modal').classList.remove('hidden');
     } else {
-        logoClickTimer = setTimeout(() => { logoClickCount = 0; }, 2000);
+        window.logoClickTimer = setTimeout(() => { this.dataset.clicks = 0; }, 2000);
     }
 });
 
 function verifyAdmin() {
-    const pass = document.getElementById('admin-pass-modal').value;
-    if (pass === 'chapdel220605') {
+    if (document.getElementById('admin-pass-modal').value === 'chapdel220605') {
         document.getElementById('admin-modal').classList.add('hidden');
         document.getElementById('login-screen').classList.add('hidden');
         document.getElementById('admin-screen').classList.remove('hidden');
         document.getElementById('admin-pass-modal').value = '';
-    } else {
-        alert('Mot de passe administrateur incorrect !');
-    }
+        loadUsers();
+    } else { alert('Mot de passe incorrect !'); }
 }
-
-function closeAdminModal() {
-    document.getElementById('admin-modal').classList.add('hidden');
-    document.getElementById('admin-pass-modal').value = '';
-}
+function closeAdminModal() { document.getElementById('admin-modal').classList.add('hidden'); document.getElementById('admin-pass-modal').value = ''; }
 
 async function login() {
     const username = document.getElementById('login-user').value;
     const password = document.getElementById('login-pass').value;
-    const errorDisplay = document.getElementById('login-error');
-    errorDisplay.style.color = 'yellow';
-    errorDisplay.innerText = 'Connexion en cours...';
-
+    const errDisplay = document.getElementById('login-error');
+    errDisplay.style.color = 'yellow'; errDisplay.innerText = 'Connexion...';
     try {
-        const response = await fetch('/api/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password })
-        });
-        const data = await response.json();
-        if (data.success && data.role === 'user') {
-            showApp();
-        } else {
-            errorDisplay.style.color = 'red';
-            errorDisplay.innerText = data.message || 'Identifiants incorrects !';
-        }
-    } catch (error) {
-        errorDisplay.style.color = 'red';
-        errorDisplay.innerText = 'Erreur de connexion au serveur !';
+        const res = await fetch('/api/login', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({username, password}) });
+        const data = await res.json();
+        if (data.success) { currentLoggedUser = username; showApp(); }
+        else { errDisplay.style.color = 'red'; errDisplay.innerText = data.message || 'Erreur'; }
+    } catch(e) { errDisplay.style.color='red'; errDisplay.innerText='Erreur réseau'; }
+}
+
+async function logout() {
+    if (currentLoggedUser) {
+        try { await fetch('/api/logout', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({username: currentLoggedUser}) }); } catch(e){}
+        currentLoggedUser = '';
     }
+    document.getElementById('app-screen').classList.add('hidden');
+    document.getElementById('admin-screen').classList.add('hidden');
+    document.getElementById('login-screen').classList.remove('hidden');
+    document.getElementById('login-user').value = '';
+    document.getElementById('login-pass').value = '';
+    document.getElementById('login-error').innerText = '';
 }
 
 function autoGenerate() {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    let pass = "";
-    for (let i = 0; i < 8; i++) { pass += chars.charAt(Math.floor(Math.random() * chars.length)); }
-    document.getElementById('new-password').value = pass;
+    const c = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let p = ""; for(let i=0;i<8;i++) p += c.charAt(Math.floor(Math.random()*c.length));
+    document.getElementById('new-password').value = p;
 }
 
 async function generateUser() {
-    const newUser = document.getElementById('new-username').value;
-    const newPass = document.getElementById('new-password').value;
-    const messageDisplay = document.getElementById('admin-message');
-    messageDisplay.style.color = 'yellow';
-    messageDisplay.innerText = 'Création en cours...';
-
-    if (!newUser || !newPass) {
-        messageDisplay.style.color = 'red';
-        messageDisplay.innerText = "Veuillez remplir le nom et le mot de passe.";
-        return;
-    }
-
+    const u = document.getElementById('new-username').value;
+    const p = document.getElementById('new-password').value;
+    const m = document.getElementById('admin-message');
+    m.style.color='yellow'; m.innerText='Création...';
+    if(!u||!p){m.style.color='red';m.innerText='Remplissez tout.';return;}
     try {
-        const response = await fetch('/api/generate-user', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ adminPassword: 'chapdel220605', newUser, newPass })
-        });
-        const data = await response.json();
-        if (data.success) {
-            messageDisplay.style.color = '#0f0';
-            messageDisplay.innerText = "SUCCÈS ! Identifiants : " + newUser + " / " + newPass;
-            document.getElementById('new-username').value = '';
-            document.getElementById('new-password').value = '';
-        } else {
-            messageDisplay.style.color = 'red';
-            messageDisplay.innerText = "ERREUR : " + (data.message || 'Problème inconnu');
-        }
-    } catch (error) {
-        messageDisplay.style.color = 'red';
-        messageDisplay.innerText = "ERREUR CRITIQUE : Le serveur a planté !";
-    }
+        const res = await fetch('/api/generate-user', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({adminPassword:'chapdel220605',newUser:u,newPass:p}) });
+        const data = await res.json();
+        if(data.success){m.style.color='#0f0';m.innerText='SUCCÈS !';document.getElementById('new-username').value='';document.getElementById('new-password').value='';loadUsers();}
+        else{m.style.color='red';m.innerText=data.message||'Erreur';}
+    } catch(e){m.style.color='red';m.innerText='Erreur critique';}
+}
+
+async function loadUsers() {
+    const listDiv = document.getElementById('user-list');
+    listDiv.innerHTML = '<p style="color:grey;">Chargement...</p>';
+    try {
+        const res = await fetch('/api/get-users', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({adminPassword:'chapdel220605'}) });
+        const data = await res.json();
+        if(data.success && data.users) {
+            const users = data.users;
+            const usernames = Object.keys(users);
+            if(usernames.length === 0) { listDiv.innerHTML = '<p style="color:grey;">Aucun utilisateur.</p>'; return; }
+            listDiv.innerHTML = '';
+            usernames.forEach(u => {
+                const info = users[u];
+                // Gérer l'ancien format (juste string) et le nouveau format (objet)
+                const isOldFormat = typeof info === 'string';
+                const pass = isOldFormat ? info : info.pass;
+                const isBlocked = isOldFormat ? false : info.blocked;
+                const isActive = isOldFormat ? false : info.active;
+
+                const card = document.createElement('div');
+                card.className = 'user-card';
+                card.innerHTML = `
+                    <div class="user-info">
+                        <h4>${u}</h4>
+                        <p>Mdp: ${pass} | ${isBlocked ? '<span style="color:red;">Bloqué</span>' : '<span style="color:green;">Actif</span>'} | ${isActive ? '<span style="color:orange;">En ligne</span>' : 'Hors ligne'}</p>
+                    </div>
+                    <div class="user-actions">
+                        ${isBlocked ? `<button class="btn-success" onclick="manageUser('${u}','unblock')">Débloquer</button>` : `<button class="btn-warn" onclick="manageUser('${u}','block')">Bloquer</button>`}
+                        ${isActive ? `<button class="btn-danger" onclick="manageUser('${u}','disconnect')">Déconnecter</button>` : ''}
+                    </div>
+                `;
+                listDiv.appendChild(card);
+            });
+        } else { listDiv.innerHTML = '<p style="color:red;">Erreur</p>'; }
+    } catch(e) { listDiv.innerHTML = '<p style="color:red;">Erreur réseau</p>'; }
+}
+
+async function manageUser(username, action) {
+    try {
+        const res = await fetch('/api/manage-user', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({adminPassword:'chapdel220605',username,action}) });
+        const data = await res.json();
+        if(data.success) loadUsers(); else alert('Erreur');
+    } catch(e) { alert('Erreur réseau'); }
 }
 
 function showApp() {
@@ -174,30 +207,13 @@ function showApp() {
     document.getElementById('app-screen').classList.remove('hidden');
 }
 
-function logout() {
-    document.getElementById('app-screen').classList.add('hidden');
-    document.getElementById('admin-screen').classList.add('hidden');
-    document.getElementById('login-screen').classList.remove('hidden');
-    document.getElementById('login-user').value = '';
-    document.getElementById('login-pass').value = '';
-    document.getElementById('admin-message').innerText = 'En attente...';
-    document.getElementById('admin-message').style.color = 'yellow';
-}
-
 async function loadSource(sourceName) {
     document.getElementById('home-content').style.display = 'none';
     document.getElementById('source-container').style.display = 'block';
     document.getElementById('back-btn').style.display = 'block';
-    const response = await fetch('/api/config');
-    const config = await response.json();
-    const targetUrl = config.sources[sourceName];
-    const iframe = document.createElement('iframe');
-    iframe.src = targetUrl;
-    iframe.allowFullscreen = true;
-    iframe.allow = "autoplay";
-    const container = document.getElementById('source-container');
-    container.innerHTML = '';
-    container.appendChild(iframe);
+    const res = await fetch('/api/config'); const config = await res.json(); const url = config.sources[sourceName];
+    const iframe = document.createElement('iframe'); iframe.src = url; iframe.allowFullscreen = true; iframe.allow = "autoplay";
+    const c = document.getElementById('source-container'); c.innerHTML = ''; c.appendChild(iframe);
 }
 
 function closeSource() {
