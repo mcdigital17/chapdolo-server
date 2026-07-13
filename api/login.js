@@ -1,14 +1,6 @@
-import { Redis } from '@upstash/redis';
-
-const redis = new Redis({
-  url: process.env.KV_REST_API_URL,
-  token: process.env.KV_REST_API_TOKEN,
-});
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
-  
-  // Sécurité pour lire les données envoyées par l'application
+
   let body;
   try {
     body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
@@ -27,17 +19,30 @@ export default async function handler(req, res) {
     return res.status(200).json({ success: true, role: 'admin' });
   }
 
+  const url = process.env.KV_REST_API_URL;
+  const token = process.env.KV_REST_API_TOKEN;
+
+  if (!url || !token) {
+    return res.status(500).json({ success: false, message: 'Variables base de données manquantes sur Vercel' });
+  }
+
   try {
-    // Vérification Utilisateur dans la base de données
-    const users = await redis.get('users') || {};
+    // On demande la liste des utilisateurs au coffre-fort
+    const getResponse = await fetch(`${url}/get/users`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const getData = await getResponse.json();
     
-    // Vérification stricte du mot de passe
+    const users = getData.result ? JSON.parse(getData.result) : {};
+
+    // On vérifie si l'utilisateur existe et si le mot de passe est bon
     if (users[username] && users[username] === password) {
       return res.status(200).json({ success: true, role: 'user' });
     } else {
       return res.status(401).json({ success: false, message: 'Identifiants incorrects' });
     }
+
   } catch (error) {
-    return res.status(500).json({ success: false, message: 'Erreur serveur base de données' });
+    return res.status(500).json({ success: false, message: 'Erreur de connexion au coffre-fort : ' + error.message });
   }
 }
