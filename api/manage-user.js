@@ -13,12 +13,20 @@ export default async function handler(req, res) {
     const getData = await getResponse.json();
     const users = getData.result ? JSON.parse(getData.result) : {};
 
-    if (!users[username]) return res.status(404).json({ success: false, message: 'Utilisateur inconnu' });
+    // NOUVEAU : Si l'action est 'delete', on supprime l'utilisateur du dictionnaire
+    if (action === 'delete') {
+      if (!users[username]) return res.status(404).json({ success: false, message: 'Utilisateur inconnu' });
+      delete users[username]; // Suppression effective
+    } else {
+      // Sinon, on gère les autres actions (block, unblock, disconnect)
+      if (!users[username]) return res.status(404).json({ success: false, message: 'Utilisateur inconnu' });
 
-    if (action === 'block') users[username].blocked = true;
-    if (action === 'unblock') users[username].blocked = false;
-    if (action === 'disconnect') users[username].active = false;
+      if (action === 'block') users[username].blocked = true;
+      if (action === 'unblock') users[username].blocked = false;
+      if (action === 'disconnect') users[username].active = false;
+    }
 
+    // On sauvegarde la liste mise à jour dans le coffre-fort
     const setResponse = await fetch(`${url}/set/users`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
