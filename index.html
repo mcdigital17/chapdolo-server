@@ -224,7 +224,7 @@ async function loadSource(sourceName) {
     const res = await fetch('/api/config'); const config = await res.json(); const url = config.sources[sourceName];
     const iframe = document.createElement('iframe');
 iframe.src = url;
-iframe.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms allow-presentation");
+iframe.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms allow-presentation allow-popups");
 iframe.allowFullscreen = true;
 iframe.allow = "autoplay";
     const c = document.getElementById('source-container'); c.innerHTML = ''; c.appendChild(iframe);
