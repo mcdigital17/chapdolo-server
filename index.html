@@ -16,12 +16,15 @@ button { padding: 15px 40px; font-size: 18px; border: none; border-radius: 8px; 
 .btn-auto { background: #9b59b6; color: white; }
 .btn-warn { background: #f39c12; color: black; }
 .btn-success { background: #2ecc71; color: black; }
+.btn-delete { background: transparent; border: 1px solid red; color: red; }
 .modal-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 100; }
 .hidden { display: none !important; }
-.user-card { background: #111; border: 1px solid #333; padding: 20px; margin: 10px auto; max-width: 500px; border-radius: 10px; text-align: left; display: flex; justify-content: space-between; align-items: center; }
+.user-card { background: #111; border: 1px solid #333; padding: 20px; margin: 10px auto; max-width: 500px; border-radius: 10px; text-align: left; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+.user-info { flex-basis: 100%; margin-bottom: 10px; }
 .user-info h4 { margin: 0 0 5px 0; color: #00E5FF; }
 .user-info p { margin: 0; font-size: 14px; color: #aaa; }
-.user-actions button { padding: 8px 12px; font-size: 12px; margin: 2px; }
+.user-actions { display: flex; gap: 5px; flex-wrap: wrap; }
+.user-actions button { padding: 8px 12px; font-size: 12px; margin: 0; }
 </style>
 </head>
 <body>
@@ -57,8 +60,8 @@ button { padding: 15px 40px; font-size: 18px; border: none; border-radius: 8px; 
    </div>
    <div style="background:#111; padding:20px; border-radius:10px; width: 600px;">
       <h3>Utilisateurs créés</h3>
-      <button class="btn-secondary" onclick="loadUsers()" style="font-size:14px;"> Rafraîchir la liste</button>
-      <div id="user-list" style="margin-top:10px; max-height: 300px; overflow-y: auto;"></div>
+      <button class="btn-secondary" onclick="loadUsers()" style="font-size:14px;">🔄 Rafraîchir la liste</button>
+      <div id="user-list" style="margin-top:10px; max-height: 400px; overflow-y: auto;"></div>
    </div>
 </div>
 <br>
@@ -169,7 +172,6 @@ async function loadUsers() {
             listDiv.innerHTML = '';
             usernames.forEach(u => {
                 const info = users[u];
-                // Gérer l'ancien format (juste string) et le nouveau format (objet)
                 const isOldFormat = typeof info === 'string';
                 const pass = isOldFormat ? info : info.pass;
                 const isBlocked = isOldFormat ? false : info.blocked;
@@ -185,6 +187,7 @@ async function loadUsers() {
                     <div class="user-actions">
                         ${isBlocked ? `<button class="btn-success" onclick="manageUser('${u}','unblock')">Débloquer</button>` : `<button class="btn-warn" onclick="manageUser('${u}','block')">Bloquer</button>`}
                         ${isActive ? `<button class="btn-danger" onclick="manageUser('${u}','disconnect')">Déconnecter</button>` : ''}
+                        <button class="btn-delete" onclick="manageUser('${u}','delete')">Supprimer</button>
                     </div>
                 `;
                 listDiv.appendChild(card);
@@ -194,10 +197,17 @@ async function loadUsers() {
 }
 
 async function manageUser(username, action) {
+    // Confirmation de sécurité pour la suppression
+    if(action === 'delete') {
+        if(!confirm('⚠️ ATTENTION : Voulez-vous vraiment supprimer définitivement l\'utilisateur ' + username + ' ?')) {
+            return; // Si l'utilisateur clique sur "Annuler", on stoppe tout
+        }
+    }
+    
     try {
         const res = await fetch('/api/manage-user', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({adminPassword:'chapdel220605',username,action}) });
         const data = await res.json();
-        if(data.success) loadUsers(); else alert('Erreur');
+        if(data.success) loadUsers(); else alert('Erreur : ' + data.message);
     } catch(e) { alert('Erreur réseau'); }
 }
 
