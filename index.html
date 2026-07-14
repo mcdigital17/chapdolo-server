@@ -222,7 +222,11 @@ async function loadSource(sourceName) {
     document.getElementById('source-container').style.display = 'block';
     document.getElementById('back-btn').style.display = 'block';
     const res = await fetch('/api/config'); const config = await res.json(); const url = config.sources[sourceName];
-    const iframe = document.createElement('iframe'); iframe.src = url; iframe.allowFullscreen = true; iframe.allow = "autoplay";
+    const iframe = document.createElement('iframe');
+iframe.src = url;
+iframe.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms allow-presentation");
+iframe.allowFullscreen = true;
+iframe.allow = "autoplay";
     const c = document.getElementById('source-container'); c.innerHTML = ''; c.appendChild(iframe);
 }
 
