@@ -32,7 +32,9 @@ button { padding: 15px 40px; font-size: 18px; border: none; border-radius: 8px; 
 #tv-player { width: 100%; height: 500px; background: black; }
 #iptv-msg { color: yellow; margin-top: 10px; font-weight: bold; }
 
-.iptv-channels { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 20px; max-height: 300px; overflow-y: auto; padding: 10px; background: #111; border-radius: 8px; }
+.iptv-container { margin-top: 20px; background: #111; border-radius: 8px; padding: 15px; }
+.search-bar { display: flex; justify-content: center; gap: 10px; margin-bottom: 15px; }
+.iptv-channels { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; max-height: 400px; overflow-y: auto; padding: 10px; }
 .iptv-btn { padding: 10px 15px; font-size: 14px; border-radius: 6px; background: #222; color: white; border: 1px solid #444; cursor: pointer; }
 .iptv-btn:hover { background: #00E5FF; color: black; }
 
@@ -108,7 +110,14 @@ button { padding: 15px 40px; font-size: 18px; border: none; border-radius: 8px; 
          <button class="btn-primary" onclick="loadIPTVList()">Charger les chaînes</button>
       </div>
       <p id="iptv-msg"></p>
-      <div id="iptv-channels" class="iptv-channels"></div>
+      
+      <!-- NOUVEAU : Conteneur avec barre de recherche -->
+      <div id="iptv-container" class="iptv-container hidden">
+         <div class="search-bar">
+            <input type="text" id="iptv-search" placeholder="🔍 Rechercher une chaîne..." style="width: 300px; margin: 0;" oninput="filterChannels()">
+         </div>
+         <div id="iptv-channels" class="iptv-channels"></div>
+      </div>
    </div>
 </div>
 
@@ -161,20 +170,36 @@ function loadSite(url) {
     document.getElementById('back-main-btn').classList.remove('hidden');
 }
 
-// --- NOUVEAU : CHARGEMENT LISTE IPTV ---
+// --- NOUVEAU : FILTRE RECHERCHE ---
+function filterChannels() {
+    const searchTerm = document.getElementById('iptv-search').value.toLowerCase();
+    const channelButtons = document.getElementById('iptv-channels').getElementsByTagName('button');
+    
+    for (let i = 0; i < channelButtons.length; i++) {
+        const channelName = channelButtons[i].innerText.toLowerCase();
+        if (channelName.includes(searchTerm)) {
+            channelButtons[i].style.display = ""; // Affiche
+        } else {
+            channelButtons[i].style.display = "none"; // Cache
+        }
+    }
+}
+
+// --- CHARGEMENT LISTE IPTV ---
 async function loadIPTVList() {
     const url = document.getElementById('iptv-url-input').value;
     const msg = document.getElementById('iptv-msg');
     const channelList = document.getElementById('iptv-channels');
+    const iptvContainer = document.getElementById('iptv-container');
 
     if (!url) { msg.style.color='red'; msg.innerText='Veuillez coller un lien !'; return; }
 
     msg.style.color = 'yellow';
     msg.innerText = 'Chargement de la liste IPTV...';
     channelList.innerHTML = '';
+    document.getElementById('iptv-search').value = ''; // On vide la recherche
 
     try {
-        // On passe par notre passerelle Vercel pour éviter les blocages CORS
         const proxyUrl = `/api/proxy-iptv?url=${encodeURIComponent(url)}`;
         const response = await fetch(proxyUrl);
         const text = await response.text();
@@ -183,7 +208,6 @@ async function loadIPTVList() {
         const channels = [];
         let currentName = '';
 
-        // Lecture du fichier M3U ligne par ligne
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i].trim();
             if (line.startsWith('#EXTINF')) {
@@ -200,13 +224,14 @@ async function loadIPTVList() {
         if (channels.length === 0) {
             msg.style.color = 'red';
             msg.innerText = 'Aucune chaîne trouvée. Vérifiez que c\'est un fichier M3U.';
+            iptvContainer.classList.add('hidden');
             return;
         }
 
         msg.style.color = '#0f0';
-        msg.innerText = `${channels.length} chaînes trouvées ! Cliquez sur une chaîne pour la lancer.`;
+        msg.innerText = `${channels.length} chaînes trouvées ! Utilisez la barre de recherche pour trouver votre chaîne.`;
+        iptvContainer.classList.remove('hidden'); // Affiche le conteneur avec la barre de recherche
 
-        // Affichage des boutons des chaînes
         channels.forEach(ch => {
             const btn = document.createElement('button');
             btn.className = 'iptv-btn';
@@ -218,6 +243,7 @@ async function loadIPTVList() {
     } catch (e) {
         msg.style.color = 'red';
         msg.innerText = 'Erreur de chargement. Vérifiez le lien.';
+        iptvContainer.classList.add('hidden');
     }
 }
 
