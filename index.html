@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Chapdolo</title>
-<!-- Lecteur vidéo spécial pour la TV Live (HLS.js) -->
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <style>
 body { background-color: #0a0a0a; color: white; font-family: sans-serif; margin: 0; }
@@ -27,12 +26,15 @@ button { padding: 15px 40px; font-size: 18px; border: none; border-radius: 8px; 
 .user-actions { display: flex; gap: 5px; flex-wrap: wrap; }
 .user-actions button { padding: 8px 12px; font-size: 12px; margin: 0; }
 
-/* Styles pour le lecteur et les boutons de sources */
 .source-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-top: 30px; }
 .source-btn { padding: 20px 30px; font-size: 20px; font-weight: bold; border-radius: 12px; min-width: 150px; }
 .tv-player-container { width: 100%; max-width: 900px; margin: 20px auto; background: #000; border-radius: 12px; overflow: hidden; display: none; }
 #tv-player { width: 100%; height: 500px; background: black; }
-#tv-msg { color: yellow; margin-top: 10px; font-weight: bold; }
+#iptv-msg { color: yellow; margin-top: 10px; font-weight: bold; }
+
+.iptv-channels { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 20px; max-height: 300px; overflow-y: auto; padding: 10px; background: #111; border-radius: 8px; }
+.iptv-btn { padding: 10px 15px; font-size: 14px; border-radius: 6px; background: #222; color: white; border: 1px solid #444; cursor: pointer; }
+.iptv-btn:hover { background: #00E5FF; color: black; }
 
 #site-iframe { width: 100%; height: 800px; border: none; margin-top: 20px; display: none; background: #111; border-radius: 12px; }
 </style>
@@ -90,29 +92,28 @@ button { padding: 15px 40px; font-size: 18px; border: none; border-radius: 8px; 
 
 <div id="main-content" style="text-align: center; padding: 40px 20px;">
    <h2 style="color:#00E5FF; font-size:40px; margin-bottom:10px;">Bienvenue sur Chapdolo</h2>
-   <p style="color:grey; font-size:18px; margin-bottom:30px;">Sélectionnez une source pour lancer le streaming</p>
+   <p style="color:grey; font-size:18px; margin-bottom:30px;">Sélectionnez une source de streaming</p>
    
    <div class="source-grid">
       <button class="source-btn btn-primary" onclick="loadSite('https://oha.to')">OHA.TO</button>
-      <button class="source-btn btn-primary" onclick="loadSite('https://oha.cx')">OHA.CX</button>
-      <button class="source-btn btn-primary" onclick="loadSite('https://oha.ip')">OHA.IP</button>
       <button class="source-btn btn-secondary" onclick="loadSite('https://huhu.to')">HUHU.TO</button>
       <button class="source-btn btn-secondary" onclick="loadSite('https://huhu.bz')">HUHU.BZ</button>
-      <button class="source-btn btn-warn" onclick="loadSite('https://kool.to')">KOOL.TO</button>
    </div>
 
    <div style="margin-top: 40px; border-top: 1px solid #333; padding-top: 30px;">
-      <h3 style="color:#00E5FF;">📺 Mode TV Live Direct (Sans Pub)</h3>
-      <p style="color:grey;">Collez le lien direct du flux TV (fichier .m3u8) pour une lecture fluide et sans coupure :</p>
+      <h3 style="color:#00E5FF;">📺 Mode IPTV Direct (Sans Pub)</h3>
+      <p style="color:grey;">Collez le lien m3u8 d'une source IPTV pour afficher les chaînes m3u8 de cette source :</p>
       <div style="display:flex; justify-content:center; gap:10px; margin-top:15px; flex-wrap:wrap;">
-         <input type="text" id="direct-tv-url" placeholder="https://lien-du-flux.m3u8" style="width: 400px;">
-         <button class="btn-primary" onclick="playDirectTV()">Lancer la chaîne</button>
+         <input type="text" id="iptv-url-input" placeholder="https://lien-vers-fichier-iptv.m3u" style="width: 400px;">
+         <button class="btn-primary" onclick="loadIPTVList()">Charger les chaînes</button>
       </div>
-      <p id="tv-msg"></p>
+      <p id="iptv-msg"></p>
+      <div id="iptv-channels" class="iptv-channels"></div>
    </div>
 </div>
 
 <div id="player-section" class="hidden" style="padding: 20px;">
+   <h2 id="player-title" style="color: white; text-align: center; margin-top:0;">Lecture</h2>
    <div class="tv-player-container" style="display:block; margin-top:0;">
       <video id="tv-player" controls autoplay></video>
    </div>
@@ -124,6 +125,7 @@ button { padding: 15px 40px; font-size: 18px; border: none; border-radius: 8px; 
 
 <script>
 let currentLoggedUser = '';
+let hlsInstance = null;
 
 document.getElementById('main-logo').addEventListener('click', function() {
     let count = parseInt(this.dataset.clicks || 0); count++; this.dataset.clicks = count;
@@ -159,56 +161,111 @@ function loadSite(url) {
     document.getElementById('back-main-btn').classList.remove('hidden');
 }
 
-function playDirectTV() {
-    const url = document.getElementById('direct-tv-url').value;
-    const msg = document.getElementById('tv-msg');
-    const video = document.getElementById('tv-player');
+// --- NOUVEAU : CHARGEMENT LISTE IPTV ---
+async function loadIPTVList() {
+    const url = document.getElementById('iptv-url-input').value;
+    const msg = document.getElementById('iptv-msg');
+    const channelList = document.getElementById('iptv-channels');
 
     if (!url) { msg.style.color='red'; msg.innerText='Veuillez coller un lien !'; return; }
-    
+
+    msg.style.color = 'yellow';
+    msg.innerText = 'Chargement de la liste IPTV...';
+    channelList.innerHTML = '';
+
+    try {
+        // On passe par notre passerelle Vercel pour éviter les blocages CORS
+        const proxyUrl = `/api/proxy-iptv?url=${encodeURIComponent(url)}`;
+        const response = await fetch(proxyUrl);
+        const text = await response.text();
+
+        const lines = text.split('\n');
+        const channels = [];
+        let currentName = '';
+
+        // Lecture du fichier M3U ligne par ligne
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (line.startsWith('#EXTINF')) {
+                const commaIndex = line.lastIndexOf(',');
+                if (commaIndex !== -1) {
+                    currentName = line.substring(commaIndex + 1).trim();
+                }
+            } else if (line.startsWith('http') && currentName) {
+                channels.push({ name: currentName, url: line });
+                currentName = '';
+            }
+        }
+
+        if (channels.length === 0) {
+            msg.style.color = 'red';
+            msg.innerText = 'Aucune chaîne trouvée. Vérifiez que c\'est un fichier M3U.';
+            return;
+        }
+
+        msg.style.color = '#0f0';
+        msg.innerText = `${channels.length} chaînes trouvées ! Cliquez sur une chaîne pour la lancer.`;
+
+        // Affichage des boutons des chaînes
+        channels.forEach(ch => {
+            const btn = document.createElement('button');
+            btn.className = 'iptv-btn';
+            btn.innerText = ch.name;
+            btn.onclick = () => playChannel(ch.url, ch.name);
+            channelList.appendChild(btn);
+        });
+
+    } catch (e) {
+        msg.style.color = 'red';
+        msg.innerText = 'Erreur de chargement. Vérifiez le lien.';
+    }
+}
+
+function playChannel(url, name) {
+    const msg = document.getElementById('iptv-msg');
+    const video = document.getElementById('tv-player');
+
     document.getElementById('main-content').classList.add('hidden');
     document.getElementById('site-iframe').style.display = 'none';
     document.getElementById('site-iframe').src = '';
     document.getElementById('player-section').classList.remove('hidden');
     document.getElementById('back-main-btn').classList.remove('hidden');
-
+    
+    document.getElementById('player-title').innerText = name;
     msg.style.color = 'yellow';
-    msg.innerText = 'Chargement du flux TV...';
+    msg.innerText = `Chargement de ${name}...`;
 
     if (Hls.isSupported()) {
-        const hls = new Hls();
-        hls.loadSource(url);
-        hls.attachMedia(video);
-        hls.on(Hls.Events.MANIFEST_PARSED, function() {
+        if (hlsInstance) hlsInstance.destroy();
+        hlsInstance = new Hls();
+        hlsInstance.loadSource(url);
+        hlsInstance.attachMedia(video);
+        hlsInstance.on(Hls.Events.MANIFEST_PARSED, function() {
             video.play();
             msg.style.color = '#0f0';
-            msg.innerText = 'Lecture en cours !';
+            msg.innerText = `Lecture en cours : ${name}`;
         });
-        hls.on(Hls.Events.ERROR, function(event, data) {
+        hlsInstance.on(Hls.Events.ERROR, function(event, data) {
             msg.style.color = 'red';
-            msg.innerText = 'Erreur de lecture. Vérifiez le lien .m3u8.';
+            msg.innerText = `Erreur de lecture pour ${name}. Le flux est peut-être mort.`;
         });
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
         video.src = url;
-        video.addEventListener('loadedmetadata', function() { video.play(); msg.innerText = 'Lecture en cours !'; });
-    } else {
-        msg.style.color = 'red';
-        msg.innerText = 'Navigateur non supporté pour la TV Live.';
+        video.addEventListener('loadedmetadata', function() { video.play(); });
     }
 }
 
 function backToMain() {
-    // On arrête tout
     document.getElementById('site-iframe').src = '';
     document.getElementById('site-iframe').style.display = 'none';
     document.getElementById('player-section').classList.add('hidden');
     const video = document.getElementById('tv-player');
     video.pause(); video.src = '';
+    if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
     
     document.getElementById('main-content').classList.remove('hidden');
     document.getElementById('back-main-btn').classList.add('hidden');
-    document.getElementById('tv-msg').innerText = '';
-    document.getElementById('direct-tv-url').value = '';
+    document.getElementById('iptv-msg').innerText = '';
 }
 </script>
 </body>
