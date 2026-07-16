@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Chapdolo</title>
+<!-- Lecteur vidéo spécial pour la TV Live (HLS.js) -->
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <style>
 body { background-color: #0a0a0a; color: white; font-family: sans-serif; margin: 0; }
 .section { text-align: center; padding: 40px 20px; }
@@ -25,20 +27,14 @@ button { padding: 15px 40px; font-size: 18px; border: none; border-radius: 8px; 
 .user-actions { display: flex; gap: 5px; flex-wrap: wrap; }
 .user-actions button { padding: 8px 12px; font-size: 12px; margin: 0; }
 
-/* STYLE NETFLIX */
-.netflix-row { margin-bottom: 40px; padding-left: 20px; }
-.netflix-row h2 { margin: 0 0 10px 0; font-size: 24px; color: #e5e5e5; }
-.row-scroll { display: flex; overflow-x: auto; gap: 15px; padding-bottom: 20px; }
-.row-scroll::-webkit-scrollbar { height: 8px; }
-.row-scroll::-webkit-scrollbar-thumb { background: #00E5FF; border-radius: 4px; }
-.movie-card { min-width: 150px; cursor: pointer; transition: transform 0.2s; border-radius: 8px; overflow: hidden; }
-.movie-card:hover { transform: scale(1.08); }
-.movie-card img { width: 100%; height: 225px; object-fit: cover; display: block; }
-.movie-card p { margin: 5px 0 0 0; font-size: 12px; text-align: center; color: #ccc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Styles pour le lecteur et les boutons de sources */
+.source-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-top: 30px; }
+.source-btn { padding: 20px 30px; font-size: 20px; font-weight: bold; border-radius: 12px; min-width: 150px; }
+.tv-player-container { width: 100%; max-width: 900px; margin: 20px auto; background: #000; border-radius: 12px; overflow: hidden; display: none; }
+#tv-player { width: 100%; height: 500px; background: black; }
+#tv-msg { color: yellow; margin-top: 10px; font-weight: bold; }
 
-#player-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; z-index: 50; display: flex; flex-direction: column; }
-.player-nav { background: #111; padding: 15px; display: flex; justify-content: space-between; align-items: center; z-index: 60; }
-#video-iframe { width: 100%; flex-grow: 1; border: none; }
+#site-iframe { width: 100%; height: 800px; border: none; margin-top: 20px; display: none; background: #111; border-radius: 12px; }
 </style>
 </head>
 <body>
@@ -87,22 +83,43 @@ button { padding: 15px 40px; font-size: 18px; border: none; border-radius: 8px; 
 <nav style="background:#111; padding:15px 20px; display:flex; justify-content:space-between; align-items:center;">
 <h1 style="color:#00E5FF; font-size:28px; margin:0;">CHAPDOLO</h1>
 <div>
-<button style="background:transparent; color:white; border:1px solid white; padding:10px 20px; border-radius:5px; cursor:pointer;" onclick="logout()">Déconnexion</button>
+<button id="back-main-btn" class="btn-secondary hidden" onclick="backToMain()">↩ Retour</button>
+<button style="background:transparent; color:white; border:1px solid white; padding:10px 20px; border-radius:5px; cursor:pointer; margin-left:10px;" onclick="logout()">Déconnexion</button>
 </div>
 </nav>
-<div style="padding-top: 20px;">
-   <div id="movies-row" class="netflix-row"><h2>🎬 Films Populaires</h2><div class="row-scroll" id="movies-scroll"></div></div>
-   <div id="series-row" class="netflix-row"><h2>📺 Séries Populaires</h2><div class="row-scroll" id="series-scroll"></div></div>
-   <div id="anime-row" class="netflix-row"><h2>⚔️ Animes</h2><div class="row-scroll" id="anime-scroll"></div></div>
-</div>
+
+<div id="main-content" style="text-align: center; padding: 40px 20px;">
+   <h2 style="color:#00E5FF; font-size:40px; margin-bottom:10px;">Bienvenue sur Chapdolo</h2>
+   <p style="color:grey; font-size:18px; margin-bottom:30px;">Sélectionnez une source pour lancer le streaming</p>
+   
+   <div class="source-grid">
+      <button class="source-btn btn-primary" onclick="loadSite('https://oha.to')">OHA.TO</button>
+      <button class="source-btn btn-primary" onclick="loadSite('https://oha.cx')">OHA.CX</button>
+      <button class="source-btn btn-primary" onclick="loadSite('https://oha.ip')">OHA.IP</button>
+      <button class="source-btn btn-secondary" onclick="loadSite('https://huhu.to')">HUHU.TO</button>
+      <button class="source-btn btn-secondary" onclick="loadSite('https://huhu.bz')">HUHU.BZ</button>
+      <button class="source-btn btn-warn" onclick="loadSite('https://kool.to')">KOOL.TO</button>
+   </div>
+
+   <div style="margin-top: 40px; border-top: 1px solid #333; padding-top: 30px;">
+      <h3 style="color:#00E5FF;">📺 Mode TV Live Direct (Sans Pub)</h3>
+      <p style="color:grey;">Collez le lien direct du flux TV (fichier .m3u8) pour une lecture fluide et sans coupure :</p>
+      <div style="display:flex; justify-content:center; gap:10px; margin-top:15px; flex-wrap:wrap;">
+         <input type="text" id="direct-tv-url" placeholder="https://lien-du-flux.m3u8" style="width: 400px;">
+         <button class="btn-primary" onclick="playDirectTV()">Lancer la chaîne</button>
+      </div>
+      <p id="tv-msg"></p>
+   </div>
 </div>
 
-<div id="player-screen" class="hidden">
-<div class="player-nav">
-<h3 id="player-title" style="color:white; margin:0;">Lecture</h3>
-<button class="btn-danger" onclick="closePlayer()">✕ Fermer</button>
+<div id="player-section" class="hidden" style="padding: 20px;">
+   <div class="tv-player-container" style="display:block; margin-top:0;">
+      <video id="tv-player" controls autoplay></video>
+   </div>
 </div>
-<iframe id="video-iframe" allowfullscreen allow="autoplay; encrypted-media"></iframe>
+
+<iframe id="site-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-popups"></iframe>
+
 </div>
 
 <script>
@@ -120,7 +137,7 @@ function closeAdminModal() { document.getElementById('admin-modal').classList.ad
 
 async function login() { const u = document.getElementById('login-user').value; const p = document.getElementById('login-pass').value; const e = document.getElementById('login-error'); e.style.color='yellow'; e.innerText='Connexion...'; try { const r = await fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username:u,password:p}) }); const d = await r.json(); if(d.success){currentLoggedUser=u; showApp();}else{e.style.color='red';e.innerText=d.message||'Erreur';} } catch(x){e.style.color='red';e.innerText='Réseau';} }
 
-async function logout() { if(currentLoggedUser){try{await fetch('/api/logout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:currentLoggedUser})});}catch(e){} currentLoggedUser='';} document.getElementById('app-screen').classList.add('hidden'); document.getElementById('admin-screen').classList.add('hidden'); document.getElementById('login-screen').classList.remove('hidden'); document.getElementById('login-user').value=''; document.getElementById('login-pass').value=''; document.getElementById('login-error').innerText=''; }
+async function logout() { if(currentLoggedUser){try{await fetch('/api/logout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:currentLoggedUser})});}catch(e){} currentLoggedUser='';} document.getElementById('app-screen').classList.add('hidden'); document.getElementById('admin-screen').classList.add('hidden'); document.getElementById('login-screen').classList.remove('hidden'); document.getElementById('login-user').value=''; document.getElementById('login-pass').value=''; document.getElementById('login-error').innerText=''; backToMain(); }
 
 function autoGenerate() { const c="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"; let p=""; for(let i=0;i<8;i++) p+=c.charAt(Math.floor(Math.random()*c.length)); document.getElementById('new-password').value=p; }
 
@@ -130,60 +147,68 @@ async function loadUsers() { const l=document.getElementById('user-list'); l.inn
 
 async function manageUser(u,a) { if(a==='delete') if(!confirm('Supprimer '+u+' ?')) return; try { const r=await fetch('/api/manage-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminPassword:'chapdel220605',username:u,action:a})}); const d=await r.json(); if(d.success) loadUsers(); else alert('Erreur'); } catch(e){alert('Réseau');} }
 
-function showApp() { document.getElementById('login-screen').classList.add('hidden'); document.getElementById('admin-screen').classList.add('hidden'); document.getElementById('app-screen').classList.remove('hidden'); loadCatalog(); }
+function showApp() { document.getElementById('login-screen').classList.add('hidden'); document.getElementById('admin-screen').classList.add('hidden'); document.getElementById('app-screen').classList.remove('hidden'); backToMain(); }
 
-// --- SYSTÈME NETFLIX (CINEMETA + EMBED) ---
-async function loadCatalog() {
-    loadRow('movie', 'top', 'movies-scroll');
-    loadRow('series', 'top', 'series-scroll');
-    // Pour les animes, Cinemeta n'a pas de catalogue officiel parfait, on ruse avec les séries
-    loadRow('series', 'top', 'anime-scroll'); 
+// --- FONCTIONS STREAMING ---
+
+function loadSite(url) {
+    document.getElementById('main-content').classList.add('hidden');
+    document.getElementById('player-section').classList.add('hidden');
+    document.getElementById('site-iframe').style.display = 'block';
+    document.getElementById('site-iframe').src = url;
+    document.getElementById('back-main-btn').classList.remove('hidden');
 }
 
-async function loadRow(type, catalog, elementId) {
-    const scroll = document.getElementById(elementId);
-    scroll.innerHTML = '<p style="color:grey;">Chargement...</p>';
-    try {
-        const res = await fetch(`https://v3-cinemeta.strem.io/catalog/${type}/${catalog}.json`);
-        const data = await res.json();
-        scroll.innerHTML = '';
-        if(data.metas) {
-            // Limiter à 20 pour le chargement rapide
-            data.metas.slice(0, 20).forEach(item => {
-                const card = document.createElement('div');
-                card.className = 'movie-card';
-                card.innerHTML = `<img src="${item.poster}" alt="${item.name}"><p>${item.name}</p>`;
-                card.onclick = () => playVideo(item.id, item.name, type);
-                scroll.appendChild(card);
-            });
-        }
-    } catch(e) {
-        scroll.innerHTML = '<p style="color:red;">Erreur de chargement</p>';
-    }
-}
+function playDirectTV() {
+    const url = document.getElementById('direct-tv-url').value;
+    const msg = document.getElementById('tv-msg');
+    const video = document.getElementById('tv-player');
 
-function playVideo(imdbId, name, type) {
-    const playerScreen = document.getElementById('player-screen');
-    const videoIframe = document.getElementById('video-iframe');
-    const playerTitle = document.getElementById('player-title');
+    if (!url) { msg.style.color='red'; msg.innerText='Veuillez coller un lien !'; return; }
     
-    playerTitle.innerText = name;
-    
-    // On utilise un service d'Embed propre (comme LOKKE/VYPN)
-    // Il lit la vidéo sans afficher le site oha.to et ses pubs !
-    if(type === 'movie') {
-        videoIframe.src = `https://vidsrc.xyz/embed/movie?imdb=${imdbId}`;
+    document.getElementById('main-content').classList.add('hidden');
+    document.getElementById('site-iframe').style.display = 'none';
+    document.getElementById('site-iframe').src = '';
+    document.getElementById('player-section').classList.remove('hidden');
+    document.getElementById('back-main-btn').classList.remove('hidden');
+
+    msg.style.color = 'yellow';
+    msg.innerText = 'Chargement du flux TV...';
+
+    if (Hls.isSupported()) {
+        const hls = new Hls();
+        hls.loadSource(url);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, function() {
+            video.play();
+            msg.style.color = '#0f0';
+            msg.innerText = 'Lecture en cours !';
+        });
+        hls.on(Hls.Events.ERROR, function(event, data) {
+            msg.style.color = 'red';
+            msg.innerText = 'Erreur de lecture. Vérifiez le lien .m3u8.';
+        });
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = url;
+        video.addEventListener('loadedmetadata', function() { video.play(); msg.innerText = 'Lecture en cours !'; });
     } else {
-        // Pour les séries, on lance le premier épisode par défaut
-        videoIframe.src = `https://vidsrc.xyz/embed/tv?imdb=${imdbId}&season=1&episode=1`;
+        msg.style.color = 'red';
+        msg.innerText = 'Navigateur non supporté pour la TV Live.';
     }
-    
-    playerScreen.classList.remove('hidden');
 }
 
-function closePlayer() {
-    document.getElementById('player-screen').classList.add('hidden');
-    document.getElementById('video-iframe').src = ''; // Arrête la vidéo
+function backToMain() {
+    // On arrête tout
+    document.getElementById('site-iframe').src = '';
+    document.getElementById('site-iframe').style.display = 'none';
+    document.getElementById('player-section').classList.add('hidden');
+    const video = document.getElementById('tv-player');
+    video.pause(); video.src = '';
+    
+    document.getElementById('main-content').classList.remove('hidden');
+    document.getElementById('back-main-btn').classList.add('hidden');
+    document.getElementById('tv-msg').innerText = '';
+    document.getElementById('direct-tv-url').value = '';
 }
 </script>
 </body>
