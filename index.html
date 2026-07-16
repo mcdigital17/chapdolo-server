@@ -6,7 +6,6 @@
 <title>Chapdolo</title>
 <style>
 body { background-color: #0a0a0a; color: white; font-family: sans-serif; margin: 0; }
-iframe { width: 100%; height: 100%; border: none; }
 .section { text-align: center; padding: 40px 20px; }
 input { padding: 15px; margin: 10px; border-radius: 8px; border: 1px solid #333; background: #111; color: white; font-size: 18px; width: 300px; }
 button { padding: 15px 40px; font-size: 18px; border: none; border-radius: 8px; cursor: pointer; margin: 10px; }
@@ -25,6 +24,12 @@ button { padding: 15px 40px; font-size: 18px; border: none; border-radius: 8px; 
 .user-info p { margin: 0; font-size: 14px; color: #aaa; }
 .user-actions { display: flex; gap: 5px; flex-wrap: wrap; }
 .user-actions button { padding: 8px 12px; font-size: 12px; margin: 0; }
+
+/* Style pour la barre de recherche et le lecteur */
+.search-box { margin: 20px auto; max-width: 600px; display: flex; gap: 10px; }
+.search-box input { flex: 1; }
+#video-player { width: 100%; max-width: 900px; height: 500px; background: black; margin: 20px auto; display: block; border-radius: 8px; }
+.extract-msg { color: yellow; margin-top: 10px; }
 </style>
 </head>
 <body>
@@ -74,16 +79,23 @@ button { padding: 15px 40px; font-size: 18px; border: none; border-radius: 8px; 
 <h1 style="color:#00E5FF; font-size:28px; margin:0;">CHAPDOLO</h1>
 <div>
 <button style="background:transparent; color:white; border:1px solid white; padding:10px 20px; border-radius:5px; cursor:pointer;" onclick="logout()">Déconnexion</button>
-<button id="back-btn" style="display:none; background:red; color:white; padding:10px 20px; border:none; border-radius:5px; cursor:pointer; margin-left:10px;" onclick="closeSource()">Fermer la vidéo</button>
+<button id="back-btn" style="display:none; background:red; color:white; padding:10px 20px; border:none; border-radius:5px; cursor:pointer; margin-left:10px;" onclick="closeSource()">Retour</button>
 </div>
 </nav>
-<div id="home-content" style="text-align:center; padding:100px 20px;">
-<h2 style="color:#00E5FF; font-size:50px; margin-bottom:10px;">Bienvenue</h2>
-<p style="color:grey; font-size:20px; margin-bottom:40px;">Streaming sans interruption</p>
-<button class="btn-primary" style="font-size:20px; padding:15px 40px;" onclick="loadSource('oha')">OHA</button>
-<button class="btn-secondary" style="font-size:20px; padding:15px 40px;" onclick="loadSource('huhu')">HUHU</button>
+<div id="home-content" style="text-align:center; padding:50px 20px;">
+   <h2 style="color:#00E5FF; font-size:40px; margin-bottom:10px;">Recherche Directe</h2>
+   <p style="color:grey; font-size:18px; margin-bottom:30px;">Colle le lien du film (ex: https://oha.to/film...) et Chapdolo lira la vidéo sans pub !</p>
+   
+   <div class="search-box">
+      <input type="text" id="movie-url-input" placeholder="Coller le lien du film ici...">
+      <button class="btn-primary" onclick="extractAndPlay()">🎥 Lire</button>
+   </div>
+   <p id="extract-message" class="extract-msg"></p>
+
+   <div id="video-container" style="display:none; margin-top: 30px;">
+      <video id="video-player" controls autoplay></video>
+   </div>
 </div>
-<div id="source-container" style="display:none; position:fixed; top:60px; left:0; right:0; bottom:0; background:black;"></div>
 </div>
 
 <script>
@@ -137,6 +149,7 @@ async function logout() {
     document.getElementById('login-user').value = '';
     document.getElementById('login-pass').value = '';
     document.getElementById('login-error').innerText = '';
+    stopVideo();
 }
 
 function autoGenerate() {
@@ -176,7 +189,6 @@ async function loadUsers() {
                 const pass = isOldFormat ? info : info.pass;
                 const isBlocked = isOldFormat ? false : info.blocked;
                 const isActive = isOldFormat ? false : info.active;
-
                 const card = document.createElement('div');
                 card.className = 'user-card';
                 card.innerHTML = `
@@ -197,13 +209,9 @@ async function loadUsers() {
 }
 
 async function manageUser(username, action) {
-    // Confirmation de sécurité pour la suppression
     if(action === 'delete') {
-        if(!confirm('⚠️ ATTENTION : Voulez-vous vraiment supprimer définitivement l\'utilisateur ' + username + ' ?')) {
-            return; // Si l'utilisateur clique sur "Annuler", on stoppe tout
-        }
+        if(!confirm('⚠️ ATTENTION : Voulez-vous vraiment supprimer définitivement l\'utilisateur ' + username + ' ?')) return;
     }
-    
     try {
         const res = await fetch('/api/manage-user', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({adminPassword:'chapdel220605',username,action}) });
         const data = await res.json();
@@ -217,24 +225,63 @@ function showApp() {
     document.getElementById('app-screen').classList.remove('hidden');
 }
 
-async function loadSource(sourceName) {
-    document.getElementById('home-content').style.display = 'none';
-    document.getElementById('source-container').style.display = 'block';
-    document.getElementById('back-btn').style.display = 'block';
-    const res = await fetch('/api/config'); const config = await res.json(); const url = config.sources[sourceName];
-    const iframe = document.createElement('iframe');
-iframe.src = url;
-iframe.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms allow-presentation allow-popups");
-iframe.allowFullscreen = true;
-iframe.allow = "autoplay";
-    const c = document.getElementById('source-container'); c.innerHTML = ''; c.appendChild(iframe);
+// NOUVELLE FONCTION : EXTRACTION ET LECTURE NORMALE
+async function extractAndPlay() {
+    const movieUrl = document.getElementById('movie-url-input').value;
+    const msgDisplay = document.getElementById('extract-message');
+    const videoContainer = document.getElementById('video-container');
+    const videoPlayer = document.getElementById('video-player');
+
+    if (!movieUrl) {
+        msgDisplay.style.color = 'red';
+        msgDisplay.innerText = 'Veuillez coller un lien de film !';
+        return;
+    }
+
+    msgDisplay.style.color = 'yellow';
+    msgDisplay.innerText = '🤖 Robot Chapdolo en cours d\'extraction de la vidéo...';
+    videoContainer.style.display = 'none';
+
+    try {
+        const res = await fetch('/api/extract-video', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ movieUrl })
+        });
+        const data = await res.json();
+
+        if (data.success && data.videoUrl) {
+            msgDisplay.style.color = '#0f0';
+            msgDisplay.innerText = '✅ Vidéo trouvée ! Lancement du lecteur...';
+            
+            videoPlayer.src = data.videoUrl;
+            videoContainer.style.display = 'block';
+            videoPlayer.play();
+            
+            document.getElementById('back-btn').style.display = 'block';
+        } else {
+            msgDisplay.style.color = 'red';
+            msgDisplay.innerText = '❌ Échec : ' + (data.message || 'Le robot n\'a pas trouvé la vidéo sur cette page.');
+        }
+    } catch (e) {
+        msgDisplay.style.color = 'red';
+        msgDisplay.innerText = '❌ Erreur réseau lors de l\'extraction.';
+    }
 }
 
 function closeSource() {
-    document.getElementById('home-content').style.display = 'block';
-    document.getElementById('source-container').style.display = 'none';
-    document.getElementById('source-container').innerHTML = '';
+    stopVideo();
     document.getElementById('back-btn').style.display = 'none';
+}
+
+function stopVideo() {
+    const videoPlayer = document.getElementById('video-player');
+    const videoContainer = document.getElementById('video-container');
+    videoPlayer.pause();
+    videoPlayer.src = '';
+    videoContainer.style.display = 'none';
+    document.getElementById('extract-message').innerText = '';
+    document.getElementById('movie-url-input').value = '';
 }
 </script>
 </body>
