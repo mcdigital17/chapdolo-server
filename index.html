@@ -171,18 +171,24 @@ function loadSite(url) {
 }
 
 // --- NOUVEAU : FILTRE RECHERCHE ---
+let searchTimeout;
 function filterChannels() {
-    const searchTerm = document.getElementById('iptv-search').value.toLowerCase();
-    const channelButtons = document.getElementById('iptv-channels').getElementsByTagName('button');
-    
-    for (let i = 0; i < channelButtons.length; i++) {
-        const channelName = channelButtons[i].innerText.toLowerCase();
-        if (channelName.includes(searchTerm)) {
-            channelButtons[i].style.display = ""; // Affiche
-        } else {
-            channelButtons[i].style.display = "none"; // Cache
-        }
-    }
+    // Anti-gel : on attend 300 millisecondes après la dernière frappe pour lancer la recherche
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        const searchTerm = document.getElementById('iptv-search').value.toLowerCase();
+        // Méthode plus rapide pour lire les boutons
+        const channelButtons = document.querySelectorAll('#iptv-channels .iptv-btn');
+        
+        channelButtons.forEach(btn => {
+            const channelName = btn.innerText.toLowerCase();
+            if (channelName.includes(searchTerm)) {
+                btn.style.display = ""; // Affiche
+            } else {
+                btn.style.display = "none"; // Cache
+            }
+        });
+    }, 300);
 }
 
 // --- CHARGEMENT LISTE IPTV ---
