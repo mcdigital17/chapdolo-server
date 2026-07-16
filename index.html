@@ -25,11 +25,20 @@ button { padding: 15px 40px; font-size: 18px; border: none; border-radius: 8px; 
 .user-actions { display: flex; gap: 5px; flex-wrap: wrap; }
 .user-actions button { padding: 8px 12px; font-size: 12px; margin: 0; }
 
-/* Style pour la barre de recherche et le lecteur */
-.search-box { margin: 20px auto; max-width: 600px; display: flex; gap: 10px; }
-.search-box input { flex: 1; }
-#video-player { width: 100%; max-width: 900px; height: 500px; background: black; margin: 20px auto; display: block; border-radius: 8px; }
-.extract-msg { color: yellow; margin-top: 10px; }
+/* STYLE NETFLIX */
+.netflix-row { margin-bottom: 40px; padding-left: 20px; }
+.netflix-row h2 { margin: 0 0 10px 0; font-size: 24px; color: #e5e5e5; }
+.row-scroll { display: flex; overflow-x: auto; gap: 15px; padding-bottom: 20px; }
+.row-scroll::-webkit-scrollbar { height: 8px; }
+.row-scroll::-webkit-scrollbar-thumb { background: #00E5FF; border-radius: 4px; }
+.movie-card { min-width: 150px; cursor: pointer; transition: transform 0.2s; border-radius: 8px; overflow: hidden; }
+.movie-card:hover { transform: scale(1.08); }
+.movie-card img { width: 100%; height: 225px; object-fit: cover; display: block; }
+.movie-card p { margin: 5px 0 0 0; font-size: 12px; text-align: center; color: #ccc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+#player-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; z-index: 50; display: flex; flex-direction: column; }
+.player-nav { background: #111; padding: 15px; display: flex; justify-content: space-between; align-items: center; z-index: 60; }
+#video-iframe { width: 100%; flex-grow: 1; border: none; }
 </style>
 </head>
 <body>
@@ -65,7 +74,7 @@ button { padding: 15px 40px; font-size: 18px; border: none; border-radius: 8px; 
    </div>
    <div style="background:#111; padding:20px; border-radius:10px; width: 600px;">
       <h3>Utilisateurs créés</h3>
-      <button class="btn-secondary" onclick="loadUsers()" style="font-size:14px;">🔄 Rafraîchir la liste</button>
+      <button class="btn-secondary" onclick="loadUsers()" style="font-size:14px;">🔄 Rafraîchir</button>
       <div id="user-list" style="margin-top:10px; max-height: 400px; overflow-y: auto;"></div>
    </div>
 </div>
@@ -75,213 +84,106 @@ button { padding: 15px 40px; font-size: 18px; border: none; border-radius: 8px; 
 </div>
 
 <div id="app-screen" class="hidden">
-<nav style="background:#111; padding:15px; display:flex; justify-content:space-between; align-items:center;">
+<nav style="background:#111; padding:15px 20px; display:flex; justify-content:space-between; align-items:center;">
 <h1 style="color:#00E5FF; font-size:28px; margin:0;">CHAPDOLO</h1>
 <div>
 <button style="background:transparent; color:white; border:1px solid white; padding:10px 20px; border-radius:5px; cursor:pointer;" onclick="logout()">Déconnexion</button>
-<button id="back-btn" style="display:none; background:red; color:white; padding:10px 20px; border:none; border-radius:5px; cursor:pointer; margin-left:10px;" onclick="closeSource()">Retour</button>
 </div>
 </nav>
-<div id="home-content" style="text-align:center; padding:50px 20px;">
-   <h2 style="color:#00E5FF; font-size:40px; margin-bottom:10px;">Recherche Directe</h2>
-   <p style="color:grey; font-size:18px; margin-bottom:30px;">Colle le lien du film (ex: https://oha.to/film...) et Chapdolo lira la vidéo sans pub !</p>
-   
-   <div class="search-box">
-      <input type="text" id="movie-url-input" placeholder="Coller le lien du film ici...">
-      <button class="btn-primary" onclick="extractAndPlay()">🎥 Lire</button>
-   </div>
-   <p id="extract-message" class="extract-msg"></p>
-
-   <div id="video-container" style="display:none; margin-top: 30px;">
-      <video id="video-player" controls autoplay></video>
-   </div>
+<div style="padding-top: 20px;">
+   <div id="movies-row" class="netflix-row"><h2>🎬 Films Populaires</h2><div class="row-scroll" id="movies-scroll"></div></div>
+   <div id="series-row" class="netflix-row"><h2>📺 Séries Populaires</h2><div class="row-scroll" id="series-scroll"></div></div>
+   <div id="anime-row" class="netflix-row"><h2>⚔️ Animes</h2><div class="row-scroll" id="anime-scroll"></div></div>
 </div>
+</div>
+
+<div id="player-screen" class="hidden">
+<div class="player-nav">
+<h3 id="player-title" style="color:white; margin:0;">Lecture</h3>
+<button class="btn-danger" onclick="closePlayer()">✕ Fermer</button>
+</div>
+<iframe id="video-iframe" allowfullscreen allow="autoplay; encrypted-media"></iframe>
 </div>
 
 <script>
 let currentLoggedUser = '';
 
 document.getElementById('main-logo').addEventListener('click', function() {
-    let count = parseInt(this.dataset.clicks || 0);
-    count++;
-    this.dataset.clicks = count;
+    let count = parseInt(this.dataset.clicks || 0); count++; this.dataset.clicks = count;
     clearTimeout(window.logoClickTimer);
-    if (count >= 5) {
-        this.dataset.clicks = 0;
-        document.getElementById('admin-modal').classList.remove('hidden');
-    } else {
-        window.logoClickTimer = setTimeout(() => { this.dataset.clicks = 0; }, 2000);
-    }
+    if (count >= 5) { this.dataset.clicks = 0; document.getElementById('admin-modal').classList.remove('hidden'); } 
+    else { window.logoClickTimer = setTimeout(() => { this.dataset.clicks = 0; }, 2000); }
 });
 
-function verifyAdmin() {
-    if (document.getElementById('admin-pass-modal').value === 'chapdel220605') {
-        document.getElementById('admin-modal').classList.add('hidden');
-        document.getElementById('login-screen').classList.add('hidden');
-        document.getElementById('admin-screen').classList.remove('hidden');
-        document.getElementById('admin-pass-modal').value = '';
-        loadUsers();
-    } else { alert('Mot de passe incorrect !'); }
-}
+function verifyAdmin() { if (document.getElementById('admin-pass-modal').value === 'chapdel220605') { document.getElementById('admin-modal').classList.add('hidden'); document.getElementById('login-screen').classList.add('hidden'); document.getElementById('admin-screen').classList.remove('hidden'); document.getElementById('admin-pass-modal').value = ''; loadUsers(); } else { alert('Mot de passe incorrect !'); } }
 function closeAdminModal() { document.getElementById('admin-modal').classList.add('hidden'); document.getElementById('admin-pass-modal').value = ''; }
 
-async function login() {
-    const username = document.getElementById('login-user').value;
-    const password = document.getElementById('login-pass').value;
-    const errDisplay = document.getElementById('login-error');
-    errDisplay.style.color = 'yellow'; errDisplay.innerText = 'Connexion...';
+async function login() { const u = document.getElementById('login-user').value; const p = document.getElementById('login-pass').value; const e = document.getElementById('login-error'); e.style.color='yellow'; e.innerText='Connexion...'; try { const r = await fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username:u,password:p}) }); const d = await r.json(); if(d.success){currentLoggedUser=u; showApp();}else{e.style.color='red';e.innerText=d.message||'Erreur';} } catch(x){e.style.color='red';e.innerText='Réseau';} }
+
+async function logout() { if(currentLoggedUser){try{await fetch('/api/logout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:currentLoggedUser})});}catch(e){} currentLoggedUser='';} document.getElementById('app-screen').classList.add('hidden'); document.getElementById('admin-screen').classList.add('hidden'); document.getElementById('login-screen').classList.remove('hidden'); document.getElementById('login-user').value=''; document.getElementById('login-pass').value=''; document.getElementById('login-error').innerText=''; }
+
+function autoGenerate() { const c="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"; let p=""; for(let i=0;i<8;i++) p+=c.charAt(Math.floor(Math.random()*c.length)); document.getElementById('new-password').value=p; }
+
+async function generateUser() { const u=document.getElementById('new-username').value; const p=document.getElementById('new-password').value; const m=document.getElementById('admin-message'); m.style.color='yellow';m.innerText='Création...'; if(!u||!p){m.style.color='red';m.innerText='Remplissez tout.';return;} try { const r=await fetch('/api/generate-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminPassword:'chapdel220605',newUser:u,newPass:p})}); const d=await r.json(); if(d.success){m.style.color='#0f0';m.innerText='SUCCÈS !';document.getElementById('new-username').value='';document.getElementById('new-password').value='';loadUsers();}else{m.style.color='red';m.innerText=d.message||'Erreur';} } catch(e){m.style.color='red';m.innerText='Critique';} }
+
+async function loadUsers() { const l=document.getElementById('user-list'); l.innerHTML='<p style="color:grey;">Chargement...</p>'; try { const r=await fetch('/api/get-users',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminPassword:'chapdel220605'})}); const d=await r.json(); if(d.success&&d.users){ const us=d.users; const un=Object.keys(us); if(un.length===0){l.innerHTML='<p style="color:grey;">Aucun.</p>';return;} l.innerHTML=''; un.forEach(u=>{ const i=us[u]; const old=typeof i==='string'; const pass=old?i:i.pass; const blk=old?false:i.blocked; const act=old?false:i.active; const c=document.createElement('div'); c.className='user-card'; c.innerHTML=`<div class="user-info"><h4>${u}</h4><p>Mdp: ${pass} | ${blk?'<span style="color:red;">Bloqué</span>':'<span style="color:green;">Actif</span>'} | ${act?'<span style="color:orange;">En ligne</span>':'Hors ligne'}</p></div><div class="user-actions">${blk?`<button class="btn-success" onclick="manageUser('${u}','unblock')">Débloquer</button>`:`<button class="btn-warn" onclick="manageUser('${u}','block')">Bloquer</button>`} ${act?`<button class="btn-danger" onclick="manageUser('${u}','disconnect')">Déco</button>`:''} <button class="btn-delete" onclick="manageUser('${u}','delete')">Suppr</button></div>`; l.appendChild(c); }); } } catch(e){l.innerHTML='<p style="color:red;">Réseau</p>';} }
+
+async function manageUser(u,a) { if(a==='delete') if(!confirm('Supprimer '+u+' ?')) return; try { const r=await fetch('/api/manage-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminPassword:'chapdel220605',username:u,action:a})}); const d=await r.json(); if(d.success) loadUsers(); else alert('Erreur'); } catch(e){alert('Réseau');} }
+
+function showApp() { document.getElementById('login-screen').classList.add('hidden'); document.getElementById('admin-screen').classList.add('hidden'); document.getElementById('app-screen').classList.remove('hidden'); loadCatalog(); }
+
+// --- SYSTÈME NETFLIX (CINEMETA + EMBED) ---
+async function loadCatalog() {
+    loadRow('movie', 'top', 'movies-scroll');
+    loadRow('series', 'top', 'series-scroll');
+    // Pour les animes, Cinemeta n'a pas de catalogue officiel parfait, on ruse avec les séries
+    loadRow('series', 'top', 'anime-scroll'); 
+}
+
+async function loadRow(type, catalog, elementId) {
+    const scroll = document.getElementById(elementId);
+    scroll.innerHTML = '<p style="color:grey;">Chargement...</p>';
     try {
-        const res = await fetch('/api/login', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({username, password}) });
+        const res = await fetch(`https://v3-cinemeta.strem.io/catalog/${type}/${catalog}.json`);
         const data = await res.json();
-        if (data.success) { currentLoggedUser = username; showApp(); }
-        else { errDisplay.style.color = 'red'; errDisplay.innerText = data.message || 'Erreur'; }
-    } catch(e) { errDisplay.style.color='red'; errDisplay.innerText='Erreur réseau'; }
-}
-
-async function logout() {
-    if (currentLoggedUser) {
-        try { await fetch('/api/logout', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({username: currentLoggedUser}) }); } catch(e){}
-        currentLoggedUser = '';
-    }
-    document.getElementById('app-screen').classList.add('hidden');
-    document.getElementById('admin-screen').classList.add('hidden');
-    document.getElementById('login-screen').classList.remove('hidden');
-    document.getElementById('login-user').value = '';
-    document.getElementById('login-pass').value = '';
-    document.getElementById('login-error').innerText = '';
-    stopVideo();
-}
-
-function autoGenerate() {
-    const c = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    let p = ""; for(let i=0;i<8;i++) p += c.charAt(Math.floor(Math.random()*c.length));
-    document.getElementById('new-password').value = p;
-}
-
-async function generateUser() {
-    const u = document.getElementById('new-username').value;
-    const p = document.getElementById('new-password').value;
-    const m = document.getElementById('admin-message');
-    m.style.color='yellow'; m.innerText='Création...';
-    if(!u||!p){m.style.color='red';m.innerText='Remplissez tout.';return;}
-    try {
-        const res = await fetch('/api/generate-user', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({adminPassword:'chapdel220605',newUser:u,newPass:p}) });
-        const data = await res.json();
-        if(data.success){m.style.color='#0f0';m.innerText='SUCCÈS !';document.getElementById('new-username').value='';document.getElementById('new-password').value='';loadUsers();}
-        else{m.style.color='red';m.innerText=data.message||'Erreur';}
-    } catch(e){m.style.color='red';m.innerText='Erreur critique';}
-}
-
-async function loadUsers() {
-    const listDiv = document.getElementById('user-list');
-    listDiv.innerHTML = '<p style="color:grey;">Chargement...</p>';
-    try {
-        const res = await fetch('/api/get-users', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({adminPassword:'chapdel220605'}) });
-        const data = await res.json();
-        if(data.success && data.users) {
-            const users = data.users;
-            const usernames = Object.keys(users);
-            if(usernames.length === 0) { listDiv.innerHTML = '<p style="color:grey;">Aucun utilisateur.</p>'; return; }
-            listDiv.innerHTML = '';
-            usernames.forEach(u => {
-                const info = users[u];
-                const isOldFormat = typeof info === 'string';
-                const pass = isOldFormat ? info : info.pass;
-                const isBlocked = isOldFormat ? false : info.blocked;
-                const isActive = isOldFormat ? false : info.active;
+        scroll.innerHTML = '';
+        if(data.metas) {
+            // Limiter à 20 pour le chargement rapide
+            data.metas.slice(0, 20).forEach(item => {
                 const card = document.createElement('div');
-                card.className = 'user-card';
-                card.innerHTML = `
-                    <div class="user-info">
-                        <h4>${u}</h4>
-                        <p>Mdp: ${pass} | ${isBlocked ? '<span style="color:red;">Bloqué</span>' : '<span style="color:green;">Actif</span>'} | ${isActive ? '<span style="color:orange;">En ligne</span>' : 'Hors ligne'}</p>
-                    </div>
-                    <div class="user-actions">
-                        ${isBlocked ? `<button class="btn-success" onclick="manageUser('${u}','unblock')">Débloquer</button>` : `<button class="btn-warn" onclick="manageUser('${u}','block')">Bloquer</button>`}
-                        ${isActive ? `<button class="btn-danger" onclick="manageUser('${u}','disconnect')">Déconnecter</button>` : ''}
-                        <button class="btn-delete" onclick="manageUser('${u}','delete')">Supprimer</button>
-                    </div>
-                `;
-                listDiv.appendChild(card);
+                card.className = 'movie-card';
+                card.innerHTML = `<img src="${item.poster}" alt="${item.name}"><p>${item.name}</p>`;
+                card.onclick = () => playVideo(item.id, item.name, type);
+                scroll.appendChild(card);
             });
-        } else { listDiv.innerHTML = '<p style="color:red;">Erreur</p>'; }
-    } catch(e) { listDiv.innerHTML = '<p style="color:red;">Erreur réseau</p>'; }
-}
-
-async function manageUser(username, action) {
-    if(action === 'delete') {
-        if(!confirm('⚠️ ATTENTION : Voulez-vous vraiment supprimer définitivement l\'utilisateur ' + username + ' ?')) return;
-    }
-    try {
-        const res = await fetch('/api/manage-user', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({adminPassword:'chapdel220605',username,action}) });
-        const data = await res.json();
-        if(data.success) loadUsers(); else alert('Erreur : ' + data.message);
-    } catch(e) { alert('Erreur réseau'); }
-}
-
-function showApp() {
-    document.getElementById('login-screen').classList.add('hidden');
-    document.getElementById('admin-screen').classList.add('hidden');
-    document.getElementById('app-screen').classList.remove('hidden');
-}
-
-// NOUVELLE FONCTION : EXTRACTION ET LECTURE NORMALE
-async function extractAndPlay() {
-    const movieUrl = document.getElementById('movie-url-input').value;
-    const msgDisplay = document.getElementById('extract-message');
-    const videoContainer = document.getElementById('video-container');
-    const videoPlayer = document.getElementById('video-player');
-
-    if (!movieUrl) {
-        msgDisplay.style.color = 'red';
-        msgDisplay.innerText = 'Veuillez coller un lien de film !';
-        return;
-    }
-
-    msgDisplay.style.color = 'yellow';
-    msgDisplay.innerText = '🤖 Robot Chapdolo en cours d\'extraction de la vidéo...';
-    videoContainer.style.display = 'none';
-
-    try {
-        const res = await fetch('/api/extract-video', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ movieUrl })
-        });
-        const data = await res.json();
-
-        if (data.success && data.videoUrl) {
-            msgDisplay.style.color = '#0f0';
-            msgDisplay.innerText = '✅ Vidéo trouvée ! Lancement du lecteur...';
-            
-            videoPlayer.src = data.videoUrl;
-            videoContainer.style.display = 'block';
-            videoPlayer.play();
-            
-            document.getElementById('back-btn').style.display = 'block';
-        } else {
-            msgDisplay.style.color = 'red';
-            msgDisplay.innerText = '❌ Échec : ' + (data.message || 'Le robot n\'a pas trouvé la vidéo sur cette page.');
         }
-    } catch (e) {
-        msgDisplay.style.color = 'red';
-        msgDisplay.innerText = '❌ Erreur réseau lors de l\'extraction.';
+    } catch(e) {
+        scroll.innerHTML = '<p style="color:red;">Erreur de chargement</p>';
     }
 }
 
-function closeSource() {
-    stopVideo();
-    document.getElementById('back-btn').style.display = 'none';
+function playVideo(imdbId, name, type) {
+    const playerScreen = document.getElementById('player-screen');
+    const videoIframe = document.getElementById('video-iframe');
+    const playerTitle = document.getElementById('player-title');
+    
+    playerTitle.innerText = name;
+    
+    // On utilise un service d'Embed propre (comme LOKKE/VYPN)
+    // Il lit la vidéo sans afficher le site oha.to et ses pubs !
+    if(type === 'movie') {
+        videoIframe.src = `https://vidsrc.xyz/embed/movie?imdb=${imdbId}`;
+    } else {
+        // Pour les séries, on lance le premier épisode par défaut
+        videoIframe.src = `https://vidsrc.xyz/embed/tv?imdb=${imdbId}&season=1&episode=1`;
+    }
+    
+    playerScreen.classList.remove('hidden');
 }
 
-function stopVideo() {
-    const videoPlayer = document.getElementById('video-player');
-    const videoContainer = document.getElementById('video-container');
-    videoPlayer.pause();
-    videoPlayer.src = '';
-    videoContainer.style.display = 'none';
-    document.getElementById('extract-message').innerText = '';
-    document.getElementById('movie-url-input').value = '';
+function closePlayer() {
+    document.getElementById('player-screen').classList.add('hidden');
+    document.getElementById('video-iframe').src = ''; // Arrête la vidéo
 }
 </script>
 </body>
