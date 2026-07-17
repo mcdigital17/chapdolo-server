@@ -78,6 +78,16 @@ button { padding: 15px 40px; font-size: 18px; border: none; border-radius: 8px; 
       <div id="user-list" style="margin-top:10px; max-height: 400px; overflow-y: auto;"></div>
    </div>
 </div>
+
+<!-- NOUVEAU : Configuration IPTV dans l'admin -->
+<div style="margin-top: 30px; background:#111; padding:20px; border-radius:10px; max-width: 600px; margin-left: auto; margin-right: auto; border: 1px solid #00E5FF;">
+   <h3 style="color:#00E5FF;">📺 Source IPTV (TV Live)</h3>
+   <p style="color:grey; font-size:14px;">Collez le lien m3u8 d'une source IPTV ici. Il sera sauvegardé et affiché sur la page d'accueil des utilisateurs.</p>
+   <input type="text" id="iptv-url-input" placeholder="https://lien-vers-fichier-iptv.m3u" style="width: 100%; margin: 5px 0 15px 0;">
+   <button class="btn-primary" onclick="saveAndLoadIPTV()">Sauvegarder & Charger</button>
+   <p id="iptv-msg" style="font-size:14px;"></p>
+</div>
+
 <br>
 <button class="btn-primary" onclick="showApp()">Accéder au Streaming</button>
 <button class="btn-danger" onclick="logout()">Déconnexion</button>
@@ -103,20 +113,15 @@ button { padding: 15px 40px; font-size: 18px; border: none; border-radius: 8px; 
    </div>
 
    <div style="margin-top: 40px; border-top: 1px solid #333; padding-top: 30px;">
-      <h3 style="color:#00E5FF;">📺 Mode IPTV Direct (Sans Pub)</h3>
-      <p style="color:grey;">Collez le lien m3u8 d'une source IPTV pour afficher les chaînes m3u8 de cette source :</p>
-      <div style="display:flex; justify-content:center; gap:10px; margin-top:15px; flex-wrap:wrap;">
-         <input type="text" id="iptv-url-input" placeholder="https://lien-vers-fichier-iptv.m3u" style="width: 400px;">
-         <button class="btn-primary" onclick="loadIPTVList()">Charger les chaînes</button>
-      </div>
-      <p id="iptv-msg"></p>
-      
+      <h3 style="color:#00E5FF;">📺 TV Live (Sans Pub)</h3>
+      <!-- La liste des chaînes s'affichera ici automatiquement -->
       <div id="iptv-container" class="iptv-container hidden">
          <div class="search-bar">
             <input type="text" id="iptv-search" placeholder="🔍 Rechercher une chaîne..." style="width: 300px; margin: 0;" oninput="filterChannels()">
          </div>
          <div id="iptv-channels" class="iptv-channels"></div>
       </div>
+      <p id="iptv-status-msg" style="color:grey; display:none;">Chargement des chaînes TV en cours...</p>
    </div>
 </div>
 
@@ -145,7 +150,7 @@ document.getElementById('main-logo').addEventListener('click', function() {
     else { window.logoClickTimer = setTimeout(() => { this.dataset.clicks = 0; }, 2000); }
 });
 
-function verifyAdmin() { if (document.getElementById('admin-pass-modal').value === 'chapdel220605') { document.getElementById('admin-modal').classList.add('hidden'); document.getElementById('login-screen').classList.add('hidden'); document.getElementById('admin-screen').classList.remove('hidden'); document.getElementById('admin-pass-modal').value = ''; loadUsers(); } else { alert('Mot de passe incorrect !'); } }
+function verifyAdmin() { if (document.getElementById('admin-pass-modal').value === 'chapdel220605') { document.getElementById('admin-modal').classList.add('hidden'); document.getElementById('login-screen').classList.add('hidden'); document.getElementById('admin-screen').classList.remove('hidden'); document.getElementById('admin-pass-modal').value = ''; loadUsers(); loadSavedIPTVUrl(); } else { alert('Mot de passe incorrect !'); } }
 function closeAdminModal() { document.getElementById('admin-modal').classList.add('hidden'); document.getElementById('admin-pass-modal').value = ''; }
 
 async function login() { const u = document.getElementById('login-user').value; const p = document.getElementById('login-pass').value; const e = document.getElementById('login-error'); e.style.color='yellow'; e.innerText='Connexion...'; try { const r = await fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username:u,password:p}) }); const d = await r.json(); if(d.success){currentLoggedUser=u; showApp();}else{e.style.color='red';e.innerText=d.message||'Erreur';} } catch(x){e.style.color='red';e.innerText='Réseau';} }
@@ -160,7 +165,14 @@ async function loadUsers() { const l=document.getElementById('user-list'); l.inn
 
 async function manageUser(u,a) { if(a==='delete') if(!confirm('Supprimer '+u+' ?')) return; try { const r=await fetch('/api/manage-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminPassword:'chapdel220605',username:u,action:a})}); const d=await r.json(); if(d.success) loadUsers(); else alert('Erreur'); } catch(e){alert('Réseau');} }
 
-function showApp() { document.getElementById('login-screen').classList.add('hidden'); document.getElementById('admin-screen').classList.add('hidden'); document.getElementById('app-screen').classList.remove('hidden'); backToMain(); }
+function showApp() { 
+    document.getElementById('login-screen').classList.add('hidden'); 
+    document.getElementById('admin-screen').classList.add('hidden'); 
+    document.getElementById('app-screen').classList.remove('hidden'); 
+    backToMain(); 
+    // Quand un utilisateur se connecte, on charge la source IPTV sauvegardée par l'admin
+    loadSavedIPTVForUser(); 
+}
 
 // --- STREAMING & IPTV ---
 function loadSite(url) {
@@ -171,16 +183,53 @@ function loadSite(url) {
     document.getElementById('back-main-btn').classList.remove('hidden');
 }
 
-async function loadIPTVList() {
+// --- NOUVEAU : GESTION IPTV ADMIN ---
+async function loadSavedIPTVUrl() {
+    try {
+        const res = await fetch('/api/iptv-config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action: 'get'}) });
+        const data = await res.json();
+        if(data.success && data.url) {
+            document.getElementById('iptv-url-input').value = data.url;
+        }
+    } catch(e) {}
+}
+
+async function saveAndLoadIPTV() {
     const url = document.getElementById('iptv-url-input').value;
     const msg = document.getElementById('iptv-msg');
-    const iptvContainer = document.getElementById('iptv-container');
-
     if (!url) { msg.style.color='red'; msg.innerText='Veuillez coller un lien !'; return; }
+    
+    msg.style.color = 'yellow'; msg.innerText = 'Sauvegarde...';
+    try {
+        const res = await fetch('/api/iptv-config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action: 'save', adminPassword: 'chapdel220605', iptvUrl: url}) });
+        const data = await res.json();
+        if(data.success) {
+            msg.style.color = '#0f0'; msg.innerText = 'Sauvegardé ! Chargement des chaînes...';
+            loadIPTVList(url);
+        } else { msg.style.color = 'red'; msg.innerText = 'Erreur de sauvegarde.'; }
+    } catch(e) { msg.style.color = 'red'; msg.innerText = 'Erreur réseau.'; }
+}
 
+async function loadSavedIPTVForUser() {
+    try {
+        const res = await fetch('/api/iptv-config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action: 'get'}) });
+        const data = await res.json();
+        if(data.success && data.url) {
+            document.getElementById('iptv-status-msg').style.display = 'block';
+            loadIPTVList(data.url);
+        }
+    } catch(e) {}
+}
+
+async function loadIPTVList(url) {
+    const msg = document.getElementById('iptv-status-msg');
+    const iptvContainer = document.getElementById('iptv-container');
+    const channelList = document.getElementById('iptv-channels');
+
+    msg.style.display = 'block';
     msg.style.color = 'yellow';
     msg.innerText = 'Chargement de la liste IPTV...';
-    document.getElementById('iptv-channels').innerHTML = '';
+    channelList.innerHTML = '';
     document.getElementById('iptv-search').value = '';
 
     try {
@@ -207,8 +256,7 @@ async function loadIPTVList() {
             msg.style.color = 'red'; msg.innerText = 'Aucune chaîne trouvée.'; iptvContainer.classList.add('hidden'); return;
         }
 
-        msg.style.color = '#0f0';
-        msg.innerText = `${channels.length} chaînes trouvées ! Utilisez la barre de recherche.`;
+        msg.style.display = 'none';
         iptvContainer.classList.remove('hidden');
         
         globalChannels = channels;
@@ -223,10 +271,7 @@ function filterChannels() {
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
         const searchTerm = document.getElementById('iptv-search').value.toLowerCase();
-        if (!searchTerm) {
-            renderChannels(globalChannels);
-            return;
-        }
+        if (!searchTerm) { renderChannels(globalChannels); return; }
         const filtered = globalChannels.filter(ch => ch.name.toLowerCase().includes(searchTerm));
         renderChannels(filtered);
     }, 300);
@@ -255,7 +300,6 @@ function renderChannels(channelsToRender) {
 }
 
 function playChannel(url, name) {
-    const msg = document.getElementById('iptv-msg');
     const video = document.getElementById('tv-player');
 
     document.getElementById('main-content').classList.add('hidden');
@@ -265,23 +309,13 @@ function playChannel(url, name) {
     document.getElementById('back-main-btn').classList.remove('hidden');
     
     document.getElementById('player-title').innerText = name;
-    msg.style.color = 'yellow';
-    msg.innerText = `Chargement de ${name}...`;
 
     if (Hls.isSupported()) {
         if (hlsInstance) hlsInstance.destroy();
         hlsInstance = new Hls();
         hlsInstance.loadSource(url);
         hlsInstance.attachMedia(video);
-        hlsInstance.on(Hls.Events.MANIFEST_PARSED, function() {
-            video.play();
-            msg.style.color = '#0f0';
-            msg.innerText = `Lecture en cours : ${name}`;
-        });
-        hlsInstance.on(Hls.Events.ERROR, function(event, data) {
-            msg.style.color = 'red';
-            msg.innerText = `Erreur de lecture pour ${name}. Le flux est peut-être mort.`;
-        });
+        hlsInstance.on(Hls.Events.MANIFEST_PARSED, function() { video.play(); });
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
         video.src = url;
         video.addEventListener('loadedmetadata', function() { video.play(); });
@@ -298,7 +332,6 @@ function backToMain() {
     
     document.getElementById('main-content').classList.remove('hidden');
     document.getElementById('back-main-btn').classList.add('hidden');
-    document.getElementById('iptv-msg').innerText = '';
 }
 </script>
 </body>
