@@ -111,7 +111,6 @@ button { padding: 15px 40px; font-size: 18px; border: none; border-radius: 8px; 
       </div>
       <p id="iptv-msg"></p>
       
-      <!-- NOUVEAU : Conteneur avec barre de recherche -->
       <div id="iptv-container" class="iptv-container hidden">
          <div class="search-bar">
             <input type="text" id="iptv-search" placeholder="🔍 Rechercher une chaîne..." style="width: 300px; margin: 0;" oninput="filterChannels()">
@@ -134,9 +133,11 @@ button { padding: 15px 40px; font-size: 18px; border: none; border-radius: 8px; 
 
 <script>
 let currentLoggedUser = '';
-let globalChannels = [];
 let hlsInstance = null;
+let globalChannels = [];
+let searchTimeout;
 
+// --- CONNEXION & ADMIN ---
 document.getElementById('main-logo').addEventListener('click', function() {
     let count = parseInt(this.dataset.clicks || 0); count++; this.dataset.clicks = count;
     clearTimeout(window.logoClickTimer);
@@ -161,8 +162,7 @@ async function manageUser(u,a) { if(a==='delete') if(!confirm('Supprimer '+u+' ?
 
 function showApp() { document.getElementById('login-screen').classList.add('hidden'); document.getElementById('admin-screen').classList.add('hidden'); document.getElementById('app-screen').classList.remove('hidden'); backToMain(); }
 
-// --- FONCTIONS STREAMING ---
-
+// --- STREAMING & IPTV ---
 function loadSite(url) {
     document.getElementById('main-content').classList.add('hidden');
     document.getElementById('player-section').classList.add('hidden');
@@ -171,48 +171,6 @@ function loadSite(url) {
     document.getElementById('back-main-btn').classList.remove('hidden');
 }
 
-// --- NOUVEAU : FILTRE RECHERCHE ---
-let searchTimeout;
-function filterChannels() {
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => {
-        const searchTerm = document.getElementById('iptv-search').value.toLowerCase();
-        if (!searchTerm) {
-            renderChannels(globalChannels); // Si vide, on affiche tout
-            return;
-        }
-        // On filtre uniquement les chaînes dont le nom contient la recherche
-        const filtered = globalChannels.filter(ch => ch.name.toLowerCase().includes(searchTerm));
-        renderChannels(filtered); // On affiche uniquement le résultat
-    }, 300);
-}
-
-// Nouvelle fonction ultra rapide qui génère les boutons
-function renderChannels(channelsToRender) {
-    const channelList = document.getElementById('iptv-channels');
-    channelList.innerHTML = ''; // On vide la liste (plus rapide que de cacher les boutons)
-    
-    // Limite à 200 résultats pour éviter de faire geler l'écran
-    const limit = Math.min(channelsToRender.length, 200);
-    
-    for (let i = 0; i < limit; i++) {
-        const ch = channelsToRender[i];
-        const btn = document.createElement('button');
-        btn.className = 'iptv-btn';
-        btn.innerText = ch.name;
-        btn.onclick = () => playChannel(ch.url, ch.name);
-        channelList.appendChild(btn);
-    }
-    
-    if (channelsToRender.length > 200) {
-        const info = document.createElement('p');
-        info.innerText = `Affichage des 200 premiers sur ${channelsToRender.length}. Affinez votre recherche.`;
-        info.style.color = "orange";
-        channelList.appendChild(info);
-    }
-}
-
-// --- CHARGEMENT LISTE IPTV ---
 async function loadIPTVList() {
     const url = document.getElementById('iptv-url-input').value;
     const msg = document.getElementById('iptv-msg');
@@ -253,37 +211,46 @@ async function loadIPTVList() {
         msg.innerText = `${channels.length} chaînes trouvées ! Utilisez la barre de recherche.`;
         iptvContainer.classList.remove('hidden');
         
-        globalChannels = channels; // On sauvegarde la liste complète en mémoire
-        renderChannels(globalChannels); // On affiche les boutons
+        globalChannels = channels;
+        renderChannels(globalChannels);
 
     } catch (e) {
         msg.style.color = 'red'; msg.innerText = 'Erreur de chargement.'; iptvContainer.classList.add('hidden');
     }
 }
 
-        if (channels.length === 0) {
-            msg.style.color = 'red';
-            msg.innerText = 'Aucune chaîne trouvée. Vérifiez que c\'est un fichier M3U.';
-            iptvContainer.classList.add('hidden');
+function filterChannels() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        const searchTerm = document.getElementById('iptv-search').value.toLowerCase();
+        if (!searchTerm) {
+            renderChannels(globalChannels);
             return;
         }
+        const filtered = globalChannels.filter(ch => ch.name.toLowerCase().includes(searchTerm));
+        renderChannels(filtered);
+    }, 300);
+}
 
-        msg.style.color = '#0f0';
-        msg.innerText = `${channels.length} chaînes trouvées ! Utilisez la barre de recherche pour trouver votre chaîne.`;
-        iptvContainer.classList.remove('hidden'); // Affiche le conteneur avec la barre de recherche
-
-        channels.forEach(ch => {
-            const btn = document.createElement('button');
-            btn.className = 'iptv-btn';
-            btn.innerText = ch.name;
-            btn.onclick = () => playChannel(ch.url, ch.name);
-            channelList.appendChild(btn);
-        });
-
-    } catch (e) {
-        msg.style.color = 'red';
-        msg.innerText = 'Erreur de chargement. Vérifiez le lien.';
-        iptvContainer.classList.add('hidden');
+function renderChannels(channelsToRender) {
+    const channelList = document.getElementById('iptv-channels');
+    channelList.innerHTML = '';
+    const limit = Math.min(channelsToRender.length, 200);
+    
+    for (let i = 0; i < limit; i++) {
+        const ch = channelsToRender[i];
+        const btn = document.createElement('button');
+        btn.className = 'iptv-btn';
+        btn.innerText = ch.name;
+        btn.onclick = () => playChannel(ch.url, ch.name);
+        channelList.appendChild(btn);
+    }
+    
+    if (channelsToRender.length > 200) {
+        const info = document.createElement('p');
+        info.innerText = `Affichage des 200 premiers sur ${channelsToRender.length}. Affinez votre recherche.`;
+        info.style.color = "orange";
+        channelList.appendChild(info);
     }
 }
 
