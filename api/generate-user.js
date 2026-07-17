@@ -14,7 +14,7 @@ export default async function handler(req, res) {
     const users = getData.result ? JSON.parse(getData.result) : {};
 
     // NOUVEAU FORMAT : On sauvegarde le mot de passe, le statut bloqué et le statut actif
-    users[newUser] = { pass: newPass, blocked: false, active: false };
+    users[newUser] = { pass: newPass, blocked: false, active: false, createdAt: new Date().toISOString() };
 
     const setResponse = await fetch(`${url}/set/users`, {
       method: 'POST',
