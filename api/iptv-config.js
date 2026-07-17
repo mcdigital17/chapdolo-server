@@ -1,53 +1,76 @@
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
   
-  let body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-  const { action, adminPassword, iptvUrl } = body;
-
-  const url = process.env.KV_REST_API_URL;
-  const token = process.env.KV_REST_API_TOKEN;
-
-  if (!url || !token) {
-    return res.status(500).json({ success: false, message: 'Variables base de données manquantes' });
+  // Lecture sécurisée des données reçues
+  let body;
+  try {
+    body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+  } catch (e) {
+    return res.status(400).json({ success: false, message: 'Invalid JSON' });
   }
 
-  // Si l'admin veut sauvegarder un nouveau lien
+  const { action, adminPassword, iptvUrl } = body;
+
+  const redisUrl = process.env.KV_REST_API_URL;
+  const redisToken = process.env.KV_REST_API_TOKEN;
+
+  if (!redisUrl || !redisToken) {
+    return res.status(500).json({ success: false, message: 'Variables base de données manquantes sur Vercel' });
+  }
+
+  // --- ACTION : SAUVEGARDER ---
   if (action === 'save') {
-    if (adminPassword !== 'chapdel220605') return res.status(403).json({ error: 'Interdit' });
-    
+    if (adminPassword !== 'chapdel220605') {
+      return res.status(403).json({ success: false, message: 'Action interdite' });
+    }
+    if (!iptvUrl) {
+      return res.status(400).json({ success: false, message: 'URL manquante' });
+    }
+
     try {
-      const setResponse = await fetch(`${url}/set/iptv_url`, {
+      // On sauvegarde l'URL dans la base de données
+      const setResponse = await fetch(`${redisUrl}/set/iptv_url`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        headers: { 
+          'Authorization': `Bearer ${redisToken}`, 
+          'Content-Type': 'application/json' 
+        },
         body: JSON.stringify(iptvUrl)
       });
       const setData = await setResponse.json();
+      
       if (setData.result === 'OK') {
-        return res.status(200).json({ success: true, message: 'Source IPTV sauvegardée !' });
+        return res.status(200).json({ success: true, message: 'Source IPTV sauvegardée avec succès !' });
       } else {
-        return res.status(500).json({ success: false, message: 'Erreur sauvegarde base' });
+        return res.status(500).json({ success: false, message: 'Erreur lors de la sauvegarde en base' });
       }
-    } catch (e) {
-      return res.status(500).json({ success: false, message: 'Erreur connexion base' });
+    } catch (error) {
+      return res.status(500).json({ success: false, message: 'Erreur de connexion au coffre-fort' });
     }
   }
 
-   // Si l'application demande le lien pour l'afficher aux utilisateurs
+  // --- ACTION : LIRE / RECUPERER ---
   if (action === 'get') {
     try {
-      const getResponse = await fetch(`${url}/get/iptv_url`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+      // On demande l'URL au coffre-fort
+      const getResponse = await fetch(`${redisUrl}/get/iptv_url`, {
+        headers: { 'Authorization': `Bearer ${redisToken}` }
       });
       const getData = await getResponse.json();
       
-      // Nettoyage des guillemets si la base en a ajouté
       let cleanUrl = getData.result || '';
-      if (cleanUrl.startsWith('"') && cleanUrl.endsWith('"')) {
+      
+      // Nettoyage des guillemets (bug courant avec Redis)
+      if (typeof cleanUrl === 'string' && cleanUrl.startsWith('"') && cleanUrl.endsWith('"')) {
         cleanUrl = cleanUrl.substring(1, cleanUrl.length - 1);
       }
       
       return res.status(200).json({ success: true, url: cleanUrl });
-    } catch (e) {
-      return res.status(500).json({ success: false, message: 'Erreur lecture base' });
+    } catch (error) {
+      return res.status(500).json({ success: false, message: 'Erreur de lecture du coffre-fort' });
     }
   }
+
+  // Si l'action n'est ni save ni get
+  return res.status(400).json({ success: false, message: 'Action inconnue' });
+}
