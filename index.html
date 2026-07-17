@@ -7,7 +7,6 @@
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
-/* --- CHAPDOLO BLUE DESIGN SYSTEM --- */
 body { background-color: #0a0a0a; color: white; font-family: 'Inter', sans-serif; margin: 0; }
 .section { text-align: center; padding: 60px 20px; animation: fadeIn 0.5s ease; }
 input { padding: 16px 20px; margin: 8px; border-radius: 6px; border: 1px solid #333; background: #111; color: white; font-size: 16px; width: 320px; transition: all 0.3s ease; box-sizing: border-box; }
@@ -33,14 +32,12 @@ button:active { transform: scale(0.96); }
 .user-actions { display: flex; gap: 5px; flex-wrap: wrap; }
 .user-actions button { padding: 8px 12px; font-size: 12px; margin: 0; border-radius: 4px; }
 
-/* --- LOGO ANIME --- */
 .logo-container { display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 40px; cursor: pointer; user-select: none; }
 .logo-icon { width: 60px; height: 60px; background: #00E5FF; border-radius: 8px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 25px rgba(0, 229, 255, 0.4); transition: transform 0.3s, box-shadow 0.3s; }
 .logo-icon::after { content: ''; border-left: 22px solid black; border-top: 14px solid transparent; border-bottom: 14px solid transparent; margin-left: 5px; }
 .logo-container:hover .logo-icon { transform: scale(1.1); box-shadow: 0 0 40px rgba(0, 229, 255, 0.8); }
 .logo-text { font-size: 56px; font-weight: 800; color: white; letter-spacing: -2px; text-shadow: 2px 2px 10px rgba(0,0,0,0.8); }
 
-/* --- NAV & STREAMING --- */
 .source-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-top: 40px; }
 .source-btn { padding: 24px 36px; font-size: 20px; font-weight: bold; border-radius: 8px; min-width: 160px; letter-spacing: 1px; position: relative; overflow: hidden; }
 .source-btn::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, rgba(255,255,255,0.1), transparent); pointer-events: none; }
@@ -57,7 +54,6 @@ button:active { transform: scale(0.96); }
 
 #site-iframe { width: 100%; height: 800px; border: none; margin-top: 20px; display: none; background: #000; }
 
-/* Animations */
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 .nav-bar { background: rgba(10, 10, 10, 0.95); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 50; border-bottom: 1px solid #222; backdrop-filter: blur(10px); }
 </style>
@@ -167,47 +163,229 @@ let searchTimeout;
 
 // --- CONNEXION & ADMIN ---
 document.getElementById('main-logo').addEventListener('click', function() {
-    let count = parseInt(this.dataset.clicks || 0); count++; this.dataset.clicks = count;
+    let count = parseInt(this.dataset.clicks || 0); 
+    count++; 
+    this.dataset.clicks = count;
     clearTimeout(window.logoClickTimer);
-    if (count >= 5) { this.dataset.clicks = 0; document.getElementById('admin-modal').classList.remove('hidden'); } 
-    else { window.logoClickTimer = setTimeout(() => { this.dataset.clicks = 0; }, 2000); }
+    if (count >= 5) { 
+        this.dataset.clicks = 0; 
+        document.getElementById('admin-modal').classList.remove('hidden'); 
+    } else { 
+        window.logoClickTimer = setTimeout(() => { this.dataset.clicks = 0; }, 2000); 
+    }
 });
 
-function verifyAdmin() { if (document.getElementById('admin-pass-modal').value === 'chapdel220605') { document.getElementById('admin-modal').classList.add('hidden'); document.getElementById('login-screen').classList.add('hidden'); document.getElementById('admin-screen').classList.remove('hidden'); document.getElementById('admin-pass-modal').value = ''; loadUsers(); loadSavedIPTVUrl(); } else { alert('Mot de passe incorrect !'); } }
-function closeAdminModal() { document.getElementById('admin-modal').classList.add('hidden'); document.getElementById('admin-pass-modal').value = ''; }
+function verifyAdmin() { 
+    if (document.getElementById('admin-pass-modal').value === 'chapdel220605') { 
+        document.getElementById('admin-modal').classList.add('hidden'); 
+        document.getElementById('login-screen').classList.add('hidden'); 
+        document.getElementById('admin-screen').classList.remove('hidden'); 
+        document.getElementById('admin-pass-modal').value = ''; 
+        loadUsers(); 
+        loadSavedIPTVUrl(); 
+    } else { 
+        alert('Mot de passe incorrect !'); 
+    } 
+}
 
-async function login() { const u = document.getElementById('login-user').value; const p = document.getElementById('login-pass').value; const e = document.getElementById('login-error'); e.style.color='#00E5FF'; e.innerText='Connexion...'; try { const r = await fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username:u,password:p}) }); const d = await r.json(); if(d.success){currentLoggedUser=u; showApp();}else{e.style.color='#ff4d4d';e.innerText=d.message||'Erreur';} } catch(x){e.style.color='#ff4d4d';e.innerText='Réseau';} }
+function closeAdminModal() { 
+    document.getElementById('admin-modal').classList.add('hidden'); 
+    document.getElementById('admin-pass-modal').value = ''; 
+}
 
-async function logout() { if(currentLoggedUser){try{await fetch('/api/logout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:currentLoggedUser})});}catch(e){} currentLoggedUser='';} document.getElementById('app-screen').classList.add('hidden'); document.getElementById('admin-screen').classList.add('hidden'); document.getElementById('login-screen').classList.remove('hidden'); document.getElementById('login-user').value=''; document.getElementById('login-pass').value=''; document.getElementById('login-error').innerText=''; backToMain(); }
+async function login() { 
+    const u = document.getElementById('login-user').value; 
+    const p = document.getElementById('login-pass').value; 
+    const e = document.getElementById('login-error'); 
+    e.style.color='#00E5FF'; e.innerText='Connexion...'; 
+    try { 
+        const r = await fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username:u,password:p}) }); 
+        const d = await r.json(); 
+        if(d.success){currentLoggedUser=u; showApp();}else{e.style.color='#ff4d4d';e.innerText=d.message||'Erreur';} 
+    } catch(x){e.style.color='#ff4d4d';e.innerText='Réseau';} 
+}
 
-function autoGenerate() { const c="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"; let p=""; for(let i=0;i<8;i++) p+=c.charAt(Math.floor(Math.random()*c.length)); document.getElementById('new-password').value=p; }
+async function logout() { 
+    if(currentLoggedUser){try{await fetch('/api/logout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:currentLoggedUser})});}catch(e){} currentLoggedUser='';} 
+    document.getElementById('app-screen').classList.add('hidden'); 
+    document.getElementById('admin-screen').classList.add('hidden'); 
+    document.getElementById('login-screen').classList.remove('hidden'); 
+    document.getElementById('login-user').value=''; 
+    document.getElementById('login-pass').value=''; 
+    document.getElementById('login-error').innerText=''; 
+    backToMain(); 
+}
 
-async function generateUser() { const u=document.getElementById('new-username').value; const p=document.getElementById('new-password').value; const m=document.getElementById('admin-message'); m.style.color='#00E5FF';m.innerText='Création...'; if(!u||!p){m.style.color='#ff4d4d';m.innerText='Remplissez tout.';return;} try { const r=await fetch('/api/generate-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminPassword:'chapdel220605',newUser:u,newPass:p})}); const d=await r.json(); if(d.success){m.style.color='#2ecc71';m.innerText='SUCCÈS !';document.getElementById('new-username').value='';document.getElementById('new-password').value='';loadUsers();}else{m.style.color='#ff4d4d';m.innerText=d.message||'Erreur';} } catch(e){m.style.color='#ff4d4d';m.innerText='Critique';} }
+function autoGenerate() { 
+    const c="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"; 
+    let p=""; for(let i=0;i<8;i++) p+=c.charAt(Math.floor(Math.random()*c.length)); 
+    document.getElementById('new-password').value=p; 
+}
 
-un.forEach(u=>{ const i=us[u]; const old=typeof i==='string'; const pass=old?i:i.pass; const blk=old?false:i.blocked; const act=old?false:i.active; const rawDate = old ? null : i.createdAt; const createdDate = rawDate ? new Date(rawDate).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Ancien'; const c=document.createElement('div'); c.className='user-card'; c.innerHTML=`<div class="user-info"><h4>${u}</h4><p>Mdp: ${pass} | Créé: ${createdDate} | ${blk?'<span style="color:#ff4d4d;">Bloqué</span>':'<span style="color:#2ecc71;">Actif</span>'} | ${act?'<span style="color:#e6b800;">En ligne</span>':'Hors ligne'}</p></div><div class="user-actions">${blk?`<button class="btn-success" onclick="manageUser('${u}','unblock')">Débloquer</button>`:`<button class="btn-warn" onclick="manageUser('${u}','block')">Bloquer</button>`} ${act?`<button class="btn-danger" onclick="manageUser('${u}','disconnect')">Déco</button>`:''} <button class="btn-delete" onclick="manageUser('${u}','delete')">Suppr</button></div>`; l.appendChild(c); }); } } catch(e){l.innerHTML='<p style="color:#ff4d4d;">Réseau</p>';} }
+async function generateUser() { 
+    const u=document.getElementById('new-username').value; 
+    const p=document.getElementById('new-password').value; 
+    const m=document.getElementById('admin-message'); 
+    m.style.color='#00E5FF';m.innerText='Création...'; 
+    if(!u||!p){m.style.color='#ff4d4d';m.innerText='Remplissez tout.';return;} 
+    try { 
+        const r=await fetch('/api/generate-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminPassword:'chapdel220605',newUser:u,newPass:p})}); 
+        const d=await r.json(); 
+        if(d.success){m.style.color='#2ecc71';m.innerText='SUCCÈS !';document.getElementById('new-username').value='';document.getElementById('new-password').value='';loadUsers();}else{m.style.color='#ff4d4d';m.innerText=d.message||'Erreur';} 
+    } catch(e){m.style.color='#ff4d4d';m.innerText='Critique';} 
+}
 
-async function manageUser(u,a) { if(a==='delete') if(!confirm('Supprimer '+u+' ?')) return; try { const r=await fetch('/api/manage-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminPassword:'chapdel220605',username:u,action:a})}); const d=await r.json(); if(d.success) loadUsers(); else alert('Erreur'); } catch(e){alert('Réseau');} }
+async function loadUsers() { 
+    const l=document.getElementById('user-list'); 
+    l.innerHTML='<p style="color:#888;">Chargement...</p>'; 
+    try { 
+        const r=await fetch('/api/get-users',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminPassword:'chapdel220605'})}); 
+        const d=await r.json(); 
+        if(d.success&&d.users){ 
+            const us=d.users; 
+            const un=Object.keys(us); 
+            if(un.length===0){l.innerHTML='<p style="color:#888;">Aucun.</p>';return;} 
+            l.innerHTML=''; 
+            un.forEach(u=>{ 
+                const i=us[u]; 
+                const old=typeof i==='string'; 
+                const pass=old?i:i.pass; 
+                const blk=old?false:i.blocked; 
+                const act=old?false:i.active; 
+                const rawDate = old ? null : i.createdAt; 
+                const createdDate = rawDate ? new Date(rawDate).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Ancien'; 
+                const c=document.createElement('div'); 
+                c.className='user-card'; 
+                c.innerHTML=`<div class="user-info"><h4>${u}</h4><p>Mdp: ${pass} | Créé: ${createdDate} | ${blk?'<span style="color:#ff4d4d;">Bloqué</span>':'<span style="color:#2ecc71;">Actif</span>'} | ${act?'<span style="color:#e6b800;">En ligne</span>':'Hors ligne'}</p></div><div class="user-actions">${blk?`<button class="btn-success" onclick="manageUser('${u}','unblock')">Débloquer</button>`:`<button class="btn-warn" onclick="manageUser('${u}','block')">Bloquer</button>`} ${act?`<button class="btn-danger" onclick="manageUser('${u}','disconnect')">Déco</button>`:''} <button class="btn-delete" onclick="manageUser('${u}','delete')">Suppr</button></div>`; 
+                l.appendChild(c); 
+            }); 
+        } 
+    } catch(e){l.innerHTML='<p style="color:#ff4d4d;">Réseau</p>';} 
+}
 
-function showApp() { document.getElementById('login-screen').classList.add('hidden'); document.getElementById('admin-screen').classList.add('hidden'); document.getElementById('app-screen').classList.remove('hidden'); backToMain(); loadSavedIPTVForUser(); }
+async function manageUser(u,a) { 
+    if(a==='delete') if(!confirm('Supprimer '+u+' ?')) return; 
+    try { 
+        const r=await fetch('/api/manage-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminPassword:'chapdel220605',username:u,action:a})}); 
+        const d=await r.json(); 
+        if(d.success) loadUsers(); else alert('Erreur'); 
+    } catch(e){alert('Réseau');} 
+}
+
+function showApp() { 
+    document.getElementById('login-screen').classList.add('hidden'); 
+    document.getElementById('admin-screen').classList.add('hidden'); 
+    document.getElementById('app-screen').classList.remove('hidden'); 
+    backToMain(); 
+    loadSavedIPTVForUser(); 
+}
 
 // --- STREAMING & IPTV ---
-function loadSite(url) { document.getElementById('main-content').classList.add('hidden'); document.getElementById('player-section').classList.add('hidden'); document.getElementById('site-iframe').style.display = 'block'; document.getElementById('site-iframe').src = url; document.getElementById('back-main-btn').classList.remove('hidden'); }
+function loadSite(url) { 
+    document.getElementById('main-content').classList.add('hidden'); 
+    document.getElementById('player-section').classList.add('hidden'); 
+    document.getElementById('site-iframe').style.display = 'block'; 
+    document.getElementById('site-iframe').src = url; 
+    document.getElementById('back-main-btn').classList.remove('hidden'); 
+}
 
-async function loadSavedIPTVUrl() { try { const res = await fetch('/api/iptv-config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action: 'get'}) }); const data = await res.json(); if(data.success && data.url) { document.getElementById('iptv-url-input').value = data.url; } } catch(e) {} }
+async function loadSavedIPTVUrl() { 
+    try { 
+        const res = await fetch('/api/iptv-config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action: 'get'}) }); 
+        const data = await res.json(); 
+        if(data.success && data.url) { document.getElementById('iptv-url-input').value = data.url; } 
+    } catch(e) {} 
+}
 
-async function saveAndLoadIPTV() { const url = document.getElementById('iptv-url-input').value; const msg = document.getElementById('iptv-msg'); if (!url) { msg.style.color='#ff4d4d'; msg.innerText='Veuillez coller un lien !'; return; } msg.style.color = '#e6b800'; msg.innerText = 'Sauvegarde...'; try { const res = await fetch('/api/iptv-config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action: 'save', adminPassword: 'chapdel220605', iptvUrl: url}) }); const data = await res.json(); if(data.success) { msg.style.color = '#2ecc71'; msg.innerText = 'Sauvegardé ! Chargement...'; loadIPTVList(url); } else { msg.style.color = '#ff4d4d'; msg.innerText = 'Erreur de sauvegarde.'; } } catch(e) { msg.style.color = '#ff4d4d'; msg.innerText = 'Erreur réseau.'; } }
+async function saveAndLoadIPTV() { 
+    const url = document.getElementById('iptv-url-input').value; 
+    const msg = document.getElementById('iptv-msg'); 
+    if (!url) { msg.style.color='#ff4d4d'; msg.innerText='Veuillez coller un lien !'; return; } 
+    msg.style.color = '#e6b800'; msg.innerText = 'Sauvegarde...'; 
+    try { 
+        const res = await fetch('/api/iptv-config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action: 'save', adminPassword: 'chapdel220605', iptvUrl: url}) }); 
+        const data = await res.json(); 
+        if(data.success) { msg.style.color = '#2ecc71'; msg.innerText = 'Sauvegardé ! Chargement...'; loadIPTVList(url); } 
+        else { msg.style.color = '#ff4d4d'; msg.innerText = 'Erreur de sauvegarde.'; } 
+    } catch(e) { msg.style.color = '#ff4d4d'; msg.innerText = 'Erreur réseau.'; } 
+}
 
-async function loadSavedIPTVForUser() { try { const res = await fetch('/api/iptv-config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action: 'get'}) }); const data = await res.json(); if(data.success && data.url) { document.getElementById('iptv-status-msg').style.display = 'block'; loadIPTVList(data.url); } } catch(e) {} }
+async function loadSavedIPTVForUser() { 
+    try { 
+        const res = await fetch('/api/iptv-config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action: 'get'}) }); 
+        const data = await res.json(); 
+        if(data.success && data.url) { document.getElementById('iptv-status-msg').style.display = 'block'; loadIPTVList(data.url); } 
+    } catch(e) {} 
+}
 
-async function loadIPTVList(url) { const msg = document.getElementById('iptv-status-msg'); const iptvContainer = document.getElementById('iptv-container'); const channelList = document.getElementById('iptv-channels'); msg.style.display = 'block'; msg.style.color = '#e6b800'; msg.innerText = 'Chargement de la liste IPTV...'; channelList.innerHTML = ''; document.getElementById('iptv-search').value = ''; try { const proxyUrl = `/api/proxy-iptv?url=${encodeURIComponent(url)}`; const response = await fetch(proxyUrl); const text = await response.text(); const lines = text.split('\n'); let channels = []; let currentName = ''; for (let i = 0; i < lines.length; i++) { const line = lines[i].trim(); if (line.startsWith('#EXTINF')) { const commaIndex = line.lastIndexOf(','); if (commaIndex !== -1) { currentName = line.substring(commaIndex + 1).trim(); } } else if (line.startsWith('http') && currentName) { channels.push({ name: currentName, url: line }); currentName = ''; } } if (channels.length === 0) { msg.style.color = '#ff4d4d'; msg.innerText = 'Aucune chaîne trouvée.'; iptvContainer.classList.add('hidden'); return; } msg.style.display = 'none'; iptvContainer.classList.remove('hidden'); globalChannels = channels; renderChannels(globalChannels); } catch (e) { msg.style.color = '#ff4d4d'; msg.innerText = 'Erreur de chargement.'; iptvContainer.classList.add('hidden'); } }
+async function loadIPTVList(url) { 
+    const msg = document.getElementById('iptv-status-msg'); 
+    const iptvContainer = document.getElementById('iptv-container'); 
+    const channelList = document.getElementById('iptv-channels'); 
+    msg.style.display = 'block'; msg.style.color = '#e6b800'; msg.innerText = 'Chargement de la liste IPTV...'; 
+    channelList.innerHTML = ''; document.getElementById('iptv-search').value = ''; 
+    try { 
+        const proxyUrl = `/api/proxy-iptv?url=${encodeURIComponent(url)}`; 
+        const response = await fetch(proxyUrl); 
+        const text = await response.text(); 
+        const lines = text.split('\n'); 
+        let channels = []; let currentName = ''; 
+        for (let i = 0; i < lines.length; i++) { 
+            const line = lines[i].trim(); 
+            if (line.startsWith('#EXTINF')) { const commaIndex = line.lastIndexOf(','); if (commaIndex !== -1) { currentName = line.substring(commaIndex + 1).trim(); } } 
+            else if (line.startsWith('http') && currentName) { channels.push({ name: currentName, url: line }); currentName = ''; } 
+        } 
+        if (channels.length === 0) { msg.style.color = '#ff4d4d'; msg.innerText = 'Aucune chaîne trouvée.'; iptvContainer.classList.add('hidden'); return; } 
+        msg.style.display = 'none'; iptvContainer.classList.remove('hidden'); globalChannels = channels; renderChannels(globalChannels); 
+    } catch (e) { msg.style.color = '#ff4d4d'; msg.innerText = 'Erreur de chargement.'; iptvContainer.classList.add('hidden'); } 
+}
 
-function filterChannels() { clearTimeout(searchTimeout); searchTimeout = setTimeout(() => { const searchTerm = document.getElementById('iptv-search').value.toLowerCase(); if (!searchTerm) { renderChannels(globalChannels); return; } const filtered = globalChannels.filter(ch => ch.name.toLowerCase().includes(searchTerm)); renderChannels(filtered); }, 300); }
+function filterChannels() { 
+    clearTimeout(searchTimeout); 
+    searchTimeout = setTimeout(() => { 
+        const searchTerm = document.getElementById('iptv-search').value.toLowerCase(); 
+        if (!searchTerm) { renderChannels(globalChannels); return; } 
+        const filtered = globalChannels.filter(ch => ch.name.toLowerCase().includes(searchTerm)); 
+        renderChannels(filtered); 
+    }, 300); 
+}
 
-function renderChannels(channelsToRender) { const channelList = document.getElementById('iptv-channels'); channelList.innerHTML = ''; const limit = Math.min(channelsToRender.length, 200); for (let i = 0; i < limit; i++) { const ch = channelsToRender[i]; const btn = document.createElement('button'); btn.className = 'iptv-btn'; btn.innerText = ch.name; btn.onclick = () => playChannel(ch.url, ch.name); channelList.appendChild(btn); } if (channelsToRender.length > 200) { const info = document.createElement('p'); info.innerText = `Affichage des 200 premiers sur ${channelsToRender.length}. Affinez votre recherche.`; info.style.color = "#e6b800"; channelList.appendChild(info); } }
+function renderChannels(channelsToRender) { 
+    const channelList = document.getElementById('iptv-channels'); 
+    channelList.innerHTML = ''; 
+    const limit = Math.min(channelsToRender.length, 200); 
+    for (let i = 0; i < limit; i++) { 
+        const ch = channelsToRender[i]; const btn = document.createElement('button'); btn.className = 'iptv-btn'; btn.innerText = ch.name; btn.onclick = () => playChannel(ch.url, ch.name); channelList.appendChild(btn); 
+    } 
+    if (channelsToRender.length > 200) { 
+        const info = document.createElement('p'); info.innerText = `Affichage des 200 premiers sur ${channelsToRender.length}. Affinez votre recherche.`; info.style.color = "#e6b800"; channelList.appendChild(info); 
+    } 
+}
 
-function playChannel(url, name) { const video = document.getElementById('tv-player'); document.getElementById('main-content').classList.add('hidden'); document.getElementById('site-iframe').style.display = 'none'; document.getElementById('site-iframe').src = ''; document.getElementById('player-section').classList.remove('hidden'); document.getElementById('back-main-btn').classList.remove('hidden'); document.getElementById('player-title').innerText = name; if (Hls.isSupported()) { if (hlsInstance) hlsInstance.destroy(); hlsInstance = new Hls(); hlsInstance.loadSource(url); hlsInstance.attachMedia(video); hlsInstance.on(Hls.Events.MANIFEST_PARSED, function() { video.play(); }); } else if (video.canPlayType('application/vnd.apple.mpegurl')) { video.src = url; video.addEventListener('loadedmetadata', function() { video.play(); }); } }
+function playChannel(url, name) { 
+    const video = document.getElementById('tv-player'); 
+    document.getElementById('main-content').classList.add('hidden'); 
+    document.getElementById('site-iframe').style.display = 'none'; 
+    document.getElementById('site-iframe').src = ''; 
+    document.getElementById('player-section').classList.remove('hidden'); 
+    document.getElementById('back-main-btn').classList.remove('hidden'); 
+    document.getElementById('player-title').innerText = name; 
+    if (Hls.isSupported()) { 
+        if (hlsInstance) hlsInstance.destroy(); hlsInstance = new Hls(); hlsInstance.loadSource(url); hlsInstance.attachMedia(video); hlsInstance.on(Hls.Events.MANIFEST_PARSED, function() { video.play(); }); 
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) { 
+        video.src = url; video.addEventListener('loadedmetadata', function() { video.play(); }); 
+    } 
+}
 
-function backToMain() { document.getElementById('site-iframe').src = ''; document.getElementById('site-iframe').style.display = 'none'; document.getElementById('player-section').classList.add('hidden'); const video = document.getElementById('tv-player'); video.pause(); video.src = ''; if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; } document.getElementById('main-content').classList.remove('hidden'); document.getElementById('back-main-btn').classList.add('hidden'); }
+function backToMain() { 
+    document.getElementById('site-iframe').src = ''; 
+    document.getElementById('site-iframe').style.display = 'none'; 
+    document.getElementById('player-section').classList.add('hidden'); 
+    const video = document.getElementById('tv-player'); video.pause(); video.src = ''; 
+    if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; } 
+    document.getElementById('main-content').classList.remove('hidden'); 
+    document.getElementById('back-main-btn').classList.add('hidden'); 
+}
 </script>
 </body>
 </html>
