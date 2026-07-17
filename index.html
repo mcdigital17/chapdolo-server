@@ -196,15 +196,14 @@ function filterChannels() {
 async function loadIPTVList() {
     const url = document.getElementById('iptv-url-input').value;
     const msg = document.getElementById('iptv-msg');
-    const channelList = document.getElementById('iptv-channels');
     const iptvContainer = document.getElementById('iptv-container');
 
     if (!url) { msg.style.color='red'; msg.innerText='Veuillez coller un lien !'; return; }
 
     msg.style.color = 'yellow';
     msg.innerText = 'Chargement de la liste IPTV...';
-    channelList.innerHTML = '';
-    document.getElementById('iptv-search').value = ''; // On vide la recherche
+    document.getElementById('iptv-channels').innerHTML = '';
+    document.getElementById('iptv-search').value = '';
 
     try {
         const proxyUrl = `/api/proxy-iptv?url=${encodeURIComponent(url)}`;
@@ -212,21 +211,35 @@ async function loadIPTVList() {
         const text = await response.text();
 
         const lines = text.split('\n');
-        const channels = [];
+        let channels = [];
         let currentName = '';
 
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i].trim();
             if (line.startsWith('#EXTINF')) {
                 const commaIndex = line.lastIndexOf(',');
-                if (commaIndex !== -1) {
-                    currentName = line.substring(commaIndex + 1).trim();
-                }
+                if (commaIndex !== -1) { currentName = line.substring(commaIndex + 1).trim(); }
             } else if (line.startsWith('http') && currentName) {
                 channels.push({ name: currentName, url: line });
                 currentName = '';
             }
         }
+
+        if (channels.length === 0) {
+            msg.style.color = 'red'; msg.innerText = 'Aucune chaîne trouvée.'; iptvContainer.classList.add('hidden'); return;
+        }
+
+        msg.style.color = '#0f0';
+        msg.innerText = `${channels.length} chaînes trouvées ! Utilisez la barre de recherche.`;
+        iptvContainer.classList.remove('hidden');
+        
+        globalChannels = channels; // On sauvegarde la liste complète en mémoire
+        renderChannels(globalChannels); // On affiche les boutons
+
+    } catch (e) {
+        msg.style.color = 'red'; msg.innerText = 'Erreur de chargement.'; iptvContainer.classList.add('hidden');
+    }
+}
 
         if (channels.length === 0) {
             msg.style.color = 'red';
