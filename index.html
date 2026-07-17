@@ -270,9 +270,9 @@ function playEmbed(type, imdbId, name) {
     
     // Utilisation de VidSrc.to (Lecteur sans pub)
     if(type === 'movie') {
-        embedIframe.src = `https://vidsrc.cc/v2/embed/movie/${imdbId}`;
+        embedIframe.src = `https://autoembed.cc/movie/${imdbId}`;
     } else {
-        embedIframe.src = `https://vidsrc.cc/v2/embed/tv/${imdbId}/1/1`; // Lance Saison 1 Episode 1 par défaut
+        embedIframe.src = `https://autoembed.cc/tv/${imdbId}/1/1`; // Lance Saison 1 Episode 1 par défaut
     }
     
     embedPlayer.classList.remove('hidden');
