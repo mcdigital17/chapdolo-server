@@ -32,18 +32,22 @@ export default async function handler(req, res) {
     }
   }
 
-  // Si l'application demande le lien pour l'afficher aux utilisateurs
+   // Si l'application demande le lien pour l'afficher aux utilisateurs
   if (action === 'get') {
     try {
       const getResponse = await fetch(`${url}/get/iptv_url`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const getData = await getResponse.json();
-      return res.status(200).json({ success: true, url: getData.result || '' });
+      
+      // Nettoyage des guillemets si la base en a ajouté
+      let cleanUrl = getData.result || '';
+      if (cleanUrl.startsWith('"') && cleanUrl.endsWith('"')) {
+        cleanUrl = cleanUrl.substring(1, cleanUrl.length - 1);
+      }
+      
+      return res.status(200).json({ success: true, url: cleanUrl });
     } catch (e) {
       return res.status(500).json({ success: false, message: 'Erreur lecture base' });
     }
   }
-
-  return res.status(400).json({ error: 'Action inconnue' });
-}
