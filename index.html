@@ -5,135 +5,158 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Chapdolo</title>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
-body { background-color: #0a0a0a; color: white; font-family: sans-serif; margin: 0; }
-.section { text-align: center; padding: 40px 20px; }
-input { padding: 15px; margin: 10px; border-radius: 8px; border: 1px solid #333; background: #111; color: white; font-size: 18px; width: 300px; }
-button { padding: 15px 40px; font-size: 18px; border: none; border-radius: 8px; cursor: pointer; margin: 10px; }
-.btn-primary { background: #00E5FF; color: black; font-weight: bold; }
-.btn-danger { background: red; color: white; }
-.btn-secondary { background: #333; color: white; }
-.btn-auto { background: #9b59b6; color: white; }
-.btn-warn { background: #f39c12; color: black; }
-.btn-success { background: #2ecc71; color: black; }
-.btn-delete { background: transparent; border: 1px solid red; color: red; }
-.modal-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 100; }
+/* --- CHAPDOLO BLUE DESIGN SYSTEM --- */
+body { background-color: #0a0a0a; color: white; font-family: 'Inter', sans-serif; margin: 0; }
+.section { text-align: center; padding: 60px 20px; animation: fadeIn 0.5s ease; }
+input { padding: 16px 20px; margin: 8px; border-radius: 6px; border: 1px solid #333; background: #111; color: white; font-size: 16px; width: 320px; transition: all 0.3s ease; box-sizing: border-box; }
+input:focus { outline: none; border-color: #00E5FF; box-shadow: 0 0 0 2px rgba(0, 229, 255, 0.3); }
+button { padding: 16px 32px; font-size: 16px; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; margin: 8px; transition: all 0.2s ease; }
+button:active { transform: scale(0.96); }
+
+.btn-primary { background: #00E5FF; color: black; box-shadow: 0 4px 15px rgba(0, 229, 255, 0.3); }
+.btn-primary:hover { background: #33ECFF; box-shadow: 0 6px 20px rgba(0, 229, 255, 0.5); transform: translateY(-2px); }
+.btn-danger { background: #b2b2b2; color: black; } .btn-danger:hover { background: #fff; }
+.btn-secondary { background: rgba(255,255,255,0.1); color: white; border: 1px solid #444; } .btn-secondary:hover { background: rgba(255,255,255,0.2); border-color: #fff; }
+.btn-auto { background: #1a1a1a; color: #00E5FF; border: 1px solid #00E5FF; } .btn-auto:hover { background: #00E5FF; color: black; }
+.btn-warn { background: #e6b800; color: black; } .btn-success { background: #2ecc71; color: black; }
+.btn-delete { background: transparent; border: 1px solid #888; color: #888; } .btn-delete:hover { border-color: #ff4d4d; color: #ff4d4d; }
+
+.modal-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(4px); }
 .hidden { display: none !important; }
-.user-card { background: #111; border: 1px solid #333; padding: 20px; margin: 10px auto; max-width: 500px; border-radius: 10px; text-align: left; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+.user-card { background: #111; border: 1px solid #222; padding: 20px; margin: 10px auto; max-width: 500px; border-radius: 8px; text-align: left; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; transition: border-color 0.3s; }
+.user-card:hover { border-color: #00E5FF; }
 .user-info { flex-basis: 100%; margin-bottom: 10px; }
-.user-info h4 { margin: 0 0 5px 0; color: #00E5FF; }
-.user-info p { margin: 0; font-size: 14px; color: #aaa; }
+.user-info h4 { margin: 0 0 5px 0; color: #00E5FF; font-size: 18px; }
+.user-info p { margin: 0; font-size: 13px; color: #888; }
 .user-actions { display: flex; gap: 5px; flex-wrap: wrap; }
-.user-actions button { padding: 8px 12px; font-size: 12px; margin: 0; }
+.user-actions button { padding: 8px 12px; font-size: 12px; margin: 0; border-radius: 4px; }
 
-.source-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-top: 30px; }
-.source-btn { padding: 20px 30px; font-size: 20px; font-weight: bold; border-radius: 12px; min-width: 150px; }
-.tv-player-container { width: 100%; max-width: 900px; margin: 20px auto; background: #000; border-radius: 12px; overflow: hidden; display: none; }
-#tv-player { width: 100%; height: 500px; background: black; }
-#iptv-msg { color: yellow; margin-top: 10px; font-weight: bold; }
+/* --- LOGO ANIME --- */
+.logo-container { display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 40px; cursor: pointer; user-select: none; }
+.logo-icon { width: 60px; height: 60px; background: #00E5FF; border-radius: 8px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 25px rgba(0, 229, 255, 0.4); transition: transform 0.3s, box-shadow 0.3s; }
+.logo-icon::after { content: ''; border-left: 22px solid black; border-top: 14px solid transparent; border-bottom: 14px solid transparent; margin-left: 5px; }
+.logo-container:hover .logo-icon { transform: scale(1.1); box-shadow: 0 0 40px rgba(0, 229, 255, 0.8); }
+.logo-text { font-size: 56px; font-weight: 800; color: white; letter-spacing: -2px; text-shadow: 2px 2px 10px rgba(0,0,0,0.8); }
 
-.iptv-container { margin-top: 20px; background: #111; border-radius: 8px; padding: 15px; }
-.search-bar { display: flex; justify-content: center; gap: 10px; margin-bottom: 15px; }
-.iptv-channels { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; max-height: 400px; overflow-y: auto; padding: 10px; }
-.iptv-btn { padding: 10px 15px; font-size: 14px; border-radius: 6px; background: #222; color: white; border: 1px solid #444; cursor: pointer; }
-.iptv-btn:hover { background: #00E5FF; color: black; }
+/* --- NAV & STREAMING --- */
+.source-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-top: 40px; }
+.source-btn { padding: 24px 36px; font-size: 20px; font-weight: bold; border-radius: 8px; min-width: 160px; letter-spacing: 1px; position: relative; overflow: hidden; }
+.source-btn::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, rgba(255,255,255,0.1), transparent); pointer-events: none; }
 
-#site-iframe { width: 100%; height: 800px; border: none; margin-top: 20px; display: none; background: #111; border-radius: 12px; }
+.tv-player-container { width: 100%; max-width: 1000px; margin: 20px auto; background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8); display: none; }
+#tv-player { width: 100%; height: 550px; background: black; }
+#iptv-msg { color: #00E5FF; margin-top: 10px; font-weight: bold; }
+
+.iptv-container { margin-top: 30px; background: #111; border-radius: 12px; padding: 20px; border: 1px solid #222; }
+.search-bar { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
+.iptv-channels { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; max-height: 450px; overflow-y: auto; padding: 10px; }
+.iptv-btn { padding: 12px 20px; font-size: 14px; font-weight: 600; border-radius: 6px; background: #1a1a1a; color: white; border: 1px solid #333; cursor: pointer; transition: all 0.2s; }
+.iptv-btn:hover { background: #00E5FF; border-color: #00E5FF; color: black; transform: scale(1.05); }
+
+#site-iframe { width: 100%; height: 800px; border: none; margin-top: 20px; display: none; background: #000; }
+
+/* Animations */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.nav-bar { background: rgba(10, 10, 10, 0.95); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 50; border-bottom: 1px solid #222; backdrop-filter: blur(10px); }
 </style>
 </head>
 <body>
 
 <div id="login-screen" class="section">
-<h1 id="main-logo" style="color:#00E5FF; font-size:60px; margin-bottom:20px; cursor:pointer; user-select:none;">CHAPDOLO</h1>
-<p style="color:grey; font-size:20px; margin-bottom:40px;">Accès réservé</p>
-<input type="text" id="login-user" placeholder="Nom d'utilisateur"><br>
-<input type="password" id="login-pass" placeholder="Mot de passe"><br>
-<button class="btn-primary" onclick="login()">Se Connecter</button>
-<p id="login-error" style="color:red; margin-top:20px;"></p>
+  <div id="main-logo" class="logo-container">
+    <div class="logo-icon"></div>
+    <div class="logo-text">CHAPDOLO</div>
+  </div>
+  <p style="color:#888; font-size:18px; margin-bottom:40px;">Accès réservé</p>
+  <input type="text" id="login-user" placeholder="Nom d'utilisateur"><br>
+  <input type="password" id="login-pass" placeholder="Mot de passe"><br>
+  <button class="btn-primary" onclick="login()">Se Connecter</button>
+  <p id="login-error" style="color:#ff4d4d; margin-top:20px;"></p>
 </div>
 
 <div id="admin-modal" class="modal-bg hidden">
-<div class="modal-box" style="background:#111; padding:40px; border-radius:12px; border:2px solid red; text-align:center;">
-<h2 style="color:red; margin-top:0;">Accès Administrateur</h2>
-<input type="password" id="admin-pass-modal" placeholder="Mot de passe Admin"><br>
-<button class="btn-danger" onclick="verifyAdmin()">Valider</button>
-<button class="btn-secondary" onclick="closeAdminModal()">Annuler</button>
-</div>
+  <div class="modal-box" style="background:#111; padding:40px; border-radius:12px; border:2px solid #00E5FF; text-align:center; box-shadow: 0 0 30px rgba(0,229,255,0.2);">
+    <h2 style="color:#00E5FF; margin-top:0;">Accès Administrateur</h2>
+    <input type="password" id="admin-pass-modal" placeholder="Mot de passe Admin" style="width:80%;"><br>
+    <button class="btn-primary" onclick="verifyAdmin()">Valider</button>
+    <button class="btn-secondary" onclick="closeAdminModal()">Annuler</button>
+  </div>
 </div>
 
 <div id="admin-screen" class="section hidden">
-<h1 style="color:#00E5FF; margin-bottom:30px;">Panneau Administrateur</h1>
-<div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px;">
-   <div style="background:#111; padding:20px; border-radius:10px; width: 300px;">
-      <h3>Créer un accès</h3>
-      <input type="text" id="new-username" placeholder="Nom d'utilisateur" style="width:220px;"><br>
-      <input type="text" id="new-password" placeholder="Mot de passe" style="width:150px;">
-      <button class="btn-auto" onclick="autoGenerate()">Auto</button><br>
-      <button class="btn-primary" onclick="generateUser()">Créer l'accès</button>
-      <p id="admin-message" style="color:yellow; font-size:14px; font-weight:bold;">En attente...</p>
-   </div>
-   <div style="background:#111; padding:20px; border-radius:10px; width: 600px;">
-      <h3>Utilisateurs créés</h3>
-      <button class="btn-secondary" onclick="loadUsers()" style="font-size:14px;">🔄 Rafraîchir</button>
-      <div id="user-list" style="margin-top:10px; max-height: 400px; overflow-y: auto;"></div>
-   </div>
-</div>
+  <h1 style="color:white; margin-bottom:30px;">Panneau Administrateur</h1>
+  <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px;">
+     <div style="background:#111; padding:25px; border-radius:12px; width: 320px; border:1px solid #222;">
+        <h3 style="color:white;">Créer un accès</h3>
+        <input type="text" id="new-username" placeholder="Nom d'utilisateur" style="width:100%;"><br>
+        <input type="text" id="new-password" placeholder="Mot de passe" style="width:65%;">
+        <button class="btn-auto" onclick="autoGenerate()">Auto</button><br>
+        <button class="btn-primary" onclick="generateUser()">Créer l'accès</button>
+        <p id="admin-message" style="color:#00E5FF; font-size:14px; font-weight:bold; height:20px;">En attente...</p>
+     </div>
+     <div style="background:#111; padding:25px; border-radius:12px; width: 600px; border:1px solid #222;">
+        <h3 style="color:white;">Utilisateurs créés</h3>
+        <button class="btn-secondary" onclick="loadUsers()" style="font-size:14px;">🔄 Rafraîchir</button>
+        <div id="user-list" style="margin-top:10px; max-height: 400px; overflow-y: auto;"></div>
+     </div>
+  </div>
 
-<!-- NOUVEAU : Configuration IPTV dans l'admin -->
-<div style="margin-top: 30px; background:#111; padding:20px; border-radius:10px; max-width: 600px; margin-left: auto; margin-right: auto; border: 1px solid #00E5FF;">
-   <h3 style="color:#00E5FF;">📺 Source IPTV (TV Live)</h3>
-   <p style="color:grey; font-size:14px;">Collez le lien m3u8 d'une source IPTV ici. Il sera sauvegardé et affiché sur la page d'accueil des utilisateurs.</p>
-   <input type="text" id="iptv-url-input" placeholder="https://lien-vers-fichier-iptv.m3u" style="width: 100%; margin: 5px 0 15px 0;">
-   <button class="btn-primary" onclick="saveAndLoadIPTV()">Sauvegarder & Charger</button>
-   <p id="iptv-msg" style="font-size:14px;"></p>
-</div>
-
-<br>
-<button class="btn-primary" onclick="showApp()">Accéder au Streaming</button>
-<button class="btn-danger" onclick="logout()">Déconnexion</button>
+  <div style="margin-top: 30px; background:#111; padding:25px; border-radius:12px; max-width: 600px; margin-left: auto; margin-right: auto; border: 1px solid #00E5FF; box-shadow: 0 0 20px rgba(0,229,255,0.1);">
+     <h3 style="color:#00E5FF;">📺 Source IPTV (TV Live)</h3>
+     <p style="color:#888; font-size:14px;">Collez le lien m3u8 d'une source IPTV ici.</p>
+     <input type="text" id="iptv-url-input" placeholder="https://lien-vers-fichier-iptv.m3u" style="width: 100%; margin: 5px 0 15px 0;">
+     <button class="btn-primary" onclick="saveAndLoadIPTV()">Sauvegarder & Charger</button>
+     <p id="iptv-msg" style="font-size:14px;"></p>
+  </div>
+  <br>
+  <button class="btn-primary" onclick="showApp()">Accéder au Streaming</button>
+  <button class="btn-danger" onclick="logout()">Déconnexion</button>
 </div>
 
 <div id="app-screen" class="hidden">
-<nav style="background:#111; padding:15px 20px; display:flex; justify-content:space-between; align-items:center;">
-<h1 style="color:#00E5FF; font-size:28px; margin:0;">CHAPDOLO</h1>
-<div>
-<button id="back-main-btn" class="btn-secondary hidden" onclick="backToMain()">↩ Retour</button>
-<button style="background:transparent; color:white; border:1px solid white; padding:10px 20px; border-radius:5px; cursor:pointer; margin-left:10px;" onclick="logout()">Déconnexion</button>
-</div>
-</nav>
+  <nav class="nav-bar">
+    <div class="logo-container" style="margin-bottom:0; cursor: default;">
+       <div class="logo-icon" style="width:40px; height:40px;"></div>
+       <div class="logo-text" style="font-size:32px; color:#00E5FF;">CHAPDOLO</div>
+    </div>
+    <div>
+       <button id="back-main-btn" class="btn-secondary hidden" onclick="backToMain()">↩ Retour</button>
+       <button class="btn-secondary" onclick="logout()" style="margin-left:10px;">Déconnexion</button>
+    </div>
+  </nav>
 
-<div id="main-content" style="text-align: center; padding: 40px 20px;">
-   <h2 style="color:#00E5FF; font-size:40px; margin-bottom:10px;">Bienvenue sur Chapdolo</h2>
-   <p style="color:grey; font-size:18px; margin-bottom:30px;">Sélectionnez une source de streaming</p>
-   
-   <div class="source-grid">
-      <button class="source-btn btn-primary" onclick="loadSite('https://oha.to')">OHA.TO</button>
-      <button class="source-btn btn-secondary" onclick="loadSite('https://huhu.to')">HUHU.TO</button>
-      <button class="source-btn btn-secondary" onclick="loadSite('https://huhu.bz')">HUHU.BZ</button>
-   </div>
+  <div id="main-content" style="text-align: center; padding: 60px 20px;">
+     <h2 style="color:white; font-size:44px; margin-bottom:10px;">Bienvenue sur Chapdolo</h2>
+     <p style="color:#888; font-size:20px; margin-bottom:40px;">Sélectionnez une source de streaming</p>
+     
+     <div class="source-grid">
+        <button class="source-btn btn-primary" onclick="loadSite('https://oha.to')">OHA.TO</button>
+        <button class="source-btn btn-secondary" onclick="loadSite('https://huhu.to')">HUHU.TO</button>
+        <button class="source-btn btn-secondary" onclick="loadSite('https://huhu.bz')">HUHU.BZ</button>
+     </div>
 
-   <div style="margin-top: 40px; border-top: 1px solid #333; padding-top: 30px;">
-      <h3 style="color:#00E5FF;">📺 TV Live (Sans Pub)</h3>
-      <!-- La liste des chaînes s'affichera ici automatiquement -->
-      <div id="iptv-container" class="iptv-container hidden">
-         <div class="search-bar">
-            <input type="text" id="iptv-search" placeholder="🔍 Rechercher une chaîne..." style="width: 300px; margin: 0;" oninput="filterChannels()">
-         </div>
-         <div id="iptv-channels" class="iptv-channels"></div>
-      </div>
-      <p id="iptv-status-msg" style="color:grey; display:none;">Chargement des chaînes TV en cours...</p>
-   </div>
-</div>
+     <div style="margin-top: 60px; border-top: 1px solid #222; padding-top: 40px;">
+        <h3 style="color:white;">📺 TV Live (Sans Pub)</h3>
+        <div id="iptv-container" class="iptv-container hidden">
+           <div class="search-bar">
+              <input type="text" id="iptv-search" placeholder="🔍 Rechercher une chaîne..." style="width: 300px; margin: 0;" oninput="filterChannels()">
+           </div>
+           <div id="iptv-channels" class="iptv-channels"></div>
+        </div>
+        <p id="iptv-status-msg" style="color:#888; display:none;">Chargement des chaînes TV en cours...</p>
+     </div>
+  </div>
 
-<div id="player-section" class="hidden" style="padding: 20px;">
-   <h2 id="player-title" style="color: white; text-align: center; margin-top:0;">Lecture</h2>
-   <div class="tv-player-container" style="display:block; margin-top:0;">
-      <video id="tv-player" controls autoplay></video>
-   </div>
-</div>
+  <div id="player-section" class="hidden" style="padding: 20px; animation: fadeIn 0.3s ease;">
+     <h2 id="player-title" style="color: white; text-align: center; margin-top:0; font-size:28px;">Lecture</h2>
+     <div class="tv-player-container" style="display:block; margin-top:0;">
+        <video id="tv-player" controls autoplay></video>
+     </div>
+  </div>
 
-<iframe id="site-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-popups"></iframe>
-
+  <iframe id="site-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-popups"></iframe>
 </div>
 
 <script>
@@ -153,186 +176,38 @@ document.getElementById('main-logo').addEventListener('click', function() {
 function verifyAdmin() { if (document.getElementById('admin-pass-modal').value === 'chapdel220605') { document.getElementById('admin-modal').classList.add('hidden'); document.getElementById('login-screen').classList.add('hidden'); document.getElementById('admin-screen').classList.remove('hidden'); document.getElementById('admin-pass-modal').value = ''; loadUsers(); loadSavedIPTVUrl(); } else { alert('Mot de passe incorrect !'); } }
 function closeAdminModal() { document.getElementById('admin-modal').classList.add('hidden'); document.getElementById('admin-pass-modal').value = ''; }
 
-async function login() { const u = document.getElementById('login-user').value; const p = document.getElementById('login-pass').value; const e = document.getElementById('login-error'); e.style.color='yellow'; e.innerText='Connexion...'; try { const r = await fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username:u,password:p}) }); const d = await r.json(); if(d.success){currentLoggedUser=u; showApp();}else{e.style.color='red';e.innerText=d.message||'Erreur';} } catch(x){e.style.color='red';e.innerText='Réseau';} }
+async function login() { const u = document.getElementById('login-user').value; const p = document.getElementById('login-pass').value; const e = document.getElementById('login-error'); e.style.color='#00E5FF'; e.innerText='Connexion...'; try { const r = await fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username:u,password:p}) }); const d = await r.json(); if(d.success){currentLoggedUser=u; showApp();}else{e.style.color='#ff4d4d';e.innerText=d.message||'Erreur';} } catch(x){e.style.color='#ff4d4d';e.innerText='Réseau';} }
 
 async function logout() { if(currentLoggedUser){try{await fetch('/api/logout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:currentLoggedUser})});}catch(e){} currentLoggedUser='';} document.getElementById('app-screen').classList.add('hidden'); document.getElementById('admin-screen').classList.add('hidden'); document.getElementById('login-screen').classList.remove('hidden'); document.getElementById('login-user').value=''; document.getElementById('login-pass').value=''; document.getElementById('login-error').innerText=''; backToMain(); }
 
 function autoGenerate() { const c="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"; let p=""; for(let i=0;i<8;i++) p+=c.charAt(Math.floor(Math.random()*c.length)); document.getElementById('new-password').value=p; }
 
-async function generateUser() { const u=document.getElementById('new-username').value; const p=document.getElementById('new-password').value; const m=document.getElementById('admin-message'); m.style.color='yellow';m.innerText='Création...'; if(!u||!p){m.style.color='red';m.innerText='Remplissez tout.';return;} try { const r=await fetch('/api/generate-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminPassword:'chapdel220605',newUser:u,newPass:p})}); const d=await r.json(); if(d.success){m.style.color='#0f0';m.innerText='SUCCÈS !';document.getElementById('new-username').value='';document.getElementById('new-password').value='';loadUsers();}else{m.style.color='red';m.innerText=d.message||'Erreur';} } catch(e){m.style.color='red';m.innerText='Critique';} }
+async function generateUser() { const u=document.getElementById('new-username').value; const p=document.getElementById('new-password').value; const m=document.getElementById('admin-message'); m.style.color='#00E5FF';m.innerText='Création...'; if(!u||!p){m.style.color='#ff4d4d';m.innerText='Remplissez tout.';return;} try { const r=await fetch('/api/generate-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminPassword:'chapdel220605',newUser:u,newPass:p})}); const d=await r.json(); if(d.success){m.style.color='#2ecc71';m.innerText='SUCCÈS !';document.getElementById('new-username').value='';document.getElementById('new-password').value='';loadUsers();}else{m.style.color='#ff4d4d';m.innerText=d.message||'Erreur';} } catch(e){m.style.color='#ff4d4d';m.innerText='Critique';} }
 
-async function loadUsers() { const l=document.getElementById('user-list'); l.innerHTML='<p style="color:grey;">Chargement...</p>'; try { const r=await fetch('/api/get-users',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminPassword:'chapdel220605'})}); const d=await r.json(); if(d.success&&d.users){ const us=d.users; const un=Object.keys(us); if(un.length===0){l.innerHTML='<p style="color:grey;">Aucun.</p>';return;} l.innerHTML=''; un.forEach(u=>{ const i=us[u]; const old=typeof i==='string'; const pass=old?i:i.pass; const blk=old?false:i.blocked; const act=old?false:i.active; const c=document.createElement('div'); c.className='user-card'; c.innerHTML=`<div class="user-info"><h4>${u}</h4><p>Mdp: ${pass} | ${blk?'<span style="color:red;">Bloqué</span>':'<span style="color:green;">Actif</span>'} | ${act?'<span style="color:orange;">En ligne</span>':'Hors ligne'}</p></div><div class="user-actions">${blk?`<button class="btn-success" onclick="manageUser('${u}','unblock')">Débloquer</button>`:`<button class="btn-warn" onclick="manageUser('${u}','block')">Bloquer</button>`} ${act?`<button class="btn-danger" onclick="manageUser('${u}','disconnect')">Déco</button>`:''} <button class="btn-delete" onclick="manageUser('${u}','delete')">Suppr</button></div>`; l.appendChild(c); }); } } catch(e){l.innerHTML='<p style="color:red;">Réseau</p>';} }
+async function loadUsers() { const l=document.getElementById('user-list'); l.innerHTML='<p style="color:#888;">Chargement...</p>'; try { const r=await fetch('/api/get-users',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminPassword:'chapdel220605'})}); const d=await r.json(); if(d.success&&d.users){ const us=d.users; const un=Object.keys(us); if(un.length===0){l.innerHTML='<p style="color:#888;">Aucun.</p>';return;} l.innerHTML=''; un.forEach(u=>{ const i=us[u]; const old=typeof i==='string'; const pass=old?i:i.pass; const blk=old?false:i.blocked; const act=old?false:i.active; const c=document.createElement('div'); c.className='user-card'; c.innerHTML=`<div class="user-info"><h4>${u}</h4><p>Mdp: ${pass} | ${blk?'<span style="color:#ff4d4d;">Bloqué</span>':'<span style="color:#2ecc71;">Actif</span>'} | ${act?'<span style="color:#e6b800;">En ligne</span>':'Hors ligne'}</p></div><div class="user-actions">${blk?`<button class="btn-success" onclick="manageUser('${u}','unblock')">Débloquer</button>`:`<button class="btn-warn" onclick="manageUser('${u}','block')">Bloquer</button>`} ${act?`<button class="btn-danger" onclick="manageUser('${u}','disconnect')">Déco</button>`:''} <button class="btn-delete" onclick="manageUser('${u}','delete')">Suppr</button></div>`; l.appendChild(c); }); } } catch(e){l.innerHTML='<p style="color:#ff4d4d;">Réseau</p>';} }
 
 async function manageUser(u,a) { if(a==='delete') if(!confirm('Supprimer '+u+' ?')) return; try { const r=await fetch('/api/manage-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminPassword:'chapdel220605',username:u,action:a})}); const d=await r.json(); if(d.success) loadUsers(); else alert('Erreur'); } catch(e){alert('Réseau');} }
 
-function showApp() { 
-    document.getElementById('login-screen').classList.add('hidden'); 
-    document.getElementById('admin-screen').classList.add('hidden'); 
-    document.getElementById('app-screen').classList.remove('hidden'); 
-    backToMain(); 
-    // Quand un utilisateur se connecte, on charge la source IPTV sauvegardée par l'admin
-    loadSavedIPTVForUser(); 
-}
+function showApp() { document.getElementById('login-screen').classList.add('hidden'); document.getElementById('admin-screen').classList.add('hidden'); document.getElementById('app-screen').classList.remove('hidden'); backToMain(); loadSavedIPTVForUser(); }
 
 // --- STREAMING & IPTV ---
-function loadSite(url) {
-    document.getElementById('main-content').classList.add('hidden');
-    document.getElementById('player-section').classList.add('hidden');
-    document.getElementById('site-iframe').style.display = 'block';
-    document.getElementById('site-iframe').src = url;
-    document.getElementById('back-main-btn').classList.remove('hidden');
-}
+function loadSite(url) { document.getElementById('main-content').classList.add('hidden'); document.getElementById('player-section').classList.add('hidden'); document.getElementById('site-iframe').style.display = 'block'; document.getElementById('site-iframe').src = url; document.getElementById('back-main-btn').classList.remove('hidden'); }
 
-// --- NOUVEAU : GESTION IPTV ADMIN ---
-async function loadSavedIPTVUrl() {
-    try {
-        const res = await fetch('/api/iptv-config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action: 'get'}) });
-        const data = await res.json();
-        if(data.success && data.url) {
-            document.getElementById('iptv-url-input').value = data.url;
-        }
-    } catch(e) {}
-}
+async function loadSavedIPTVUrl() { try { const res = await fetch('/api/iptv-config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action: 'get'}) }); const data = await res.json(); if(data.success && data.url) { document.getElementById('iptv-url-input').value = data.url; } } catch(e) {} }
 
-async function saveAndLoadIPTV() {
-    const url = document.getElementById('iptv-url-input').value;
-    const msg = document.getElementById('iptv-msg');
-    if (!url) { msg.style.color='red'; msg.innerText='Veuillez coller un lien !'; return; }
-    
-    msg.style.color = 'yellow'; msg.innerText = 'Sauvegarde...';
-    try {
-        const res = await fetch('/api/iptv-config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action: 'save', adminPassword: 'chapdel220605', iptvUrl: url}) });
-        const data = await res.json();
-        if(data.success) {
-            msg.style.color = '#0f0'; msg.innerText = 'Sauvegardé ! Chargement des chaînes...';
-            loadIPTVList(url);
-        } else { msg.style.color = 'red'; msg.innerText = 'Erreur de sauvegarde.'; }
-    } catch(e) { msg.style.color = 'red'; msg.innerText = 'Erreur réseau.'; }
-}
+async function saveAndLoadIPTV() { const url = document.getElementById('iptv-url-input').value; const msg = document.getElementById('iptv-msg'); if (!url) { msg.style.color='#ff4d4d'; msg.innerText='Veuillez coller un lien !'; return; } msg.style.color = '#e6b800'; msg.innerText = 'Sauvegarde...'; try { const res = await fetch('/api/iptv-config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action: 'save', adminPassword: 'chapdel220605', iptvUrl: url}) }); const data = await res.json(); if(data.success) { msg.style.color = '#2ecc71'; msg.innerText = 'Sauvegardé ! Chargement...'; loadIPTVList(url); } else { msg.style.color = '#ff4d4d'; msg.innerText = 'Erreur de sauvegarde.'; } } catch(e) { msg.style.color = '#ff4d4d'; msg.innerText = 'Erreur réseau.'; } }
 
-async function loadSavedIPTVForUser() {
-    try {
-        const res = await fetch('/api/iptv-config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action: 'get'}) });
-        const data = await res.json();
-        if(data.success && data.url) {
-            document.getElementById('iptv-status-msg').style.display = 'block';
-            loadIPTVList(data.url);
-        }
-    } catch(e) {}
-}
+async function loadSavedIPTVForUser() { try { const res = await fetch('/api/iptv-config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action: 'get'}) }); const data = await res.json(); if(data.success && data.url) { document.getElementById('iptv-status-msg').style.display = 'block'; loadIPTVList(data.url); } } catch(e) {} }
 
-async function loadIPTVList(url) {
-    const msg = document.getElementById('iptv-status-msg');
-    const iptvContainer = document.getElementById('iptv-container');
-    const channelList = document.getElementById('iptv-channels');
+async function loadIPTVList(url) { const msg = document.getElementById('iptv-status-msg'); const iptvContainer = document.getElementById('iptv-container'); const channelList = document.getElementById('iptv-channels'); msg.style.display = 'block'; msg.style.color = '#e6b800'; msg.innerText = 'Chargement de la liste IPTV...'; channelList.innerHTML = ''; document.getElementById('iptv-search').value = ''; try { const proxyUrl = `/api/proxy-iptv?url=${encodeURIComponent(url)}`; const response = await fetch(proxyUrl); const text = await response.text(); const lines = text.split('\n'); let channels = []; let currentName = ''; for (let i = 0; i < lines.length; i++) { const line = lines[i].trim(); if (line.startsWith('#EXTINF')) { const commaIndex = line.lastIndexOf(','); if (commaIndex !== -1) { currentName = line.substring(commaIndex + 1).trim(); } } else if (line.startsWith('http') && currentName) { channels.push({ name: currentName, url: line }); currentName = ''; } } if (channels.length === 0) { msg.style.color = '#ff4d4d'; msg.innerText = 'Aucune chaîne trouvée.'; iptvContainer.classList.add('hidden'); return; } msg.style.display = 'none'; iptvContainer.classList.remove('hidden'); globalChannels = channels; renderChannels(globalChannels); } catch (e) { msg.style.color = '#ff4d4d'; msg.innerText = 'Erreur de chargement.'; iptvContainer.classList.add('hidden'); } }
 
-    msg.style.display = 'block';
-    msg.style.color = 'yellow';
-    msg.innerText = 'Chargement de la liste IPTV...';
-    channelList.innerHTML = '';
-    document.getElementById('iptv-search').value = '';
+function filterChannels() { clearTimeout(searchTimeout); searchTimeout = setTimeout(() => { const searchTerm = document.getElementById('iptv-search').value.toLowerCase(); if (!searchTerm) { renderChannels(globalChannels); return; } const filtered = globalChannels.filter(ch => ch.name.toLowerCase().includes(searchTerm)); renderChannels(filtered); }, 300); }
 
-    try {
-        const proxyUrl = `/api/proxy-iptv?url=${encodeURIComponent(url)}`;
-        const response = await fetch(proxyUrl);
-        const text = await response.text();
+function renderChannels(channelsToRender) { const channelList = document.getElementById('iptv-channels'); channelList.innerHTML = ''; const limit = Math.min(channelsToRender.length, 200); for (let i = 0; i < limit; i++) { const ch = channelsToRender[i]; const btn = document.createElement('button'); btn.className = 'iptv-btn'; btn.innerText = ch.name; btn.onclick = () => playChannel(ch.url, ch.name); channelList.appendChild(btn); } if (channelsToRender.length > 200) { const info = document.createElement('p'); info.innerText = `Affichage des 200 premiers sur ${channelsToRender.length}. Affinez votre recherche.`; info.style.color = "#e6b800"; channelList.appendChild(info); } }
 
-        const lines = text.split('\n');
-        let channels = [];
-        let currentName = '';
+function playChannel(url, name) { const video = document.getElementById('tv-player'); document.getElementById('main-content').classList.add('hidden'); document.getElementById('site-iframe').style.display = 'none'; document.getElementById('site-iframe').src = ''; document.getElementById('player-section').classList.remove('hidden'); document.getElementById('back-main-btn').classList.remove('hidden'); document.getElementById('player-title').innerText = name; if (Hls.isSupported()) { if (hlsInstance) hlsInstance.destroy(); hlsInstance = new Hls(); hlsInstance.loadSource(url); hlsInstance.attachMedia(video); hlsInstance.on(Hls.Events.MANIFEST_PARSED, function() { video.play(); }); } else if (video.canPlayType('application/vnd.apple.mpegurl')) { video.src = url; video.addEventListener('loadedmetadata', function() { video.play(); }); } }
 
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i].trim();
-            if (line.startsWith('#EXTINF')) {
-                const commaIndex = line.lastIndexOf(',');
-                if (commaIndex !== -1) { currentName = line.substring(commaIndex + 1).trim(); }
-            } else if (line.startsWith('http') && currentName) {
-                channels.push({ name: currentName, url: line });
-                currentName = '';
-            }
-        }
-
-        if (channels.length === 0) {
-            msg.style.color = 'red'; msg.innerText = 'Aucune chaîne trouvée. Réponse du serveur : ' + text.substring(0, 100); iptvContainer.classList.add('hidden'); return;
-        }
-
-        msg.style.display = 'none';
-        iptvContainer.classList.remove('hidden');
-        
-        globalChannels = channels;
-        renderChannels(globalChannels);
-
-    } catch (e) {
-        msg.style.color = 'red'; msg.innerText = 'Erreur de chargement.'; iptvContainer.classList.add('hidden');
-    }
-}
-
-function filterChannels() {
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => {
-        const searchTerm = document.getElementById('iptv-search').value.toLowerCase();
-        if (!searchTerm) { renderChannels(globalChannels); return; }
-        const filtered = globalChannels.filter(ch => ch.name.toLowerCase().includes(searchTerm));
-        renderChannels(filtered);
-    }, 300);
-}
-
-function renderChannels(channelsToRender) {
-    const channelList = document.getElementById('iptv-channels');
-    channelList.innerHTML = '';
-    const limit = Math.min(channelsToRender.length, 200);
-    
-    for (let i = 0; i < limit; i++) {
-        const ch = channelsToRender[i];
-        const btn = document.createElement('button');
-        btn.className = 'iptv-btn';
-        btn.innerText = ch.name;
-        btn.onclick = () => playChannel(ch.url, ch.name);
-        channelList.appendChild(btn);
-    }
-    
-    if (channelsToRender.length > 200) {
-        const info = document.createElement('p');
-        info.innerText = `Affichage des 200 premiers sur ${channelsToRender.length}. Affinez votre recherche.`;
-        info.style.color = "orange";
-        channelList.appendChild(info);
-    }
-}
-
-function playChannel(url, name) {
-    const video = document.getElementById('tv-player');
-
-    document.getElementById('main-content').classList.add('hidden');
-    document.getElementById('site-iframe').style.display = 'none';
-    document.getElementById('site-iframe').src = '';
-    document.getElementById('player-section').classList.remove('hidden');
-    document.getElementById('back-main-btn').classList.remove('hidden');
-    
-    document.getElementById('player-title').innerText = name;
-
-    if (Hls.isSupported()) {
-        if (hlsInstance) hlsInstance.destroy();
-        hlsInstance = new Hls();
-        hlsInstance.loadSource(url);
-        hlsInstance.attachMedia(video);
-        hlsInstance.on(Hls.Events.MANIFEST_PARSED, function() { video.play(); });
-    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        video.src = url;
-        video.addEventListener('loadedmetadata', function() { video.play(); });
-    }
-}
-
-function backToMain() {
-    document.getElementById('site-iframe').src = '';
-    document.getElementById('site-iframe').style.display = 'none';
-    document.getElementById('player-section').classList.add('hidden');
-    const video = document.getElementById('tv-player');
-    video.pause(); video.src = '';
-    if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
-    
-    document.getElementById('main-content').classList.remove('hidden');
-    document.getElementById('back-main-btn').classList.add('hidden');
-}
+function backToMain() { document.getElementById('site-iframe').src = ''; document.getElementById('site-iframe').style.display = 'none'; document.getElementById('player-section').classList.add('hidden'); const video = document.getElementById('tv-player'); video.pause(); video.src = ''; if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; } document.getElementById('main-content').classList.remove('hidden'); document.getElementById('back-main-btn').classList.add('hidden'); }
 </script>
 </body>
 </html>
