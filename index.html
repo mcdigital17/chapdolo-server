@@ -253,7 +253,7 @@ async function loadIPTVList(url) {
         }
 
         if (channels.length === 0) {
-            msg.style.color = 'red'; msg.innerText = 'Aucune chaîne trouvée.'; iptvContainer.classList.add('hidden'); return;
+            msg.style.color = 'red'; msg.innerText = 'Aucune chaîne trouvée. Réponse du serveur : ' + text.substring(0, 100); iptvContainer.classList.add('hidden'); return;
         }
 
         msg.style.display = 'none';
