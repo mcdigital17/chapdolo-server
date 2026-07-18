@@ -72,6 +72,37 @@ button:active { transform: scale(0.96); }
 
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 .nav-bar { background: rgba(10, 10, 10, 0.95); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 50; border-bottom: 1px solid #222; backdrop-filter: blur(10px); }
+/* --- CORRECTIF TV / BOX ANDROID --- */
+@media screen and (min-width: 1024px) {
+  /* Réduit le zoom global sur les grands écrans */
+  body { zoom: 0.8; }
+  
+  /* Réduit la taille de l'en-tête (Logo et boutons) */
+  .nav-bar { padding: 5px 15px; }
+  .logo-text { font-size: 20px; }
+  .logo-icon { width: 25px; height: 25px; }
+  .logo-icon::after { border-left-width: 14px; border-top-width: 9px; border-bottom-width: 9px; margin-left: 3px; }
+  button { padding: 10px 15px; font-size: 14px; margin: 5px; }
+  
+  /* Ajuste le lecteur vidéo pour qu'il ne déborde pas de l'écran */
+  .tv-player-container { width: 100%; height: auto; aspect-ratio: 16/9; max-height: 70vh; }
+  #tv-player { width: 100%; height: auto; aspect-ratio: 16/9; object-fit: contain; }
+  
+  /* Réduit la taille des boutons de chaînes IPTV */
+  .iptv-btn { font-size: 12px; padding: 8px 15px; }
+  input { padding: 10px 15px; font-size: 14px; }
+}
+
+/* --- AMÉLIORATION TÉLÉCOMMANDE (D-PAD FOCUS) --- */
+*:focus {
+  outline: 3px solid #00E5FF; /* Ajoute un contour bleu lumineux là où la télécommande pointe */
+  outline-offset: 2px;
+  z-index: 10;
+}
+button:focus, a:focus {
+  transform: scale(1.05); /* Fait légèrement grossir le bouton sélectionné */
+  background-color: rgba(0, 229, 255, 0.2); /* Ajoute un fond bleu clair */
+}
 </style>
 </head>
 <body>
