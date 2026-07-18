@@ -313,7 +313,12 @@ function filterChannels() { clearTimeout(searchTimeout); searchTimeout = setTime
 function renderChannels(channelsToRender) { const channelList = document.getElementById('iptv-channels'); channelList.innerHTML = ''; const limit = Math.min(channelsToRender.length, 200); for (let i = 0; i < limit; i++) { const ch = channelsToRender[i]; const btn = document.createElement('button'); btn.className = 'iptv-btn'; btn.innerText = ch.name; btn.onclick = () => playChannel(ch.url, ch.name); channelList.appendChild(btn); } if (channelsToRender.length > 200) { const info = document.createElement('p'); info.innerText = `Affichage des 200 premiers sur ${channelsToRender.length}. Affinez votre recherche.`; info.style.color = "#e6b800"; channelList.appendChild(info); } }
 
 function playChannel(url, name) { const video = document.getElementById('tv-player'); document.getElementById('main-content').classList.add('hidden'); document.getElementById('site-iframe').style.display = 'none'; document.getElementById('site-iframe').src = ''; document.getElementById('player-section').classList.remove('hidden'); document.getElementById('back-main-btn').classList.remove('hidden'); document.getElementById('player-title').innerText = name; if (Hls.isSupported()) { if (hlsInstance) hlsInstance.destroy(); hlsInstance = new Hls(); hlsInstance.loadSource(url); hlsInstance.attachMedia(video); hlsInstance.on(Hls.Events.MANIFEST_PARSED, function() { video.play(); }); } else if (video.canPlayType('application/vnd.apple.mpegurl')) { video.src = url; video.addEventListener('loadedmetadata', function() { video.play(); }); } }
-
+    // Active le mode plein écran
+    document.body.classList.add('app-fullscreen');
+    const exitBtn = document.getElementById('exit-fullscreen-btn');
+    exitBtn.classList.remove('hidden');
+    // Fait disparaître le bouton "Quitter" après 4 secondes
+    setTimeout(() => { exitBtn.classList.add('hidden-btn'); }, 4000);
 // --- CATALOGUE FILMS & SERIES ---
 async function loadCatalog() {
     loadRow('movie', 'top', 'movies-scroll');
@@ -365,6 +370,9 @@ function backToMain() {
     document.getElementById('player-section').classList.add('hidden'); 
     const video = document.getElementById('tv-player'); video.pause(); video.src = ''; 
     if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; } 
+        // Désactive le mode plein écran
+    document.body.classList.remove('app-fullscreen');
+    document.getElementById('exit-fullscreen-btn').classList.add('hidden');
     document.getElementById('main-content').classList.remove('hidden'); 
     document.getElementById('back-main-btn').classList.add('hidden'); 
 }
