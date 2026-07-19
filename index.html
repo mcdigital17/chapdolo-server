@@ -42,8 +42,8 @@ button:active { transform: scale(0.96); }
 .source-btn { padding: 24px 36px; font-size: 20px; font-weight: bold; border-radius: 8px; min-width: 160px; letter-spacing: 1px; position: relative; overflow: hidden; }
 .source-btn::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, rgba(255,255,255,0.1), transparent); pointer-events: none; }
 
-.tv-player-container { width: 100%; max-width: 1000px; margin: 20px auto; background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8); display: none; }
-#tv-player { width: 100%; height: 550px; background: black; object-fit: contain; }
+.tv-player-container { width: 100%; max-width: 1000px; margin: 20px auto; background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8); display: none; aspect-ratio: 16/9; }
+#tv-player { width: 100%; height: 100%; background: black; object-fit: contain; }
 #iptv-msg { color: #00E5FF; margin-top: 10px; font-weight: bold; }
 
 .iptv-container { margin-top: 30px; background: #111; border-radius: 12px; padding: 20px; border: 1px solid #222; }
@@ -80,9 +80,9 @@ button:focus, a:focus { transform: scale(1.05); background-color: rgba(0, 229, 2
     position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
     padding: 0; margin: 0; z-index: 9999; background: black; animation: none;
 }
-.app-fullscreen .tv-player-container { max-width: 100%; height: 100%; border-radius: 0; box-shadow: none; display: block !important; }
+.app-fullscreen .tv-player-container { max-width: 100vw; height: 100vh; border-radius: 0; box-shadow: none; display: block !important; aspect-ratio: auto; }
 .app-fullscreen #site-iframe { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; border: none; display: block !important; } 
-.app-fullscreen #tv-player { width: 100%; height: 100%; object-fit: contain; }
+.app-fullscreen #tv-player { width: 100vw; height: 100vh; object-fit: contain; }
 .app-fullscreen #player-title { display: none; }
 #exit-fullscreen-btn {
     position: absolute; top: 20px; right: 20px; z-index: 10000;
@@ -253,7 +253,7 @@ async function loadIPTVList(url) { const msg = document.getElementById('iptv-sta
 
 function filterChannels() { clearTimeout(searchTimeout); searchTimeout = setTimeout(() => { const searchTerm = document.getElementById('iptv-search').value.toLowerCase(); if (!searchTerm) { renderChannels(globalChannels); return; } const filtered = globalChannels.filter(ch => ch.name.toLowerCase().includes(searchTerm)); renderChannels(filtered); }, 300); }
 
-function renderChannels(channelsToRender) { const channelList = document.getElementById('iptv-channels'); channelList.innerHTML = ''; const limit = Math.min(channelsToRender.length, 200); for (let i = 0; i < limit; i++) { const ch = channelsToRender[i]; const btn = document.createElement('button'); btn.className = 'iptv-btn'; btn.setAttribute('tabindex', '0'); btn.innerText = ch.name; btn.onclick = () => playChannel(ch.url, ch.name); channelList.appendChild(btn); } if (channelsToRender.length > 200) { const info = document.createElement('p'); info.innerText = `Affichage des 200 premiers sur ${channelsToRender.length}. Affinez votre recherche.`; info.style.color = "#e6b800"; channelList.appendChild(info); } }
+function renderChannels(channelsToRender) { const channelList = document.getElementById('iptv-channels'); channelList.innerHTML = ''; const limit = Math.min(channelsToRender.length, 50); for (let i = 0; i < limit; i++) { const ch = channelsToRender[i]; const btn = document.createElement('button'); btn.className = 'iptv-btn'; btn.setAttribute('tabindex', '0'); btn.innerText = ch.name; btn.onclick = () => playChannel(ch.url, ch.name); channelList.appendChild(btn); } if (channelsToRender.length > 50) { const info = document.createElement('p'); info.innerText = `Affichage des 50 premiers sur ${channelsToRender.length}. Affinez votre recherche.`; info.style.color = "#e6b800"; channelList.appendChild(info); } }
 
 function playChannel(url, name) { 
     const video = document.getElementById('tv-player'); 
