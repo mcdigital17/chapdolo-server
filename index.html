@@ -70,8 +70,9 @@ button:active { transform: scale(0.96); }
   .iptv-btn { font-size: 12px; padding: 8px 15px; }
   input { padding: 10px 15px; font-size: 14px; }
 }
-*:focus { outline: 3px solid #00E5FF; outline-offset: 2px; z-index: 10; }
-button:focus, a:focus { transform: scale(1.05); background-color: rgba(0, 229, 255, 0.2); }
+*:focus { outline: 4px solid #00E5FF !important; outline-offset: -2px; z-index: 10; }
+button:focus, a:focus { transform: scale(1.05); background-color: rgba(0, 229, 255, 0.2) !important; }
+.iptv-btn:focus { background: #00E5FF !important; border-color: #00E5FF !important; color: black !important; transform: scale(1.15) !important; box-shadow: 0 0 15px rgba(0, 229, 255, 0.8) !important; }
 
 /* --- PLEIN ÉCRAN TV --- */
 .app-fullscreen #app-screen nav.nav-bar { display: none !important; }
@@ -170,7 +171,8 @@ button:focus, a:focus { transform: scale(1.05); background-color: rgba(0, 229, 2
         <h3 style="color:white;">📺 TV Live (Sans Pub)</h3>
         <div id="iptv-container" class="iptv-container hidden">
            <div class="search-bar">
-           <input type="text" id="iptv-search" tabindex="-1" placeholder="🔍 Rechercher une chaîne..." style="width: 300px; margin: 0;" oninput="filterChannels()">
+              <button class="btn-secondary" tabindex="0" onclick="document.getElementById('iptv-search').focus()">🔍 Lancer la recherche</button>
+              <input type="text" id="iptv-search" tabindex="-1" placeholder="🔍 Rechercher une chaîne..." style="width: 300px; margin: 0;" oninput="filterChannels()">
            </div>
            <div id="iptv-channels" class="iptv-channels"></div>
         </div>
