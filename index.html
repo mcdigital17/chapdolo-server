@@ -43,7 +43,7 @@ button:active { transform: scale(0.96); }
 .source-btn::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, rgba(255,255,255,0.1), transparent); pointer-events: none; }
 
 .tv-player-container { width: 100%; max-width: 1000px; margin: 20px auto; background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8); display: none; }
-#tv-player { width: 100%; height: 550px; background: black; }
+#tv-player { width: 100%; height: 550px; background: black; object-fit: contain; }
 #iptv-msg { color: #00E5FF; margin-top: 10px; font-weight: bold; }
 
 .iptv-container { margin-top: 30px; background: #111; border-radius: 12px; padding: 20px; border: 1px solid #222; }
@@ -52,101 +52,11 @@ button:active { transform: scale(0.96); }
 .iptv-btn { padding: 12px 20px; font-size: 14px; font-weight: 600; border-radius: 6px; background: #1a1a1a; color: white; border: 1px solid #333; cursor: pointer; transition: all 0.2s; }
 .iptv-btn:hover { background: #00E5FF; border-color: #00E5FF; color: black; transform: scale(1.05); }
 
-/* CATALOGUE NETFLIX */
-.netflix-section { margin-top: 60px; border-top: 1px solid #222; padding-top: 40px; text-align: left; padding-left: 20px; padding-right: 20px; }
-.netflix-row { margin-bottom: 40px; }
-.netflix-row h3 { margin: 0 0 15px 0; font-size: 24px; color: white; }
-.row-scroll { display: flex; overflow-x: auto; gap: 15px; padding-bottom: 20px; scroll-behavior: smooth; }
-.row-scroll::-webkit-scrollbar { height: 8px; }
-.row-scroll::-webkit-scrollbar-thumb { background: #00E5FF; border-radius: 4px; }
-.movie-card { min-width: 150px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; border-radius: 8px; overflow: hidden; background: #111; border: 1px solid #222; }
-.movie-card:hover { transform: scale(1.05); box-shadow: 0 0 15px rgba(0, 229, 255, 0.3); border-color: #00E5FF; }
-.movie-card img { width: 100%; height: 225px; object-fit: cover; display: block; }
-.movie-card p { margin: 8px 0; font-size: 13px; text-align: center; color: #ccc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 5px; }
-
-#embed-player { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: black; z-index: 60; display: flex; flex-direction: column; }
-.embed-nav { background: #111; padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #00E5FF; }
-#embed-iframe { width: 100%; flex-grow: 1; border: none; }
-
 #site-iframe { width: 100%; height: 800px; border: none; margin-top: 20px; display: none; background: #000; }
 
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 .nav-bar { background: rgba(10, 10, 10, 0.95); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 50; border-bottom: 1px solid #222; backdrop-filter: blur(10px); }
-/* --- CORRECTIF TV / BOX ANDROID --- */
-@media screen and (min-width: 1024px) {
-  /* Réduit le zoom global sur les grands écrans */
-  body { zoom: 0.8; }
-  
-  /* Réduit la taille de l'en-tête (Logo et boutons) */
-  .nav-bar { padding: 5px 15px; }
-  .logo-text { font-size: 20px; }
-  .logo-icon { width: 25px; height: 25px; }
-  .logo-icon::after { border-left-width: 14px; border-top-width: 9px; border-bottom-width: 9px; margin-left: 3px; }
-  button { padding: 10px 15px; font-size: 14px; margin: 5px; }
-  
-  /* Ajuste le lecteur vidéo pour qu'il ne déborde pas de l'écran */
-  .tv-player-container { width: 100%; height: auto; aspect-ratio: 16/9; max-height: 70vh; }
-  #tv-player { width: 100%; height: auto; aspect-ratio: 16/9; object-fit: contain; }
-  
-  /* Réduit la taille des boutons de chaînes IPTV */
-  .iptv-btn { font-size: 12px; padding: 8px 15px; }
-  input { padding: 10px 15px; font-size: 14px; }
-}
 
-/* --- AMÉLIORATION TÉLÉCOMMANDE (D-PAD FOCUS) --- */
-*:focus {
-  outline: 3px solid #00E5FF; /* Ajoute un contour bleu lumineux là où la télécommande pointe */
-  outline-offset: 2px;
-  z-index: 10;
-}
-button:focus, a:focus {
-  transform: scale(1.05); /* Fait légèrement grossir le bouton sélectionné */
-  background-color: rgba(0, 229, 255, 0.2); /* Ajoute un fond bleu clair */
-}
-/* --- PLEIN ÉCRAN TV --- */
-.app-fullscreen #app-screen nav.nav-bar { display: none !important; } /* Cache le menu */
-.app-fullscreen #player-section {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    padding: 0;
-    margin: 0;
-    z-index: 9999;
-    background: black;
-    animation: none;
-}
-.app-fullscreen .tv-player-container {
-    max-width: 100%;
-    height: 100%;
-    border-radius: 0;
-    box-shadow: none;
-    display: block !important;
-}
-.app-fullscreen #tv-player {
-    width: 100%;
-    height: 100%;
-    object-fit: contain; /* Respecte les proportions de la chaîne */
-}
-.app-fullscreen #player-title { display: none; } /* Cache le titre de la chaîne */
-
-/* Bouton pour quitter le plein écran (disparaît tout seul) */
-#exit-fullscreen-btn {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    z-index: 10000;
-    background: rgba(0, 0, 0, 0.7);
-    color: white;
-    border: 1px solid #00E5FF;
-    padding: 15px 30px;
-    border-radius: 8px;
-    font-size: 18px;
-    cursor: pointer;
-    transition: opacity 0.5s;
-}
-#exit-fullscreen-btn.hidden-btn { opacity: 0; pointer-events: none; }
 /* --- CORRECTIF TV / BOX ANDROID --- */
 @media screen and (min-width: 1024px) {
   body { zoom: 0.8; }
@@ -265,18 +175,11 @@ button:focus, a:focus { transform: scale(1.05); background-color: rgba(0, 229, 2
         </div>
         <p id="iptv-status-msg" style="color:#888; display:none;">Chargement des chaînes TV en cours...</p>
      </div>
-
-     <!-- CATALOGUE FILMS & SERIES -->
-     <div class="netflix-section">
-        <h3 style="text-align:center; color:white; font-size:28px;">🎬 Films & Séries (Sans Pub)</h3>
-        <div id="movies-row" class="netflix-row"><h3> Films Populaires</h3><div class="row-scroll" id="movies-scroll"><p style="color:#888;">Chargement...</p></div></div>
-        <div id="series-row" class="netflix-row"><h3> Séries Populaires</h3><div class="row-scroll" id="series-scroll"><p style="color:#888;">Chargement...</p></div></div>
-     </div>
   </div>
- 
- <div id="player-section" class="hidden" style="padding: 20px; animation: fadeIn 0.3s ease;">
-   <button id="exit-fullscreen-btn" class="hidden" onclick="backToMain()">✕ Quitter</button>   
-   <h2 id="player-title" style="color: white; text-align: center; margin-top:0; font-size:28px;">Lecture TV</h2>
+
+  <div id="player-section" class="hidden" style="padding: 20px; animation: fadeIn 0.3s ease;">
+     <button id="exit-fullscreen-btn" class="hidden" onclick="backToMain()">✕ Quitter</button>
+     <h2 id="player-title" style="color: white; text-align: center; margin-top:0; font-size:28px;">Lecture TV</h2>
      <div class="tv-player-container" style="display:block; margin-top:0;">
         <video id="tv-player" controls autoplay></video>
      </div>
@@ -285,25 +188,12 @@ button:focus, a:focus { transform: scale(1.05); background-color: rgba(0, 229, 2
   <iframe id="site-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-popups"></iframe>
 </div>
 
-<!-- LECTEUR EMBED FILMS/SERIES -->
-<div id="embed-player" class="hidden">
-   <div class="embed-nav">
-       <div class="logo-container" style="margin-bottom:0; cursor: default;">
-           <div class="logo-icon" style="width:40px; height:40px;"></div>
-           <div class="logo-text" style="font-size:32px; color:#00E5FF;">CHAPDOLO</div>
-       </div>
-       <button class="btn-secondary" onclick="closeEmbedPlayer()">✕ Fermer le lecteur</button>
-   </div>
-   <iframe id="embed-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-presentation" allowfullscreen allow="autoplay; encrypted-media"></iframe>
-</div>
-
 <script>
 let currentLoggedUser = '';
 let hlsInstance = null;
 let globalChannels = [];
 let searchTimeout;
 
-// --- CONNEXION & ADMIN ---
 document.getElementById('main-logo').addEventListener('click', function() {
     let count = parseInt(this.dataset.clicks || 0); count++; this.dataset.clicks = count;
     clearTimeout(window.logoClickTimer);
@@ -326,9 +216,8 @@ async function loadUsers() { const l=document.getElementById('user-list'); l.inn
 
 async function manageUser(u,a) { if(a==='delete') if(!confirm('Supprimer '+u+' ?')) return; try { const r=await fetch('/api/manage-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminPassword:'chapdel220605',username:u,action:a})}); const d=await r.json(); if(d.success) loadUsers(); else alert('Erreur'); } catch(e){alert('Réseau');} }
 
-function showApp() { document.getElementById('login-screen').classList.add('hidden'); document.getElementById('admin-screen').classList.add('hidden'); document.getElementById('app-screen').classList.remove('hidden'); backToMain(); loadSavedIPTVForUser(); loadCatalog(); }
+function showApp() { document.getElementById('login-screen').classList.add('hidden'); document.getElementById('admin-screen').classList.add('hidden'); document.getElementById('app-screen').classList.remove('hidden'); backToMain(); loadSavedIPTVForUser(); }
 
-// --- STREAMING & IPTV ---
 function loadSite(url) { document.getElementById('main-content').classList.add('hidden'); document.getElementById('player-section').classList.add('hidden'); document.getElementById('site-iframe').style.display = 'block'; document.getElementById('site-iframe').src = url; document.getElementById('back-main-btn').classList.remove('hidden'); }
 
 async function loadSavedIPTVUrl() { try { const res = await fetch('/api/iptv-config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action: 'get'}) }); const data = await res.json(); if(data.success && data.url) { document.getElementById('iptv-url-input').value = data.url; } } catch(e) {} }
@@ -343,67 +232,38 @@ function filterChannels() { clearTimeout(searchTimeout); searchTimeout = setTime
 
 function renderChannels(channelsToRender) { const channelList = document.getElementById('iptv-channels'); channelList.innerHTML = ''; const limit = Math.min(channelsToRender.length, 200); for (let i = 0; i < limit; i++) { const ch = channelsToRender[i]; const btn = document.createElement('button'); btn.className = 'iptv-btn'; btn.innerText = ch.name; btn.onclick = () => playChannel(ch.url, ch.name); channelList.appendChild(btn); } if (channelsToRender.length > 200) { const info = document.createElement('p'); info.innerText = `Affichage des 200 premiers sur ${channelsToRender.length}. Affinez votre recherche.`; info.style.color = "#e6b800"; channelList.appendChild(info); } }
 
-function playChannel(url, name) { const video = document.getElementById('tv-player'); document.getElementById('main-content').classList.add('hidden'); document.getElementById('site-iframe').style.display = 'none'; document.getElementById('site-iframe').src = ''; document.getElementById('player-section').classList.remove('hidden'); document.getElementById('back-main-btn').classList.remove('hidden'); document.getElementById('player-title').innerText = name; if (Hls.isSupported()) { if (hlsInstance) hlsInstance.destroy(); hlsInstance = new Hls(); hlsInstance.loadSource(url); hlsInstance.attachMedia(video); hlsInstance.on(Hls.Events.MANIFEST_PARSED, function() { video.play(); }); } else if (video.canPlayType('application/vnd.apple.mpegurl')) { video.src = url; video.addEventListener('loadedmetadata', function() { video.play(); }); } }
-    // Active le mode plein écran
+function playChannel(url, name) { 
+    const video = document.getElementById('tv-player'); 
+    document.getElementById('main-content').classList.add('hidden'); 
+    document.getElementById('site-iframe').style.display = 'none'; 
+    document.getElementById('site-iframe').src = ''; 
+    document.getElementById('player-section').classList.remove('hidden'); 
+    document.getElementById('back-main-btn').classList.remove('hidden'); 
+    document.getElementById('player-title').innerText = name; 
+    
+    // Activation du mode plein écran TV
     document.body.classList.add('app-fullscreen');
     const exitBtn = document.getElementById('exit-fullscreen-btn');
     exitBtn.classList.remove('hidden');
-    // Fait disparaître le bouton "Quitter" après 4 secondes
     setTimeout(() => { exitBtn.classList.add('hidden-btn'); }, 4000);
-// --- CATALOGUE FILMS & SERIES ---
-async function loadCatalog() {
-    loadRow('movie', 'top', 'movies-scroll');
-    loadRow('series', 'top', 'series-scroll');
-}
 
-async function loadRow(type, catalog, elementId) {
-    const scroll = document.getElementById(elementId);
-    try {
-        const res = await fetch(`https://v3-cinemeta.strem.io/catalog/${type}/${catalog}.json`);
-        const data = await res.json();
-        scroll.innerHTML = '';
-        if(data.metas) {
-            data.metas.slice(0, 20).forEach(item => {
-                const card = document.createElement('div');
-                card.className = 'movie-card';
-                card.innerHTML = `<img src="${item.poster}" alt="${item.name}" onerror="this.src='https://via.placeholder.com/150x225/111/888?text=Image'"><p>${item.name}</p>`;
-                card.onclick = () => playEmbed(type, item.imdb_id, item.name);
-                scroll.appendChild(card);
-            });
-        }
-    } catch(e) {
-        scroll.innerHTML = '<p style="color:#ff4d4d;">Erreur de chargement du catalogue.</p>';
-    }
-}
-
-function playEmbed(type, imdbId, name) {
-    const embedPlayer = document.getElementById('embed-player');
-    const embedIframe = document.getElementById('embed-iframe');
-    
-    // Utilisation de VidSrc.to (Lecteur sans pub)
-    if(type === 'movie') {
-        embedIframe.src = `https://embed.su/embed/movie/${imdbId}`;
-    } else {
-        embedIframe.src = `https://embed.su/embed/tv/${imdbId}/1/1`; // Lance Saison 1 Episode 1 par défaut
-    }
-    
-    embedPlayer.classList.remove('hidden');
-}
-
-function closeEmbedPlayer() {
-    document.getElementById('embed-player').classList.add('hidden');
-    document.getElementById('embed-iframe').src = '';
+    if (Hls.isSupported()) { 
+        if (hlsInstance) hlsInstance.destroy(); hlsInstance = new Hls(); hlsInstance.loadSource(url); hlsInstance.attachMedia(video); hlsInstance.on(Hls.Events.MANIFEST_PARSED, function() { video.play(); }); 
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) { 
+        video.src = url; video.addEventListener('loadedmetadata', function() { video.play(); }); 
+    } 
 }
 
 function backToMain() { 
+    // Désactivation du mode plein écran
+    document.body.classList.remove('app-fullscreen');
+    document.getElementById('exit-fullscreen-btn').classList.add('hidden');
+
     document.getElementById('site-iframe').src = ''; 
     document.getElementById('site-iframe').style.display = 'none'; 
     document.getElementById('player-section').classList.add('hidden'); 
     const video = document.getElementById('tv-player'); video.pause(); video.src = ''; 
     if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; } 
-        // Désactive le mode plein écran
-    document.body.classList.remove('app-fullscreen');
-    document.getElementById('exit-fullscreen-btn').classList.add('hidden');
     document.getElementById('main-content').classList.remove('hidden'); 
     document.getElementById('back-main-btn').classList.add('hidden'); 
 }
