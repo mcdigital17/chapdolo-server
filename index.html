@@ -80,6 +80,7 @@ button:focus, a:focus { transform: scale(1.05); background-color: rgba(0, 229, 2
     padding: 0; margin: 0; z-index: 9999; background: black; animation: none;
 }
 .app-fullscreen .tv-player-container { max-width: 100%; height: 100%; border-radius: 0; box-shadow: none; display: block !important; }
+.app-fullscreen #site-iframe { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; border: none; display: block !important; } 
 .app-fullscreen #tv-player { width: 100%; height: 100%; object-fit: contain; }
 .app-fullscreen #player-title { display: none; }
 #exit-fullscreen-btn {
@@ -169,7 +170,7 @@ button:focus, a:focus { transform: scale(1.05); background-color: rgba(0, 229, 2
         <h3 style="color:white;">📺 TV Live (Sans Pub)</h3>
         <div id="iptv-container" class="iptv-container hidden">
            <div class="search-bar">
-              <input type="text" id="iptv-search" placeholder="🔍 Rechercher une chaîne..." style="width: 300px; margin: 0;" oninput="filterChannels()">
+              <input type="text" id="iptv-search" tabindex="-1" placeholder="🔍 Rechercher une chaîne..." style="width: 300px; margin: 0;" oninput="filterChannels()">
            </div>
            <div id="iptv-channels" class="iptv-channels"></div>
         </div>
@@ -218,7 +219,22 @@ async function manageUser(u,a) { if(a==='delete') if(!confirm('Supprimer '+u+' ?
 
 function showApp() { document.getElementById('login-screen').classList.add('hidden'); document.getElementById('admin-screen').classList.add('hidden'); document.getElementById('app-screen').classList.remove('hidden'); backToMain(); loadSavedIPTVForUser(); }
 
-function loadSite(url) { document.getElementById('main-content').classList.add('hidden'); document.getElementById('player-section').classList.add('hidden'); document.getElementById('site-iframe').style.display = 'block'; document.getElementById('site-iframe').src = url; document.getElementById('back-main-btn').classList.remove('hidden'); }
+function loadSite(url) { 
+    document.getElementById('main-content').classList.add('hidden'); 
+    document.getElementById('player-section').classList.add('hidden'); 
+    document.getElementById('site-iframe').style.display = 'block'; 
+    document.getElementById('site-iframe').src = url; 
+    document.getElementById('back-main-btn').classList.remove('hidden'); 
+
+    // Active le mode plein écran pour les sites web
+    document.body.classList.add('app-fullscreen');
+    const exitBtn = document.getElementById('exit-fullscreen-btn');
+    exitBtn.classList.remove('hidden');
+    setTimeout(() => { exitBtn.classList.add('hidden-btn'); }, 4000);
+    
+    // Gestion du bouton retour de la télécommande
+    window.history.pushState({ page: 'player' }, '', '#player');
+}
 
 async function loadSavedIPTVUrl() { try { const res = await fetch('/api/iptv-config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action: 'get'}) }); const data = await res.json(); if(data.success && data.url) { document.getElementById('iptv-url-input').value = data.url; } } catch(e) {} }
 
@@ -240,7 +256,8 @@ function playChannel(url, name) {
     document.getElementById('player-section').classList.remove('hidden'); 
     document.getElementById('back-main-btn').classList.remove('hidden'); 
     document.getElementById('player-title').innerText = name; 
-    
+    // Gestion du bouton retour de la télécommande
+    window.history.pushState({ page: 'player' }, '', '#player');
     // Activation du mode plein écran TV
     document.body.classList.add('app-fullscreen');
     const exitBtn = document.getElementById('exit-fullscreen-btn');
@@ -257,6 +274,12 @@ function playChannel(url, name) {
 function backToMain() { 
     // Désactivation du mode plein écran
     document.body.classList.remove('app-fullscreen');
+    // Intercepte le bouton retour de la télécommande
+    window.addEventListener('popstate', function(event) {
+        if (document.getElementById('main-content').classList.contains('hidden')) {
+            backToMain();
+        }
+    });
     document.getElementById('exit-fullscreen-btn').classList.add('hidden');
 
     document.getElementById('site-iframe').src = ''; 
