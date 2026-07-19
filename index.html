@@ -170,7 +170,7 @@ button:focus, a:focus { transform: scale(1.05); background-color: rgba(0, 229, 2
         <h3 style="color:white;">📺 TV Live (Sans Pub)</h3>
         <div id="iptv-container" class="iptv-container hidden">
            <div class="search-bar">
-              <input type="text" id="iptv-search" tabindex="-1" placeholder="🔍 Rechercher une chaîne..." style="width: 300px; margin: 0;" oninput="filterChannels()">
+           <input type="text" id="iptv-search" placeholder="🔍 Rechercher une chaîne..." style="width: 300px; margin: 0;" oninput="filterChannels()">
            </div>
            <div id="iptv-channels" class="iptv-channels"></div>
         </div>
@@ -194,7 +194,12 @@ let currentLoggedUser = '';
 let hlsInstance = null;
 let globalChannels = [];
 let searchTimeout;
-
+// Gestion du bouton retour de la télécommande
+window.addEventListener('popstate', function(event) {
+    if (document.getElementById('main-content').classList.contains('hidden')) {
+        backToMain();
+    }
+});
 document.getElementById('main-logo').addEventListener('click', function() {
     let count = parseInt(this.dataset.clicks || 0); count++; this.dataset.clicks = count;
     clearTimeout(window.logoClickTimer);
@@ -246,7 +251,7 @@ async function loadIPTVList(url) { const msg = document.getElementById('iptv-sta
 
 function filterChannels() { clearTimeout(searchTimeout); searchTimeout = setTimeout(() => { const searchTerm = document.getElementById('iptv-search').value.toLowerCase(); if (!searchTerm) { renderChannels(globalChannels); return; } const filtered = globalChannels.filter(ch => ch.name.toLowerCase().includes(searchTerm)); renderChannels(filtered); }, 300); }
 
-function renderChannels(channelsToRender) { const channelList = document.getElementById('iptv-channels'); channelList.innerHTML = ''; const limit = Math.min(channelsToRender.length, 200); for (let i = 0; i < limit; i++) { const ch = channelsToRender[i]; const btn = document.createElement('button'); btn.className = 'iptv-btn'; btn.innerText = ch.name; btn.onclick = () => playChannel(ch.url, ch.name); channelList.appendChild(btn); } if (channelsToRender.length > 200) { const info = document.createElement('p'); info.innerText = `Affichage des 200 premiers sur ${channelsToRender.length}. Affinez votre recherche.`; info.style.color = "#e6b800"; channelList.appendChild(info); } }
+function renderChannels(channelsToRender) { const channelList = document.getElementById('iptv-channels'); channelList.innerHTML = ''; const limit = Math.min(channelsToRender.length, 200); for (let i = 0; i < limit; i++) { const ch = channelsToRender[i]; const btn = document.createElement('button'); btn.className = 'iptv-btn'; btn.setAttribute('tabindex', '0'); btn.innerText = ch.name; btn.onclick = () => playChannel(ch.url, ch.name); channelList.appendChild(btn); } if (channelsToRender.length > 200) { const info = document.createElement('p'); info.innerText = `Affichage des 200 premiers sur ${channelsToRender.length}. Affinez votre recherche.`; info.style.color = "#e6b800"; channelList.appendChild(info); } }
 
 function playChannel(url, name) { 
     const video = document.getElementById('tv-player'); 
@@ -274,12 +279,7 @@ function playChannel(url, name) {
 function backToMain() { 
     // Désactivation du mode plein écran
     document.body.classList.remove('app-fullscreen');
-    // Intercepte le bouton retour de la télécommande
-    window.addEventListener('popstate', function(event) {
-        if (document.getElementById('main-content').classList.contains('hidden')) {
-            backToMain();
-        }
-    });
+    
     document.getElementById('exit-fullscreen-btn').classList.add('hidden');
 
     document.getElementById('site-iframe').src = ''; 
