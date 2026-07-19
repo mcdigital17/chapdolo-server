@@ -200,6 +200,14 @@ let searchTimeout;
 
 // Gérer le bouton retour de la télécommande
 window.addEventListener('popstate', function(event) {
+    // Si on est dans la barre de recherche, on la ferme sans quitter l'application
+    if (document.activeElement === document.getElementById('iptv-search')) {
+        document.getElementById('iptv-search').blur(); // Ferme le clavier
+        document.getElementById('iptv-search').value = ''; // Efface la recherche
+        filterChannels(); // Remet la liste complète
+        window.history.pushState({ page: 'app' }, '', '#app'); // Remet l'historique
+        return;
+    }
     if (document.getElementById('main-content').classList.contains('hidden')) {
         backToMain();
     }
@@ -267,7 +275,10 @@ function renderChannels(channelsToRender) {
     const limit = Math.min(channelsToRender.length, 50); 
     for (let i = 0; i < limit; i++) { 
         const ch = channelsToRender[i]; const btn = document.createElement('button'); btn.className = 'iptv-btn'; btn.innerText = ch.name; btn.setAttribute('tabindex', '0'); btn.onclick = () => playChannel(ch.url, ch.name); channelList.appendChild(btn); 
-        if (i === 0) { setTimeout(() => btn.focus(), 100); }
+        // Ne vole pas le focus si on est dans la barre de recherche
+        if (i === 0 && document.activeElement !== document.getElementById('iptv-search')) { 
+            setTimeout(() => btn.focus(), 100); 
+        }
     } 
     if (channelsToRender.length > 50) { 
         const info = document.createElement('p'); info.innerText = `Affichage des 50 premiers sur ${channelsToRender.length}. Affinez votre recherche.`; info.style.color = "#e6b800"; channelList.appendChild(info); 
