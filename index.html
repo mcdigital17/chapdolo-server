@@ -9,8 +9,8 @@
 <style>
 body { background-color: #0a0a0a; color: white; font-family: 'Inter', sans-serif; margin: 0; }
 .section { text-align: center; padding: 60px 20px; animation: fadeIn 0.5s ease; }
-input { padding: 16px 20px; margin: 8px; border-radius: 6px; border: 1px solid #333; background: #111; color: white; font-size: 16px; width: 320px; transition: all 0.3s ease; box-sizing: border-box; }
-input:focus { outline: none; border-color: #00E5FF; box-shadow: 0 0 0 2px rgba(0, 229, 255, 0.3); }
+input, select { padding: 16px 20px; margin: 8px; border-radius: 6px; border: 1px solid #333; background: #111; color: white; font-size: 16px; width: 320px; transition: all 0.3s ease; box-sizing: border-box; }
+input:focus, select:focus { outline: none; border-color: #00E5FF; box-shadow: 0 0 0 2px rgba(0, 229, 255, 0.3); }
 button { padding: 16px 32px; font-size: 16px; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; margin: 8px; transition: all 0.2s ease; }
 button:active { transform: scale(0.96); }
 
@@ -47,7 +47,7 @@ button:active { transform: scale(0.96); }
 #iptv-msg { color: #00E5FF; margin-top: 10px; font-weight: bold; }
 
 .iptv-container { margin-top: 30px; background: #111; border-radius: 12px; padding: 20px; border: 1px solid #222; }
-.search-bar { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; align-items: center; }
+.search-bar { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; }
 .iptv-channels { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; max-height: 450px; overflow-y: auto; padding: 10px; }
 .iptv-btn { padding: 12px 20px; font-size: 14px; font-weight: 600; border-radius: 6px; background: #1a1a1a; color: white; border: 1px solid #333; cursor: pointer; transition: all 0.2s; }
 .iptv-btn:hover { background: #00E5FF; border-color: #00E5FF; color: black; transform: scale(1.05); }
@@ -68,12 +68,12 @@ button:active { transform: scale(0.96); }
   .tv-player-container { width: 100%; height: auto; max-height: 70vh; }
   #tv-player { width: 100%; height: auto; object-fit: contain; }
   .iptv-btn { font-size: 12px; padding: 8px 15px; }
-  input { padding: 10px 15px; font-size: 14px; }
+  input, select { padding: 10px 15px; font-size: 14px; }
 }
 
 /* --- STYLES FOCUS POUR TELECOMMANDE --- */
 *:focus { outline: 4px solid #00E5FF !important; outline-offset: -2px; z-index: 10; }
-button:focus, a:focus { transform: scale(1.05); background-color: rgba(0, 229, 255, 0.2) !important; }
+button:focus, a:focus, select:focus { transform: scale(1.05); background-color: rgba(0, 229, 255, 0.2) !important; }
 .iptv-btn:focus { background: #00E5FF !important; border-color: #00E5FF !important; color: black !important; transform: scale(1.15) !important; box-shadow: 0 0 15px rgba(0, 229, 255, 0.8) !important; }
 
 /* --- PLEIN ÉCRAN TV --- */
@@ -172,11 +172,16 @@ button:focus, a:focus { transform: scale(1.05); background-color: rgba(0, 229, 2
      <div style="margin-top: 60px; border-top: 1px solid #222; padding-top: 40px;">
         <h3 style="color:white;">📺 TV Live (Sans Pub)</h3>
         <div id="iptv-container" class="iptv-container hidden">
-<div class="search-bar">
-   <button class="btn-secondary" tabindex="0" onclick="document.getElementById('iptv-search').focus()">🔍 Lancer la recherche</button>
-   <input type="text" id="iptv-search" tabindex="-1" placeholder="🔍 Rechercher une chaîne..." style="width: 300px; margin: 0;" oninput="filterChannels()">
-   <button id="fav-toggle-btn" class="btn-auto" tabindex="0" onclick="toggleShowFavorites()">⭐ Voir les favoris</button>
-</div>
+           <div class="search-bar">
+              <button class="btn-secondary" tabindex="0" onclick="document.getElementById('iptv-search').focus()">🔍 Lancer la recherche</button>
+              <input type="text" id="iptv-search" tabindex="-1" placeholder="🔍 Rechercher une chaîne..." style="width: 300px; margin: 0;" oninput="filterChannels()">
+              <button id="fav-toggle-btn" class="btn-auto" tabindex="0" onclick="toggleShowFavorites()">⭐ Voir les favoris</button>
+           </div>
+           <div style="margin-bottom: 15px;">
+              <select id="iptv-category-filter" onchange="filterChannels()" style="padding: 12px 15px; border-radius: 6px; border: 1px solid #333; background: #1a1a1a; color: white; font-size: 14px; width: 100%; max-width: 300px; cursor: pointer;">
+                 <option value="all">Toutes les catégories</option>
+              </select>
+           </div>
            <div id="iptv-channels" class="iptv-channels"></div>
         </div>
         <p id="iptv-status-msg" style="color:#888; display:none;">Chargement des chaînes TV en cours...</p>
@@ -202,9 +207,7 @@ let searchTimeout;
 let favorites = JSON.parse(localStorage.getItem('chapdolo_favorites')) || [];
 let showFavsOnly = false;
 
-function isFavorite(url) {
-    return favorites.some(f => f.url === url);
-}
+function isFavorite(url) { return favorites.some(f => f.url === url); }
 
 function toggleFavorite(ch) {
     if (isFavorite(ch.url)) {
@@ -220,20 +223,21 @@ function toggleShowFavorites() {
     const btn = document.getElementById('fav-toggle-btn');
     if(showFavsOnly) {
         btn.innerText = "📺 Toutes les chaînes";
+        document.getElementById('iptv-category-filter').value = 'all';
         renderChannels(favorites);
     } else {
         btn.innerText = "⭐ Voir les favoris";
         filterChannels(); 
     }
 }
+
 // Gérer le bouton retour de la télécommande
 window.addEventListener('popstate', function(event) {
-    // Si on est dans la barre de recherche, on la ferme sans quitter l'application
     if (document.activeElement === document.getElementById('iptv-search')) {
-        document.getElementById('iptv-search').blur(); // Ferme le clavier
-        document.getElementById('iptv-search').value = ''; // Efface la recherche
-        filterChannels(); // Remet la liste complète
-        window.history.pushState({ page: 'app' }, '', '#app'); // Remet l'historique
+        document.getElementById('iptv-search').blur();
+        document.getElementById('iptv-search').value = '';
+        filterChannels();
+        window.history.pushState({ page: 'app' }, '', '#app');
         return;
     }
     if (document.getElementById('main-content').classList.contains('hidden')) {
@@ -293,15 +297,91 @@ async function saveAndLoadIPTV() { const url = document.getElementById('iptv-url
 
 async function loadSavedIPTVForUser() { try { const res = await fetch('/api/iptv-config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action: 'get'}) }); const data = await res.json(); if(data.success && data.url) { document.getElementById('iptv-status-msg').style.display = 'block'; loadIPTVList(data.url); } } catch(e) {} }
 
-async function loadIPTVList(url) { const msg = document.getElementById('iptv-status-msg'); const iptvContainer = document.getElementById('iptv-container'); const channelList = document.getElementById('iptv-channels'); msg.style.display = 'block'; msg.style.color = '#e6b800'; msg.innerText = 'Chargement de la liste IPTV...'; channelList.innerHTML = ''; document.getElementById('iptv-search').value = ''; try { const proxyUrl = `/api/proxy-iptv?url=${encodeURIComponent(url)}`; const response = await fetch(proxyUrl); const text = await response.text(); const lines = text.split('\n'); let channels = []; let currentName = ''; for (let i = 0; i < lines.length; i++) { const line = lines[i].trim(); if (line.startsWith('#EXTINF')) { const commaIndex = line.lastIndexOf(','); if (commaIndex !== -1) { currentName = line.substring(commaIndex + 1).trim(); } } else if (line.startsWith('http') && currentName) { channels.push({ name: currentName, url: line }); currentName = ''; } } if (channels.length === 0) { msg.style.color = '#ff4d4d'; msg.innerText = 'Aucune chaîne trouvée.'; iptvContainer.classList.add('hidden'); return; } msg.style.display = 'none'; iptvContainer.classList.remove('hidden'); globalChannels = channels; renderChannels(globalChannels); } catch (e) { msg.style.color = '#ff4d4d'; msg.innerText = 'Erreur de chargement.'; iptvContainer.classList.add('hidden'); } }
+async function loadIPTVList(url) { 
+    const msg = document.getElementById('iptv-status-msg'); 
+    const iptvContainer = document.getElementById('iptv-container'); 
+    const channelList = document.getElementById('iptv-channels'); 
+    msg.style.display = 'block'; 
+    msg.style.color = '#e6b800'; 
+    msg.innerText = 'Chargement de la liste IPTV...'; 
+    channelList.innerHTML = ''; 
+    document.getElementById('iptv-search').value = ''; 
+    try { 
+        const proxyUrl = `/api/proxy-iptv?url=${encodeURIComponent(url)}`; 
+        const response = await fetch(proxyUrl); 
+        const text = await response.text(); 
+        const lines = text.split('\n'); 
+        let channels = []; 
+        let currentName = ''; 
+        let currentGroup = ''; 
+        const groups = new Set(); 
 
-function filterChannels() { clearTimeout(searchTimeout); searchTimeout = setTimeout(() => { const searchTerm = document.getElementById('iptv-search').value.toLowerCase(); if (!searchTerm) { renderChannels(globalChannels); return; } const filtered = globalChannels.filter(ch => ch.name.toLowerCase().includes(searchTerm)); renderChannels(filtered); }, 300); }
+        for (let i = 0; i < lines.length; i++) { 
+            const line = lines[i].trim(); 
+            if (line.startsWith('#EXTINF')) { 
+                const commaIndex = line.lastIndexOf(','); 
+                if (commaIndex !== -1) { 
+                    currentName = line.substring(commaIndex + 1).trim(); 
+                } 
+                const groupMatch = line.match(/group-title="([^"]+)"/);
+                currentGroup = groupMatch ? groupMatch[1] : 'Non classé';
+                groups.add(currentGroup);
+            } else if (line.startsWith('http') && currentName) { 
+                channels.push({ name: currentName, url: line, group: currentGroup }); 
+                currentName = ''; 
+                currentGroup = ''; 
+            } 
+        } 
+        if (channels.length === 0) { 
+            msg.style.color = '#ff4d4d'; 
+            msg.innerText = 'Aucune chaîne trouvée.'; 
+            iptvContainer.classList.add('hidden'); 
+            return; 
+        } 
+        msg.style.display = 'none'; 
+        iptvContainer.classList.remove('hidden'); 
+        globalChannels = channels; 
+        
+        const catSelect = document.getElementById('iptv-category-filter');
+        catSelect.innerHTML = '<option value="all">Toutes les catégories</option>';
+        Array.from(groups).sort().forEach(g => {
+            const opt = document.createElement('option');
+            opt.value = g;
+            opt.innerText = g;
+            catSelect.appendChild(opt);
+        });
+
+        renderChannels(globalChannels); 
+    } catch (e) { 
+        msg.style.color = '#ff4d4d'; 
+        msg.innerText = 'Erreur de chargement.'; 
+        iptvContainer.classList.add('hidden'); 
+    } 
+}
+
+function filterChannels() { 
+    clearTimeout(searchTimeout); 
+    searchTimeout = setTimeout(() => { 
+        const searchTerm = document.getElementById('iptv-search').value.toLowerCase(); 
+        const selectedCat = document.getElementById('iptv-category-filter').value; 
+        
+        let filtered = globalChannels; 
+        
+        if (selectedCat !== 'all') {
+            filtered = filtered.filter(ch => ch.group === selectedCat);
+        }
+        if (searchTerm) {
+            filtered = filtered.filter(ch => ch.name.toLowerCase().includes(searchTerm));
+        }
+        
+        renderChannels(filtered); 
+    }, 300); 
+}
 
 function renderChannels(channelsToRender) { 
     const channelList = document.getElementById('iptv-channels'); 
     channelList.innerHTML = ''; 
     
-    // Si on est en mode "favoris uniquement" mais qu'on n'en a pas
     if (showFavsOnly && favorites.length === 0) {
         channelList.innerHTML = '<p style="color:#888;">Aucun favori pour le moment. Cliquez sur l\'étoile d\'une chaîne pour l\'ajouter !</p>';
         return;
@@ -312,13 +392,11 @@ function renderChannels(channelsToRender) {
     for (let i = 0; i < limit; i++) { 
         const ch = channelsToRender[i]; 
         
-        // Conteneur pour le bouton + l'étoile
         const itemDiv = document.createElement('div');
         itemDiv.style.display = 'flex';
         itemDiv.style.alignItems = 'stretch';
         itemDiv.style.margin = '0';
 
-        // Bouton principal de la chaîne
         const btn = document.createElement('button'); 
         btn.className = 'iptv-btn'; 
         btn.innerText = ch.name; 
@@ -327,7 +405,6 @@ function renderChannels(channelsToRender) {
         btn.style.borderRadius = '6px 0 0 6px';
         btn.onclick = () => playChannel(ch.url, ch.name); 
         
-        // Bouton Favori (Étoile)
         const favBtn = document.createElement('button');
         favBtn.className = 'iptv-btn';
         favBtn.innerHTML = isFavorite(ch.url) ? '⭐' : '☆';
@@ -338,15 +415,12 @@ function renderChannels(channelsToRender) {
         favBtn.style.borderLeft = 'none';
         favBtn.style.background = isFavorite(ch.url) ? '#333' : '#1a1a1a';
         
-        // Action au clic sur l'étoile
         favBtn.onclick = (e) => {
-            e.stopPropagation(); // Empêche de lancer la chaîne
+            e.stopPropagation();
             toggleFavorite(ch);
-            // Met à jour l'affichage du bouton cliqué
             favBtn.innerHTML = isFavorite(ch.url) ? '⭐' : '☆';
             favBtn.style.background = isFavorite(ch.url) ? '#333' : '#1a1a1a';
             
-            // Si on est en mode favori, on rafraîchit la liste
             if (showFavsOnly) {
                 renderChannels(favorites);
             }
@@ -356,7 +430,6 @@ function renderChannels(channelsToRender) {
         itemDiv.appendChild(favBtn);
         channelList.appendChild(itemDiv); 
         
-        // Gestion du focus pour la télécommande
         if (i === 0 && document.activeElement !== document.getElementById('iptv-search')) { 
             setTimeout(() => btn.focus(), 100); 
         }
