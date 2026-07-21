@@ -44,6 +44,8 @@ button:active { transform: scale(0.96); }
 
 .tv-player-container { width: 100%; max-width: 1000px; margin: 20px auto; background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8); display: none; aspect-ratio: 16/9; position: relative; }
 #tv-player { width: 100%; height: 100%; background: black; object-fit: contain; }
+/* Enlève le cadre bleu de la vidéo */
+#tv-player:focus { outline: none !important; }
 #iptv-msg { color: #00E5FF; margin-top: 10px; font-weight: bold; }
 
 .iptv-container { margin-top: 30px; background: #111; border-radius: 12px; padding: 20px; border: 1px solid #222; }
@@ -107,14 +109,17 @@ button:focus, a:focus, select:focus { transform: scale(1.05); background-color: 
 }
 #video-error-overlay p { color: #ff4d4d; font-size: 24px; font-weight: bold; margin-bottom: 20px; text-shadow: 0 2px 4px black; }
 
-/* --- LECTEUR VIDÉO PERSONNALISÉ --- */
+/* --- LECTEUR VIDÉO PERSONNALISÉ (DISPLAY NONE/FLEX POUR TV) --- */
 #custom-player-controls {
     position: absolute; bottom: 0; left: 0; width: 100%; height: 100%;
-    display: flex; align-items: flex-end; justify-content: center; padding-bottom: 40px;
+    display: none; 
+    align-items: flex-end; justify-content: center; padding-bottom: 40px;
     background: linear-gradient(to top, rgba(0,0,0,0.7), transparent 60%);
-    opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 4;
+    z-index: 4;
 }
-#custom-player-controls.active { opacity: 1; pointer-events: auto; }
+#custom-player-controls.active { 
+    display: flex !important; 
+}
 .player-btn {
     background: rgba(0, 0, 0, 0.6); color: white; border: 2px solid #00E5FF;
     padding: 15px 30px; border-radius: 50px; font-size: 20px; cursor: pointer;
@@ -400,9 +405,10 @@ function setupSpatialNavigation() {
 function showPlayerControls() {
     const controls = document.getElementById('custom-player-controls');
     controls.classList.add('active');
-    clearTimeout(playerControlTimeout);
+    // Force le focus sur le bouton Pause pour éviter le cadre bleu sur la vidéo
+    document.getElementById('player-pause-btn').focus();
     
-    // Cache les contrôles après 4 secondes si la vidéo joue
+    clearTimeout(playerControlTimeout);
     playerControlTimeout = setTimeout(() => {
         const video = document.getElementById('tv-player');
         if (!video.paused) {
@@ -440,16 +446,43 @@ document.addEventListener('keydown', function(e) {
     const playerSection = document.getElementById('player-section');
     if (playerSection.classList.contains('hidden')) return; // Actif seulement sur le lecteur
 
+    // Si l'erreur est affichée, on laisse le bouton natif fonctionner
+    if(document.getElementById('video-error-overlay').style.display === 'flex') return;
+
     const activeKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter'];
     if (activeKeys.includes(e.key)) {
         e.preventDefault();
-        showPlayerControls();
         
-        // Si on appuie sur OK (Enter) et qu'on n'est pas sur un bouton, on met en pause
-        if (e.key === 'Enter') {
+        const controls = document.getElementById('custom-player-controls');
+        const isHidden = !controls.classList.contains('active');
+        
+        // Si les contrôles sont cachés, on les affiche et on s'arrête
+        if (isHidden) {
+            showPlayerControls();
+            return;
+        }
+        
+        // Les contrôles sont visibles, on rafraîchit le timer
+        showPlayerControls();
+
+        // Navigation entre les boutons
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+            const btns = Array.from(controls.querySelectorAll('.player-btn'));
+            let currentIdx = btns.indexOf(document.activeElement);
+            if (currentIdx === -1) currentIdx = 0;
+            
+            if (e.key === 'ArrowRight') {
+                currentIdx = (currentIdx + 1) % btns.length;
+            } else {
+                currentIdx = (currentIdx - 1 + btns.length) % btns.length;
+            }
+            btns[currentIdx].focus();
+        } 
+        // Si on appuie sur OK (Enter) alors que le focus est sur un bouton, on le clique
+        else if (e.key === 'Enter') {
             const focused = document.activeElement;
-            if (!focused.classList.contains('player-btn')) {
-                togglePlayPause();
+            if (focused && focused.classList.contains('player-btn')) {
+                focused.click();
             }
         }
     }
@@ -740,7 +773,6 @@ function playChannel(url, name, isReload = false) {
         }
     }, 15000);
 
-    // Afficher les contrôles au lancement
     showPlayerControls();
 
     if (Hls.isSupported()) { 
