@@ -125,6 +125,16 @@ button:focus, a:focus, select:focus { transform: scale(1.05); background-color: 
     margin: 0 15px; transition: all 0.2s; display: flex; align-items: center; gap: 10px;
 }
 .player-btn:focus { background: #00E5FF; color: black; transform: scale(1.1); outline: none; }
+
+/* --- ZAPPER AVEC LES CHIFFRES --- */
+#zap-overlay {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    font-size: 120px; font-weight: 800; color: #00E5FF; text-shadow: 0 0 20px rgba(0, 229, 255, 0.8);
+    z-index: 9998; display: none; pointer-events: none;
+    background: rgba(0,0,0,0.8); padding: 20px 60px; border-radius: 20px; border: 4px solid #00E5FF;
+    transition: color 0.2s, border-color 0.2s;
+}
+#zap-overlay.error { color: #ff4d4d !important; border-color: #ff4d4d !important; text-shadow: 0 0 20px rgba(255, 77, 77, 0.8); }
 </style>
 </head>
 <body>
@@ -181,6 +191,8 @@ button:focus, a:focus, select:focus { transform: scale(1.05); background-color: 
 </div>
 
 <div id="app-screen" class="hidden">
+  <div id="zap-overlay"></div>
+  
   <nav class="nav-bar">
     <div class="logo-container" style="margin-bottom:0; cursor: default;">
        <div class="logo-icon" style="width:40px; height:40px;"></div>
@@ -248,6 +260,7 @@ button:focus, a:focus, select:focus { transform: scale(1.05); background-color: 
 let currentLoggedUser = '';
 let hlsInstance = null;
 let globalChannels = [];
+let currentChannelList = []; // Sera mis à jour par renderChannels
 let searchTimeout;
 let favorites = JSON.parse(localStorage.getItem('chapdolo_favorites')) || [];
 let showFavsOnly = false;
@@ -257,6 +270,10 @@ let videoLoadTimeout;
 let currentChannelUrl = '';
 let currentChannelName = '';
 let playerControlTimeout;
+
+// Variables pour le zapping numérique
+let zapSequence = '';
+let zapTimeout;
 
 function isFavorite(url) { return favorites.some(f => f.url === url); }
 
@@ -407,7 +424,6 @@ function showPlayerControls() {
     
     controls.classList.add('active');
     
-    // Force le focus uniquement à l'ouverture pour ne pas voler le focus pendant la navigation
     if (!wasActive) {
         document.getElementById('player-pause-btn').focus();
     }
@@ -448,45 +464,87 @@ function reloadChannel() {
 // Interception stricte des touches du lecteur
 document.addEventListener('keydown', function(e) {
     const playerSection = document.getElementById('player-section');
-    if (playerSection.classList.contains('hidden')) return; // Actif seulement sur le lecteur
+    if (playerSection.classList.contains('hidden')) return; 
 
     if(document.getElementById('video-error-overlay').style.display === 'flex') return;
 
     const triggerKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter'];
     if (!triggerKeys.includes(e.key)) return;
 
-    e.preventDefault(); // Bloque TOUT comportement natif de la TV
+    e.preventDefault(); 
     
     const controls = document.getElementById('custom-player-controls');
     const isHidden = !controls.classList.contains('active');
     
-    // 1. Si les contrôles sont cachés, on les affiche et on s'arrête là
     if (isHidden) {
         showPlayerControls();
         return;
     }
 
-    // 2. Les contrôles sont visibles, on rafraîchit le timer
     showPlayerControls();
 
-    // 3. Gestion stricte Gauche/Droite/OK
     const btns = Array.from(controls.querySelectorAll('.player-btn'));
     let currentIdx = btns.indexOf(document.activeElement);
-    if (currentIdx === -1) currentIdx = 0; // Si le focus est perdu, on repart du 1er bouton
+    if (currentIdx === -1) currentIdx = 0; 
 
     if (e.key === 'ArrowRight') {
-        // Va à droite, bloqué au dernier bouton
         currentIdx = Math.min(currentIdx + 1, btns.length - 1);
         btns[currentIdx].focus();
     } else if (e.key === 'ArrowLeft') {
-        // Va à gauche, bloqué au premier bouton
         currentIdx = Math.max(currentIdx - 1, 0);
         btns[currentIdx].focus();
     } else if (e.key === 'Enter') {
-        // Bouton OK = Clic sur le bouton actuel
         btns[currentIdx].click();
     }
-    // ArrowUp et ArrowDown ne font rien (grâce au preventDefault) pour éviter de bugger
+});
+
+// --- ZAPPING NUMÉRIQUE ---
+document.addEventListener('keydown', function(e) {
+    const isAppScreen = !document.getElementById('app-screen').classList.contains('hidden');
+    if (!isAppScreen) return;
+    
+    // Ne pas intercepter si l'utilisateur tape dans un champ texte (recherche ou admin)
+    if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT') return;
+    if(document.getElementById('video-error-overlay').style.display === 'flex') return;
+
+    // Vérifier si c'est un chiffre (pavé numérique ou haut du clavier)
+    if ((e.key >= '0' && e.key <= '9')) {
+        e.preventDefault();
+        
+        zapSequence += e.key;
+        const overlay = document.getElementById('zap-overlay');
+        overlay.innerText = zapSequence;
+        overlay.style.display = 'block';
+        overlay.classList.remove('error');
+
+        clearTimeout(zapTimeout);
+        
+        // Si on tape pendant la lecture vidéo, on cache les contrôles pour voir la chaîne
+        if (!document.getElementById('player-section').classList.contains('hidden')) {
+            hidePlayerControls();
+        }
+
+        zapTimeout = setTimeout(() => {
+            const channelNum = parseInt(zapSequence);
+            const targetIndex = channelNum - 1; // Les tableaux commencent à 0
+
+            if (targetIndex >= 0 && targetIndex < currentChannelList.length) {
+                const ch = currentChannelList[targetIndex];
+                playChannel(ch.url, ch.name);
+            } else {
+                // Chaîne inexistante : on affiche l'erreur en rouge
+                overlay.classList.add('error');
+            }
+
+            // On cache l'overlay après 600ms
+            setTimeout(() => { 
+                overlay.style.display = 'none'; 
+                overlay.classList.remove('error');
+            }, 600);
+
+            zapSequence = ''; // On réinitialise pour la prochaine fois
+        }, 1500); // 1.5 seconde d'attente après le dernier chiffre
+    }
 });
 
 // Initialiser la navigation quand la page est prête
@@ -645,6 +703,8 @@ function filterChannels() {
 }
 
 function renderChannels(channelsToRender) { 
+    currentChannelList = channelsToRender; // Sauvegarde globale pour le zapping
+    
     const channelList = document.getElementById('iptv-channels'); 
     channelList.innerHTML = ''; 
     
