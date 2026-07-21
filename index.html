@@ -203,10 +203,10 @@ button:focus, a:focus, select:focus { transform: scale(1.05); background-color: 
   <!-- CONFIGURATION CONTRÔLE PARENTAL -->
   <div style="margin-top: 30px; background:#111; padding:25px; border-radius:12px; max-width: 600px; margin-left: auto; margin-right: auto; border: 1px solid #ff4d4d; box-shadow: 0 0 20px rgba(255,77,77,0.1);">
      <h3 style="color:#ff4d4d;">🔒 Contrôle Parental (Adultes)</h3>
-     <p style="color:#888; font-size:14px;">Configurez le code PIN et le lien M3U réservé aux adultes.</p>
+     <p style="color:#888; font-size:14px;">Configurez le code PIN et le lien M3U réservé aux adultes (Synchronisé sur tous les appareils).</p>
      <input type="text" id="iptv-pin-input" maxlength="4" placeholder="Code PIN (4 chiffres)" style="width: 100%; margin: 5px 0 15px 0; letter-spacing: 5px; text-align: center;">
      <input type="text" id="iptv-adult-url-input" placeholder="https://lien-vers-fichier-iptv-adulte.m3u" style="width: 100%; margin: 5px 0 15px 0;">
-     <button class="btn-primary" onclick="saveAdultConfig()">Sauvegarder</button>
+     <button class="btn-primary" onclick="saveAdultConfig()">Sauvegarder sur le serveur</button>
      <p id="adult-msg" style="font-size:14px;"></p>
   </div>
   <br>
@@ -298,9 +298,9 @@ let playerControlTimeout;
 let zapSequence = '';
 let zapTimeout;
 
-// Variables Contrôle Parental
-let adultPin = localStorage.getItem('chapdolo_pin') || '';
-let adultUrl = localStorage.getItem('chapdolo_adult_url') || '';
+// Variables Contrôle Parental (Synchronisées via le serveur)
+let adultPin = '';
+let adultUrl = '';
 
 function isFavorite(url) { return favorites.some(f => f.url === url); }
 
@@ -568,8 +568,8 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-// --- CONTRÔLE PARENTAL ---
-function saveAdultConfig() {
+// --- CONTRÔLE PARENTAL (SAUVEGARDE SUR LE SERVEUR) ---
+async function saveAdultConfig() {
     const pin = document.getElementById('iptv-pin-input').value;
     const url = document.getElementById('iptv-adult-url-input').value;
     const msg = document.getElementById('adult-msg');
@@ -583,12 +583,26 @@ function saveAdultConfig() {
         return;
     }
     
-    adultPin = pin;
-    adultUrl = url;
-    localStorage.setItem('chapdolo_pin', pin);
-    localStorage.setItem('chapdolo_adult_url', url);
+    msg.style.color = '#e6b800'; msg.innerText = 'Sauvegarde sur le serveur...';
     
-    msg.style.color = '#2ecc71'; msg.innerText = 'Configuration sauvegardée !';
+    try {
+        const res = await fetch('/api/iptv-config', { 
+            method: 'POST', 
+            headers: {'Content-Type':'application/json'}, 
+            body: JSON.stringify({action: 'save', adminPassword: 'chapdel220605', adultPin: pin, adultUrl: url}) 
+        });
+        const data = await res.json();
+        
+        if(data.success) {
+            adultPin = pin;
+            adultUrl = url;
+            msg.style.color = '#2ecc71'; msg.innerText = 'Configuration sauvegardée et synchronisée !';
+        } else {
+            msg.style.color = '#ff4d4d'; msg.innerText = 'Erreur de sauvegarde sur le serveur.';
+        }
+    } catch(e) {
+        msg.style.color = '#ff4d4d'; msg.innerText = 'Erreur réseau.';
+    }
 }
 
 function loadAdultConfigUI() {
@@ -598,7 +612,7 @@ function loadAdultConfigUI() {
 
 function promptAdultPin() {
     if (!adultUrl) {
-        alert("Aucune source adulte configurée. L'administrateur doit d'abord l'ajouter.");
+        alert("Aucune source adulte configurée. L'administrateur doit d'abord l'ajouter depuis le panneau admin.");
         return;
     }
     document.getElementById('pin-entry').value = '';
@@ -655,7 +669,7 @@ document.getElementById('main-logo').addEventListener('click', function() {
     else { window.logoClickTimer = setTimeout(() => { this.dataset.clicks = 0; }, 2000); }
 });
 
-function verifyAdmin() { if (document.getElementById('admin-pass-modal').value === 'chapdel220605') { document.getElementById('admin-modal').classList.add('hidden'); document.getElementById('login-screen').classList.add('hidden'); document.getElementById('admin-screen').classList.remove('hidden'); document.getElementById('admin-pass-modal').value = ''; loadUsers(); loadSavedIPTVUrl(); loadAdultConfigUI(); } else { alert('Mot de passe incorrect !'); } }
+function verifyAdmin() { if (document.getElementById('admin-pass-modal').value === 'chapdel220605') { document.getElementById('admin-modal').classList.add('hidden'); document.getElementById('login-screen').classList.add('hidden'); document.getElementById('admin-screen').classList.remove('hidden'); document.getElementById('admin-pass-modal').value = ''; loadUsers(); loadSavedIPTVUrl(); } else { alert('Mot de passe incorrect !'); } }
 function closeAdminModal() { document.getElementById('admin-modal').classList.add('hidden'); document.getElementById('admin-pass-modal').value = ''; }
 
 async function login() { const u = document.getElementById('login-user').value; const p = document.getElementById('login-pass').value; const e = document.getElementById('login-error'); e.style.color='#00E5FF'; e.innerText='Connexion...'; try { const r = await fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username:u,password:p}) }); const d = await r.json(); if(d.success){currentLoggedUser=u; localStorage.setItem('chapdolo_user', u); showApp();}else{e.style.color='#ff4d4d';e.innerText=d.message||'Erreur';} } catch(x){e.style.color='#ff4d4d';e.innerText='Réseau';} }
@@ -685,65 +699,48 @@ function loadSite(url) {
     window.history.pushState({ page: 'player' }, '', '#player');
 }
 
-async function loadSavedIPTVUrl() { try { const res = await fetch('/api/iptv-config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action: 'get'}) }); const data = await res.json(); if(data.success && data.url) { document.getElementById('iptv-url-input').value = data.url; } } catch(e) {} }
+async function loadSavedIPTVUrl() { 
+    try { 
+        const res = await fetch('/api/iptv-config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action: 'get'}) }); 
+        const data = await res.json(); 
+        if(data.success) {
+            if(data.url) document.getElementById('iptv-url-input').value = data.url; 
+            // Synchronisation du PIN et de l'URL adulte depuis le serveur
+            if(data.adultPin) adultPin = data.adultPin;
+            if(data.adultUrl) adultUrl = data.adultUrl;
+            loadAdultConfigUI();
+        }
+    } catch(e) {} 
+}
 
-async function saveAndLoadIPTV() { const url = document.getElementById('iptv-url-input').value; const msg = document.getElementById('iptv-msg'); if (!url) { msg.style.color='#ff4d4d'; msg.innerText='Veuillez coller un lien !'; return; } msg.style.color = '#e6b800'; msg.innerText = 'Sauvegarde...'; try { const res = await fetch('/api/iptv-config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action: 'save', adminPassword: 'chapdel220605', iptvUrl: url}) }); const data = await res.json(); if(data.success) { msg.style.color = '#2ecc71'; msg.innerText = 'Sauvegardé ! Chargement...'; localStorage.removeItem('chapdolo_cache_' + url.replace(/[^a-zA-Z0-9]/g, '')); loadIPTVList(url); } else { msg.style.color = '#ff4d4d'; msg.innerText = 'Erreur de sauvegarde.'; } } catch(e) { msg.style.color = '#ff4d4d'; msg.innerText = 'Erreur réseau.'; } }
+async function saveAndLoadIPTV() { const url = document.getElementById('iptv-url-input').value; const msg = document.getElementById('iptv-msg'); if (!url) { msg.style.color='#ff4d4d'; msg.innerText='Veuillez coller un lien !'; return; } msg.style.color = '#e6b800'; msg.innerText = 'Sauvegarde...'; try { const res = await fetch('/api/iptv-config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action: 'save', adminPassword: 'chapdel220605', iptvUrl: url}) }); const data = await res.json(); if(data.success) { msg.style.color = '#2ecc71'; msg.innerText = 'Sauvegardé ! Chargement...'; loadIPTVList(url); } else { msg.style.color = '#ff4d4d'; msg.innerText = 'Erreur de sauvegarde.'; } } catch(e) { msg.style.color = '#ff4d4d'; msg.innerText = 'Erreur réseau.'; } }
 
 async function loadSavedIPTVForUser() { 
     document.getElementById('iptv-title').innerText = "📺 TV Live (Sans Pub)";
     document.getElementById('iptv-container').classList.remove('adult-mode');
-    try { const res = await fetch('/api/iptv-config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action: 'get'}) }); const data = await res.json(); if(data.success && data.url) { document.getElementById('iptv-status-msg').style.display = 'block'; loadIPTVList(data.url); } } catch(e) {} 
+    try { 
+        const res = await fetch('/api/iptv-config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action: 'get'}) }); 
+        const data = await res.json(); 
+        if(data.success) {
+            if(data.url) { 
+                document.getElementById('iptv-status-msg').style.display = 'block'; 
+                loadIPTVList(data.url); 
+            }
+            if(data.adultPin) adultPin = data.adultPin;
+            if(data.adultUrl) adultUrl = data.adultUrl;
+        }
+    } catch(e) {} 
 }
 
-async function loadIPTVList(url, isBackgroundUpdate = false) { 
+async function loadIPTVList(url) { 
     const msg = document.getElementById('iptv-status-msg'); 
     const iptvContainer = document.getElementById('iptv-container'); 
     const channelList = document.getElementById('iptv-channels'); 
-    const catSelect = document.getElementById('iptv-category-filter');
-    
-    // Gestion de la clé de cache (sans caractères spéciaux pour éviter les bugs)
-    const cacheKey = 'chapdolo_cache_' + url.replace(/[^a-zA-Z0-9]/g, '');
-    const cachedData = localStorage.getItem(cacheKey);
-
-    // 1. DÉMARRAGE INSTANTANÉ : Si on a un cache et qu'on n'est pas en train de forcer la mise à jour
-    if (cachedData && !isBackgroundUpdate) {
-        try {
-            const channels = JSON.parse(cachedData);
-            if (channels.length > 0) {
-                const groups = new Set();
-                channels.forEach(ch => groups.add(ch.group || 'Non classé'));
-                
-                globalChannels = channels;
-                catSelect.innerHTML = '<option value="all">Toutes les catégories</option>';
-                Array.from(groups).sort().forEach(g => {
-                    const opt = document.createElement('option');
-                    opt.value = g;
-                    opt.innerText = g;
-                    catSelect.appendChild(opt);
-                });
-
-                renderChannels(globalChannels); 
-                iptvContainer.classList.remove('hidden');
-                msg.style.display = 'none'; 
-                
-                // Lancement de la mise à jour en arrière-plan
-                loadIPTVList(url, true);
-                return; 
-            }
-        } catch (e) { 
-            console.error("Erreur de lecture du cache", e);
-        }
-    }
-
-    // 2. CHARGEMENT RÉSEAU (Si pas de cache ou mise à jour en arrière-plan)
-    if (!isBackgroundUpdate) {
-        msg.style.display = 'block'; 
-        msg.style.color = '#e6b800'; 
-        msg.innerText = 'Chargement de la liste IPTV...'; 
-        channelList.innerHTML = ''; 
-        document.getElementById('iptv-search').value = ''; 
-    }
-    
+    msg.style.display = 'block'; 
+    msg.style.color = '#e6b800'; 
+    msg.innerText = 'Chargement de la liste IPTV...'; 
+    channelList.innerHTML = ''; 
+    document.getElementById('iptv-search').value = ''; 
     try { 
         const proxyUrl = `/api/proxy-iptv?url=${encodeURIComponent(url)}`; 
         const response = await fetch(proxyUrl); 
@@ -775,43 +772,30 @@ async function loadIPTVList(url, isBackgroundUpdate = false) {
                 currentLogo = '';
             } 
         } 
-        
         if (channels.length === 0) { 
-            if (!isBackgroundUpdate) {
-                msg.style.color = '#ff4d4d'; 
-                msg.innerText = 'Aucune chaîne trouvée.'; 
-                iptvContainer.classList.add('hidden'); 
-            }
+            msg.style.color = '#ff4d4d'; 
+            msg.innerText = 'Aucune chaîne trouvée.'; 
+            iptvContainer.classList.add('hidden'); 
             return; 
         } 
+        msg.style.display = 'none'; 
+        iptvContainer.classList.remove('hidden'); 
+        globalChannels = channels; 
         
-        // Sauvegarde dans le cache local
-        localStorage.setItem(cacheKey, JSON.stringify(channels));
+        const catSelect = document.getElementById('iptv-category-filter');
+        catSelect.innerHTML = '<option value="all">Toutes les catégories</option>';
+        Array.from(groups).sort().forEach(g => {
+            const opt = document.createElement('option');
+            opt.value = g;
+            opt.innerText = g;
+            catSelect.appendChild(opt);
+        });
 
-        // Vérifie si l'utilisateur est en train de chercher pour ne pas lui casser son affichage
-        const userInteracted = document.getElementById('iptv-search').value !== '' || catSelect.value !== 'all';
-        
-        // On met à jour l'UI si c'est le 1er chargement OU si l'utilisateur n'a pas touché à la recherche
-        if (!isBackgroundUpdate || !userInteracted) {
-            globalChannels = channels;
-            catSelect.innerHTML = '<option value="all">Toutes les catégories</option>';
-            Array.from(groups).sort().forEach(g => {
-                const opt = document.createElement('option');
-                opt.value = g;
-                opt.innerText = g;
-                catSelect.appendChild(opt);
-            });
-
-            renderChannels(globalChannels); 
-            msg.style.display = 'none'; 
-            iptvContainer.classList.remove('hidden'); 
-        }
+        renderChannels(globalChannels); 
     } catch (e) { 
-        if (!isBackgroundUpdate) {
-            msg.style.color = '#ff4d4d'; 
-            msg.innerText = 'Erreur de chargement.'; 
-            iptvContainer.classList.add('hidden'); 
-        }
+        msg.style.color = '#ff4d4d'; 
+        msg.innerText = 'Erreur de chargement.'; 
+        iptvContainer.classList.add('hidden'); 
     } 
 }
 
