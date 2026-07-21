@@ -42,7 +42,7 @@ button:active { transform: scale(0.96); }
 .source-btn { padding: 24px 36px; font-size: 20px; font-weight: bold; border-radius: 8px; min-width: 160px; letter-spacing: 1px; position: relative; overflow: hidden; }
 .source-btn::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, rgba(255,255,255,0.1), transparent); pointer-events: none; }
 
-.tv-player-container { width: 100%; max-width: 1000px; margin: 20px auto; background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8); display: none; aspect-ratio: 16/9; }
+.tv-player-container { width: 100%; max-width: 1000px; margin: 20px auto; background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8); display: none; aspect-ratio: 16/9; position: relative; }
 #tv-player { width: 100%; height: 100%; background: black; object-fit: contain; }
 #iptv-msg { color: #00E5FF; margin-top: 10px; font-weight: bold; }
 
@@ -92,6 +92,14 @@ button:focus, a:focus, select:focus { transform: scale(1.05); background-color: 
     padding: 15px 30px; border-radius: 8px; font-size: 18px; cursor: pointer; transition: opacity 0.5s;
 }
 #exit-fullscreen-btn.hidden-btn { opacity: 0; pointer-events: none; }
+
+/* --- OVERLAY ERREUR VIDEO --- */
+#video-error-overlay {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.85); display: none; flex-direction: column;
+    align-items: center; justify-content: center; z-index: 5; text-align: center;
+}
+#video-error-overlay p { color: #ff4d4d; font-size: 24px; font-weight: bold; margin-bottom: 20px; text-shadow: 0 2px 4px black; }
 </style>
 </head>
 <body>
@@ -194,6 +202,10 @@ button:focus, a:focus, select:focus { transform: scale(1.05); background-color: 
      <h2 id="player-title" style="color: white; text-align: center; margin-top:0; font-size:28px;">Lecture TV</h2>
      <div class="tv-player-container" style="display:block; margin-top:0;">
         <video id="tv-player" controls autoplay></video>
+        <div id="video-error-overlay">
+            <p>⚠️ Erreur de lecture<br>Le flux est peut-être hors-ligne.</p>
+            <button class="btn-primary" onclick="backToMain()">Retour au menu</button>
+        </div>
      </div>
   </div>
 
@@ -209,6 +221,7 @@ let favorites = JSON.parse(localStorage.getItem('chapdolo_favorites')) || [];
 let showFavsOnly = false;
 let recents = JSON.parse(localStorage.getItem('chapdolo_recents')) || [];
 let showRecentsOnly = false;
+let videoLoadTimeout;
 
 function isFavorite(url) { return favorites.some(f => f.url === url); }
 
@@ -223,7 +236,7 @@ function toggleFavorite(ch) {
 
 function toggleShowFavorites() {
     showFavsOnly = !showFavsOnly;
-    showRecentsOnly = false; // Désactive l'autre filtre
+    showRecentsOnly = false; 
     document.getElementById('recent-toggle-btn').innerText = "⏱ Vues récemment";
     
     const btn = document.getElementById('fav-toggle-btn');
@@ -238,16 +251,15 @@ function toggleShowFavorites() {
 }
 
 function addRecent(ch) {
-    // Retire si déjà présent pour le remettre en haut
     recents = recents.filter(r => r.url !== ch.url);
-    recents.unshift(ch); // Ajoute au début
-    if (recents.length > 10) recents = recents.slice(0, 10); // Garde les 10 derniers
+    recents.unshift(ch);
+    if (recents.length > 10) recents = recents.slice(0, 10);
     localStorage.setItem('chapdolo_recents', JSON.stringify(recents));
 }
 
 function toggleShowRecents() {
     showRecentsOnly = !showRecentsOnly;
-    showFavsOnly = false; // Désactive l'autre filtre
+    showFavsOnly = false; 
     document.getElementById('fav-toggle-btn').innerText = "⭐ Voir les favoris";
     
     const btn = document.getElementById('recent-toggle-btn');
@@ -480,8 +492,16 @@ function renderChannels(channelsToRender) {
     } 
 }
 
+function showVideoError() {
+    clearTimeout(videoLoadTimeout);
+    document.getElementById('video-error-overlay').style.display = 'flex';
+}
+
 function playChannel(url, name) { 
     const video = document.getElementById('tv-player'); 
+    const errorOverlay = document.getElementById('video-error-overlay');
+    errorOverlay.style.display = 'none'; // Cacher l'erreur précédente
+    
     document.getElementById('main-content').classList.add('hidden'); 
     document.getElementById('site-iframe').style.display = 'none'; 
     document.getElementById('site-iframe').src = ''; 
@@ -489,7 +509,6 @@ function playChannel(url, name) {
     document.getElementById('back-main-btn').classList.remove('hidden'); 
     document.getElementById('player-title').innerText = name; 
     
-    // Ajout à l'historique
     const chData = globalChannels.find(c => c.url === url) || { name: name, url: url, group: 'Non classé' };
     addRecent(chData);
 
@@ -499,14 +518,50 @@ function playChannel(url, name) {
     setTimeout(() => { exitBtn.classList.add('hidden-btn'); }, 4000);
     window.history.pushState({ page: 'player' }, '', '#player');
 
+    // Timeout de 15 secondes pour éviter l'écran noir infini
+    clearTimeout(videoLoadTimeout);
+    videoLoadTimeout = setTimeout(() => {
+        if (video.readyState < 3) { // Si la vidéo n'a pas assez de données pour lire
+            showVideoError();
+            if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
+            video.pause();
+        }
+    }, 15000);
+
     if (Hls.isSupported()) { 
-        if (hlsInstance) hlsInstance.destroy(); hlsInstance = new Hls(); hlsInstance.loadSource(url); hlsInstance.attachMedia(video); hlsInstance.on(Hls.Events.MANIFEST_PARSED, function() { video.play(); }); 
+        if (hlsInstance) hlsInstance.destroy(); 
+        hlsInstance = new Hls(); 
+        hlsInstance.loadSource(url); 
+        hlsInstance.attachMedia(video); 
+        hlsInstance.on(Hls.Events.MANIFEST_PARSED, function() { 
+            clearTimeout(videoLoadTimeout); // Le flux est bon, on annule le timeout
+            video.play().catch(e => console.error("Erreur lecture auto:", e)); 
+        });
+        // Gestion des erreurs fatales HLS
+        hlsInstance.on(Hls.Events.ERROR, function(event, data) {
+            if (data.fatal) {
+                showVideoError();
+                clearTimeout(videoLoadTimeout);
+                if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
+                video.pause();
+            }
+        });
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) { 
-        video.src = url; video.addEventListener('loadedmetadata', function() { video.play(); }); 
+        video.src = url; 
+        video.addEventListener('loadedmetadata', function() { 
+            clearTimeout(videoLoadTimeout);
+            video.play(); 
+        }); 
+        video.addEventListener('error', function() {
+            showVideoError();
+            clearTimeout(videoLoadTimeout);
+        });
     } 
 }
 
 function backToMain() { 
+    clearTimeout(videoLoadTimeout);
+    document.getElementById('video-error-overlay').style.display = 'none';
     document.body.classList.remove('app-fullscreen');
     document.getElementById('exit-fullscreen-btn').classList.add('hidden');
     document.getElementById('site-iframe').src = ''; 
