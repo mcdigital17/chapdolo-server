@@ -570,8 +570,8 @@ document.addEventListener('keydown', function(e) {
 
 // --- CONTRÔLE PARENTAL ---
 function saveAdultConfig() {
-    const pin = document.getElementById('iptv-pin-input').value;
-    const url = document.getElementById('iptv-adult-url-input').value;
+    const pin = document.getElementById('iptv-pin-input').value.trim();
+    const url = document.getElementById('iptv-adult-url-input').value.trim();
     const msg = document.getElementById('adult-msg');
     
     if (!pin || pin.length !== 4 || isNaN(pin)) {
@@ -597,10 +597,19 @@ function loadAdultConfigUI() {
 }
 
 function promptAdultPin() {
-    if (!adultUrl) {
+    // Force la relecture de la mémoire locale au moment du clic
+    const savedUrl = localStorage.getItem('chapdolo_adult_url') || adultUrl;
+    const savedPin = localStorage.getItem('chapdolo_pin') || adultPin;
+    
+    if (!savedUrl) {
         alert("Aucune source adulte configurée. L'administrateur doit d'abord l'ajouter.");
         return;
     }
+    
+    // Synchronisation des variables
+    adultUrl = savedUrl;
+    adultPin = savedPin;
+    
     document.getElementById('pin-entry').value = '';
     document.getElementById('pin-error').innerText = '';
     document.getElementById('pin-modal').classList.remove('hidden');
@@ -613,7 +622,9 @@ function closePinModal() {
 
 function verifyAdultPin() {
     const enteredPin = document.getElementById('pin-entry').value;
-    if (enteredPin === adultPin) {
+    const savedPin = localStorage.getItem('chapdolo_pin') || adultPin;
+    
+    if (enteredPin === savedPin) {
         closePinModal();
         document.getElementById('iptv-title').innerText = "🔒 TV Adulte";
         document.getElementById('iptv-container').classList.add('adult-mode');
