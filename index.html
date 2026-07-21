@@ -176,6 +176,7 @@ button:focus, a:focus, select:focus { transform: scale(1.05); background-color: 
               <button class="btn-secondary" tabindex="0" onclick="document.getElementById('iptv-search').focus()">🔍 Lancer la recherche</button>
               <input type="text" id="iptv-search" tabindex="-1" placeholder="🔍 Rechercher une chaîne..." style="width: 300px; margin: 0;" oninput="filterChannels()">
               <button id="fav-toggle-btn" class="btn-auto" tabindex="0" onclick="toggleShowFavorites()">⭐ Voir les favoris</button>
+              <button id="recent-toggle-btn" class="btn-auto" tabindex="0" onclick="toggleShowRecents()">⏱ Vues récemment</button>
            </div>
            <div style="margin-bottom: 15px;">
               <select id="iptv-category-filter" onchange="filterChannels()" style="padding: 12px 15px; border-radius: 6px; border: 1px solid #333; background: #1a1a1a; color: white; font-size: 14px; width: 100%; max-width: 300px; cursor: pointer;">
@@ -206,6 +207,8 @@ let globalChannels = [];
 let searchTimeout;
 let favorites = JSON.parse(localStorage.getItem('chapdolo_favorites')) || [];
 let showFavsOnly = false;
+let recents = JSON.parse(localStorage.getItem('chapdolo_recents')) || [];
+let showRecentsOnly = false;
 
 function isFavorite(url) { return favorites.some(f => f.url === url); }
 
@@ -220,6 +223,9 @@ function toggleFavorite(ch) {
 
 function toggleShowFavorites() {
     showFavsOnly = !showFavsOnly;
+    showRecentsOnly = false; // Désactive l'autre filtre
+    document.getElementById('recent-toggle-btn').innerText = "⏱ Vues récemment";
+    
     const btn = document.getElementById('fav-toggle-btn');
     if(showFavsOnly) {
         btn.innerText = "📺 Toutes les chaînes";
@@ -227,6 +233,30 @@ function toggleShowFavorites() {
         renderChannels(favorites);
     } else {
         btn.innerText = "⭐ Voir les favoris";
+        filterChannels(); 
+    }
+}
+
+function addRecent(ch) {
+    // Retire si déjà présent pour le remettre en haut
+    recents = recents.filter(r => r.url !== ch.url);
+    recents.unshift(ch); // Ajoute au début
+    if (recents.length > 10) recents = recents.slice(0, 10); // Garde les 10 derniers
+    localStorage.setItem('chapdolo_recents', JSON.stringify(recents));
+}
+
+function toggleShowRecents() {
+    showRecentsOnly = !showRecentsOnly;
+    showFavsOnly = false; // Désactive l'autre filtre
+    document.getElementById('fav-toggle-btn').innerText = "⭐ Voir les favoris";
+    
+    const btn = document.getElementById('recent-toggle-btn');
+    if(showRecentsOnly) {
+        btn.innerText = "📺 Toutes les chaînes";
+        document.getElementById('iptv-category-filter').value = 'all';
+        renderChannels(recents);
+    } else {
+        btn.innerText = "⏱ Vues récemment";
         filterChannels(); 
     }
 }
@@ -387,6 +417,11 @@ function renderChannels(channelsToRender) {
         return;
     }
 
+    if (showRecentsOnly && recents.length === 0) {
+        channelList.innerHTML = '<p style="color:#888;">Aucun historique pour le moment. Lancez une chaîne pour la voir apparaître ici !</p>';
+        return;
+    }
+
     const limit = Math.min(channelsToRender.length, 50); 
     
     for (let i = 0; i < limit; i++) { 
@@ -454,6 +489,10 @@ function playChannel(url, name) {
     document.getElementById('back-main-btn').classList.remove('hidden'); 
     document.getElementById('player-title').innerText = name; 
     
+    // Ajout à l'historique
+    const chData = globalChannels.find(c => c.url === url) || { name: name, url: url, group: 'Non classé' };
+    addRecent(chData);
+
     document.body.classList.add('app-fullscreen');
     const exitBtn = document.getElementById('exit-fullscreen-btn');
     exitBtn.classList.remove('hidden');
