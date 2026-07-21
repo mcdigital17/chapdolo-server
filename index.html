@@ -106,6 +106,21 @@ button:focus, a:focus, select:focus { transform: scale(1.05); background-color: 
     align-items: center; justify-content: center; z-index: 5; text-align: center;
 }
 #video-error-overlay p { color: #ff4d4d; font-size: 24px; font-weight: bold; margin-bottom: 20px; text-shadow: 0 2px 4px black; }
+
+/* --- LECTEUR VIDÉO PERSONNALISÉ --- */
+#custom-player-controls {
+    position: absolute; bottom: 0; left: 0; width: 100%; height: 100%;
+    display: flex; align-items: flex-end; justify-content: center; padding-bottom: 40px;
+    background: linear-gradient(to top, rgba(0,0,0,0.7), transparent 60%);
+    opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 4;
+}
+#custom-player-controls.active { opacity: 1; pointer-events: auto; }
+.player-btn {
+    background: rgba(0, 0, 0, 0.6); color: white; border: 2px solid #00E5FF;
+    padding: 15px 30px; border-radius: 50px; font-size: 20px; cursor: pointer;
+    margin: 0 15px; transition: all 0.2s; display: flex; align-items: center; gap: 10px;
+}
+.player-btn:focus { background: #00E5FF; color: black; transform: scale(1.1); outline: none; }
 </style>
 </head>
 <body>
@@ -207,10 +222,17 @@ button:focus, a:focus, select:focus { transform: scale(1.05); background-color: 
      <button id="exit-fullscreen-btn" class="hidden" onclick="backToMain()">✕ Quitter</button>
      <h2 id="player-title" style="color: white; text-align: center; margin-top:0; font-size:28px;">Lecture TV</h2>
      <div class="tv-player-container" style="display:block; margin-top:0;">
-        <video id="tv-player" controls autoplay></video>
+        <video id="tv-player" autoplay></video>
+        
         <div id="video-error-overlay">
             <p>⚠️ Erreur de lecture<br>Le flux est peut-être hors-ligne.</p>
             <button class="btn-primary" onclick="backToMain()">Retour au menu</button>
+        </div>
+
+        <div id="custom-player-controls">
+            <button id="player-pause-btn" class="player-btn" onclick="togglePlayPause()" tabindex="0">⏸ Pause</button>
+            <button class="player-btn" onclick="reloadChannel()" tabindex="0">🔄 Recharger</button>
+            <button class="player-btn" onclick="backToMain()" tabindex="0">✕ Quitter</button>
         </div>
      </div>
   </div>
@@ -228,6 +250,9 @@ let showFavsOnly = false;
 let recents = JSON.parse(localStorage.getItem('chapdolo_recents')) || [];
 let showRecentsOnly = false;
 let videoLoadTimeout;
+let currentChannelUrl = '';
+let currentChannelName = '';
+let playerControlTimeout;
 
 function isFavorite(url) { return favorites.some(f => f.url === url); }
 
@@ -288,7 +313,7 @@ function setupSpatialNavigation() {
         const arrows = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
         if (!arrows.includes(e.key)) return;
         
-        e.preventDefault(); // Bloque le scroll natif de la page qui bloque l'écran
+        e.preventDefault();
         
         const buttons = Array.from(this.querySelectorAll('button'));
         if (buttons.length === 0) return;
@@ -330,7 +355,6 @@ function setupSpatialNavigation() {
             }
         }
         
-        // Gestion des bords (passage à la ligne ou retour en haut)
         if (bestIdx === index) {
             if (e.key === 'ArrowRight') {
                 const nextRowBtn = buttons.find(b => b.getBoundingClientRect().top > currentRect.top + 2);
@@ -339,7 +363,6 @@ function setupSpatialNavigation() {
                 const prevRowBtns = buttons.filter(b => b.getBoundingClientRect().bottom < currentRect.bottom - 2);
                 if (prevRowBtns.length > 0) bestIdx = buttons.indexOf(prevRowBtns[prevRowBtns.length - 1]);
             } else if (e.key === 'ArrowUp') {
-                // Remonter vers la barre de filtre pour ne pas bloquer
                 document.getElementById('iptv-category-filter').focus();
                 return;
             }
@@ -347,8 +370,6 @@ function setupSpatialNavigation() {
         
         if (bestIdx !== index) {
             buttons[bestIdx].focus();
-            
-            // Scroll manuel sécurisé pour les TV
             const container = this;
             const elRect = buttons[bestIdx].getBoundingClientRect();
             const contRect = container.getBoundingClientRect();
@@ -361,7 +382,6 @@ function setupSpatialNavigation() {
         }
     });
 
-    // Permettre de redescendre dans la liste depuis la barre du haut
     topNavElements.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
@@ -375,6 +395,65 @@ function setupSpatialNavigation() {
         }
     });
 }
+
+// --- LECTEUR VIDÉO TV ---
+function showPlayerControls() {
+    const controls = document.getElementById('custom-player-controls');
+    controls.classList.add('active');
+    clearTimeout(playerControlTimeout);
+    
+    // Cache les contrôles après 4 secondes si la vidéo joue
+    playerControlTimeout = setTimeout(() => {
+        const video = document.getElementById('tv-player');
+        if (!video.paused) {
+            controls.classList.remove('active');
+        }
+    }, 4000);
+}
+
+function hidePlayerControls() {
+    document.getElementById('custom-player-controls').classList.remove('active');
+}
+
+function togglePlayPause() {
+    const video = document.getElementById('tv-player');
+    const btn = document.getElementById('player-pause-btn');
+    if (video.paused) {
+        video.play();
+        btn.innerText = "⏸ Pause";
+    } else {
+        video.pause();
+        btn.innerText = "▶ Lecture";
+    }
+    showPlayerControls();
+}
+
+function reloadChannel() {
+    showPlayerControls();
+    if (currentChannelUrl) {
+        playChannel(currentChannelUrl, currentChannelName, true);
+    }
+}
+
+// Interception des touches du lecteur
+document.addEventListener('keydown', function(e) {
+    const playerSection = document.getElementById('player-section');
+    if (playerSection.classList.contains('hidden')) return; // Actif seulement sur le lecteur
+
+    const activeKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter'];
+    if (activeKeys.includes(e.key)) {
+        e.preventDefault();
+        showPlayerControls();
+        
+        // Si on appuie sur OK (Enter) et qu'on n'est pas sur un bouton, on met en pause
+        if (e.key === 'Enter') {
+            const focused = document.activeElement;
+            if (!focused.classList.contains('player-btn')) {
+                togglePlayPause();
+            }
+        }
+    }
+});
 
 // Initialiser la navigation quand la page est prête
 document.addEventListener('DOMContentLoaded', setupSpatialNavigation);
@@ -562,22 +641,19 @@ function renderChannels(channelsToRender) {
         btn.style.borderRadius = '6px 0 0 6px';
         btn.onclick = () => playChannel(ch.url, ch.name); 
 
-        // Numéro de chaîne
         const numSpan = document.createElement('span');
         numSpan.className = 'ch-num';
         numSpan.innerText = (i + 1);
         btn.appendChild(numSpan);
 
-        // Logo de la chaîne (s'il existe)
         if (ch.logo) {
             const img = document.createElement('img');
             img.className = 'ch-logo';
             img.src = ch.logo;
-            img.onerror = () => img.style.display = 'none'; // Masque si l'image est cassée
+            img.onerror = () => img.style.display = 'none';
             btn.appendChild(img);
         }
 
-        // Nom de la chaîne
         const nameSpan = document.createElement('span');
         nameSpan.className = 'ch-name';
         nameSpan.innerText = ch.name;
@@ -625,10 +701,11 @@ function renderChannels(channelsToRender) {
 
 function showVideoError() {
     clearTimeout(videoLoadTimeout);
+    hidePlayerControls();
     document.getElementById('video-error-overlay').style.display = 'flex';
 }
 
-function playChannel(url, name) { 
+function playChannel(url, name, isReload = false) { 
     const video = document.getElementById('tv-player'); 
     const errorOverlay = document.getElementById('video-error-overlay');
     errorOverlay.style.display = 'none'; 
@@ -640,8 +717,13 @@ function playChannel(url, name) {
     document.getElementById('back-main-btn').classList.remove('hidden'); 
     document.getElementById('player-title').innerText = name; 
     
+    currentChannelUrl = url;
+    currentChannelName = name;
+    
     const chData = globalChannels.find(c => c.url === url) || { name: name, url: url, group: 'Non classé', logo: '' };
-    addRecent(chData);
+    if (!isReload) {
+        addRecent(chData);
+    }
 
     document.body.classList.add('app-fullscreen');
     const exitBtn = document.getElementById('exit-fullscreen-btn');
@@ -657,6 +739,9 @@ function playChannel(url, name) {
             video.pause();
         }
     }, 15000);
+
+    // Afficher les contrôles au lancement
+    showPlayerControls();
 
     if (Hls.isSupported()) { 
         if (hlsInstance) hlsInstance.destroy(); 
@@ -690,6 +775,8 @@ function playChannel(url, name) {
 
 function backToMain() { 
     clearTimeout(videoLoadTimeout);
+    clearTimeout(playerControlTimeout);
+    hidePlayerControls();
     document.getElementById('video-error-overlay').style.display = 'none';
     document.body.classList.remove('app-fullscreen');
     document.getElementById('exit-fullscreen-btn').classList.add('hidden');
