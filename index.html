@@ -279,6 +279,59 @@ function toggleShowRecents() {
     }
 }
 
+// --- NAVIGATION SPATIALE TV (HAUT/BAS/GAUCHE/DROITE) ---
+document.getElementById('iptv-channels').addEventListener('keydown', function(e) {
+    const arrows = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
+    if (!arrows.includes(e.key)) return;
+    
+    e.preventDefault(); // Bloque le comportement par défaut (qui bug sur TV)
+    
+    const buttons = Array.from(this.querySelectorAll('.iptv-btn'));
+    if (buttons.length === 0) return;
+    
+    const current = document.activeElement;
+    let index = buttons.indexOf(current);
+    if (index === -1) {
+        buttons[0].focus();
+        return;
+    }
+    
+    const currentRect = current.getBoundingClientRect();
+    let bestDiff = Infinity;
+    let bestIdx = index;
+    
+    for (let i = 0; i < buttons.length; i++) {
+        if (i === index) continue;
+        const rect = buttons[i].getBoundingClientRect();
+        let isCandidate = false;
+        let diff = 0;
+        
+        if (e.key === 'ArrowRight' && rect.left > currentRect.left) {
+            isCandidate = true;
+            diff = (rect.left - currentRect.left) + Math.abs(rect.top - currentRect.top) * 2; // Priorité au X
+        } else if (e.key === 'ArrowLeft' && rect.right < currentRect.right) {
+            isCandidate = true;
+            diff = (currentRect.right - rect.right) + Math.abs(rect.top - currentRect.top) * 2;
+        } else if (e.key === 'ArrowDown' && rect.top > currentRect.top) {
+            isCandidate = true;
+            diff = (rect.top - currentRect.top) + Math.abs(rect.left - currentRect.left) * 2; // Priorité au Y
+        } else if (e.key === 'ArrowUp' && rect.bottom < currentRect.bottom) {
+            isCandidate = true;
+            diff = (currentRect.bottom - rect.bottom) + Math.abs(rect.left - currentRect.left) * 2;
+        }
+        
+        if (isCandidate && diff < bestDiff) {
+            bestDiff = diff;
+            bestIdx = i;
+        }
+    }
+    
+    if (bestIdx !== index) {
+        buttons[bestIdx].focus();
+        buttons[bestIdx].scrollIntoView({ block: 'nearest' });
+    }
+});
+
 // Gérer le bouton retour de la télécommande
 window.addEventListener('popstate', function(event) {
     if (document.activeElement === document.getElementById('iptv-search')) {
@@ -540,7 +593,6 @@ function playChannel(url, name) {
     document.getElementById('back-main-btn').classList.remove('hidden'); 
     document.getElementById('player-title').innerText = name; 
     
-    // On récupère l'objet complet (avec le logo) pour l'historique
     const chData = globalChannels.find(c => c.url === url) || { name: name, url: url, group: 'Non classé', logo: '' };
     addRecent(chData);
 
