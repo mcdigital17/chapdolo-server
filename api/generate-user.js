@@ -13,14 +13,16 @@ export default async function handler(req, res) {
   try {
     const getResponse = await fetch(`${redisUrl}/get/users`, { headers: { 'Authorization': `Bearer ${redisToken}` } });
     const getData = await getResponse.json();
+    
     let users = {};
     if (getData.result) {
-      let rawResult = getData.result;
-      if (typeof rawResult === 'string' && rawResult.startsWith('"') && rawResult.endsWith('"')) {
-        rawResult = rawResult.substring(1, rawResult.length - 1);
+      let raw = getData.result;
+      if (typeof raw === 'string' && raw.startsWith('"') && raw.endsWith('"')) {
+        raw = raw.substring(1, raw.length - 1);
+        raw = raw.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
       }
       try {
-        const parsed = JSON.parse(rawResult || '{}');
+        const parsed = JSON.parse(raw || '{}');
         if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) users = parsed;
       } catch (e) { users = {}; }
     }
@@ -29,10 +31,12 @@ export default async function handler(req, res) {
 
     users[newUser] = { pass: newPass, blocked: false, active: false, lastPing: 0, sessionId: null, createdAt: new Date().toISOString() };
 
+    // EXACTEMENT LA MEME METHODE QUE L'IPTV
+    const usersString = JSON.stringify(users);
     await fetch(`${redisUrl}/set/users`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${redisToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify([JSON.stringify(users)])
+      body: JSON.stringify(usersString)
     });
     return res.status(200).json({ success: true });
   } catch (error) { return res.status(500).json({ success: false }); }
