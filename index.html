@@ -290,6 +290,8 @@ let searchTimeout;
 let favorites = JSON.parse(localStorage.getItem('chapdolo_favorites')) || [];
 let showFavsOnly = false;
 let recents = JSON.parse(localStorage.getItem('chapdolo_recents')) || [];
+let adultRecents = JSON.parse(localStorage.getItem('chapdolo_adult_recents')) || [];
+let isAdultMode = false;
 let showRecentsOnly = false;
 let videoLoadTimeout;
 let currentChannelUrl = '';
@@ -330,10 +332,19 @@ function toggleShowFavorites() {
 }
 
 function addRecent(ch) {
-    recents = recents.filter(r => r.url !== ch.url);
-    recents.unshift(ch);
-    if (recents.length > 10) recents = recents.slice(0, 10);
-    localStorage.setItem('chapdolo_recents', JSON.stringify(recents));
+    let targetRecents = isAdultMode ? adultRecents : recents;
+    let storageKey = isAdultMode ? 'chapdolo_adult_recents' : 'chapdolo_recents';
+    
+    targetRecents = targetRecents.filter(r => r.url !== ch.url);
+    targetRecents.unshift(ch);
+    if (targetRecents.length > 10) targetRecents = targetRecents.slice(0, 10);
+    
+    if (isAdultMode) {
+        adultRecents = targetRecents;
+    } else {
+        recents = targetRecents;
+    }
+    localStorage.setItem(storageKey, JSON.stringify(targetRecents));
 }
 
 function toggleShowRecents() {
@@ -342,10 +353,12 @@ function toggleShowRecents() {
     document.getElementById('fav-toggle-btn').innerText = "⭐ Voir les favoris";
     
     const btn = document.getElementById('recent-toggle-btn');
+    const currentRecents = isAdultMode ? adultRecents : recents;
+    
     if(showRecentsOnly) {
         btn.innerText = "📺 Toutes les chaînes";
         document.getElementById('iptv-category-filter').value = 'all';
-        renderChannels(recents);
+        renderChannels(currentRecents);
     } else {
         btn.innerText = "⏱ Vues récemment";
         filterChannels(); 
@@ -629,6 +642,7 @@ function verifyAdultPin() {
     const enteredPin = document.getElementById('pin-entry').value;
     if (enteredPin === adultPin) {
         closePinModal();
+        isAdultMode = true;
         document.getElementById('iptv-title').innerText = "🔒 TV Adulte";
         document.getElementById('iptv-container').classList.add('adult-mode');
         document.getElementById('iptv-status-msg').style.display = 'block';
@@ -716,6 +730,7 @@ async function loadSavedIPTVUrl() {
 async function saveAndLoadIPTV() { const url = document.getElementById('iptv-url-input').value; const msg = document.getElementById('iptv-msg'); if (!url) { msg.style.color='#ff4d4d'; msg.innerText='Veuillez coller un lien !'; return; } msg.style.color = '#e6b800'; msg.innerText = 'Sauvegarde...'; try { const res = await fetch('/api/iptv-config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action: 'save', adminPassword: 'chapdel220605', iptvUrl: url}) }); const data = await res.json(); if(data.success) { msg.style.color = '#2ecc71'; msg.innerText = 'Sauvegardé ! Chargement...'; loadIPTVList(url); } else { msg.style.color = '#ff4d4d'; msg.innerText = 'Erreur de sauvegarde.'; } } catch(e) { msg.style.color = '#ff4d4d'; msg.innerText = 'Erreur réseau.'; } }
 
 async function loadSavedIPTVForUser() { 
+    isAdultMode = false;
     document.getElementById('iptv-title').innerText = "📺 TV Live (Sans Pub)";
     document.getElementById('iptv-container').classList.remove('adult-mode');
     try { 
@@ -829,7 +844,8 @@ function renderChannels(channelsToRender) {
         return;
     }
 
-    if (showRecentsOnly && recents.length === 0) {
+    const currentRecents = isAdultMode ? adultRecents : recents;
+    if (showRecentsOnly && currentRecents.length === 0) {
         channelList.innerHTML = '<p style="color:#888;">Aucun historique pour le moment. Lancez une chaîne pour la voir apparaître ici !</p>';
         return;
     }
