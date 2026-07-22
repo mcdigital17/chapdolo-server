@@ -27,7 +27,13 @@ export default async function handler(req, res) {
       if (typeof rawResult === 'string' && rawResult.startsWith('"') && rawResult.endsWith('"')) {
         rawResult = rawResult.substring(1, rawResult.length - 1);
       }
-      try { users = JSON.parse(rawResult || '{}'); } catch(e) { users = {}; }
+      try { 
+        const parsed = JSON.parse(rawResult || '{}'); 
+        // SÉCURITÉ : On s'assure que c'est bien un objet et pas du texte corrompu
+        if (typeof parsed === 'object' && parsed !== null) {
+          users = parsed;
+        }
+      } catch(e) { users = {}; }
     }
 
     return res.status(200).json({ success: true, users: users });
