@@ -27,14 +27,18 @@ export default async function handler(req, res) {
       if (typeof rawResult === 'string' && rawResult.startsWith('"') && rawResult.endsWith('"')) {
         rawResult = rawResult.substring(1, rawResult.length - 1);
       }
-      try { users = JSON.parse(rawResult || '{}'); } catch(e) { users = {}; }
+      try { 
+        const parsed = JSON.parse(rawResult || '{}'); 
+        if (typeof parsed === 'object' && parsed !== null) {
+          users = parsed;
+        }
+      } catch(e) { users = {}; }
     }
 
     if (users[newUser]) {
       return res.status(200).json({ success: false, message: 'Cet identifiant existe déjà' });
     }
 
-    // Création du nouvel utilisateur avec le nouveau format
     users[newUser] = {
       pass: newPass,
       blocked: false,
@@ -44,11 +48,16 @@ export default async function handler(req, res) {
       createdAt: new Date().toISOString()
     };
 
-    await fetch(`${redisUrl}/set/users`, {
+    const setResponse = await fetch(`${redisUrl}/set/users`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${redisToken}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(JSON.stringify(users))
     });
+    const setData = await setResponse.json();
+
+    if (setData.error) {
+      return res.status(500).json({ success: false, message: 'Erreur Redis: ' + setData.error });
+    }
 
     return res.status(200).json({ success: true });
 
