@@ -1,6 +1,8 @@
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
   
+  res.setHeader('Cache-Control', 'no-store');
+  
   let body;
   try {
     body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
@@ -26,27 +28,27 @@ export default async function handler(req, res) {
       if (typeof rawResult === 'string' && rawResult.startsWith('"') && rawResult.endsWith('"')) {
         rawResult = rawResult.substring(1, rawResult.length - 1);
       }
-      try { users = JSON.parse(rawResult || '{}'); } catch(e) { users = {}; }
+      try { 
+        const parsed = JSON.parse(rawResult || '{}'); 
+        if (typeof parsed === 'object' && parsed !== null) users = parsed;
+      } catch(e) { users = {}; }
     }
 
     const user = users[username];
     
-    // Si l'utilisateur existe, a le bon ticket de session, et qu'il n'a pas été déconnecté par l'admin
     if (user && typeof user === 'object' && user.sessionId === sessionId && !user.blocked) {
-      // On met à jour son dernier ping
       users[username].lastPing = Date.now();
       users[username].active = true;
       
       await fetch(`${redisUrl}/set/users`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${redisToken}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(JSON.stringify(users))
+        body: JSON.stringify([JSON.stringify(users)])
       });
       
       return res.status(200).json({ success: true, valid: true });
     }
 
-    // Si le ticket ne correspond pas (quelqu'un d'autre s'est connecté entre-temps)
     return res.status(200).json({ success: true, valid: false });
 
   } catch (error) {
