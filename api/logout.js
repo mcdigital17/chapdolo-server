@@ -5,16 +5,14 @@ export default async function handler(req, res) {
   try {
     body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
   } catch (e) {
-    return res.status(400).json({ success: false, message: 'Invalid JSON' });
+    return res.status(400).json({ success: false });
   }
 
   const { username } = body;
   const redisUrl = process.env.KV_REST_API_URL;
   const redisToken = process.env.KV_REST_API_TOKEN;
 
-  if (!redisUrl || !redisToken) {
-    return res.status(500).json({ success: false, message: 'Variables base de données manquantes sur Vercel' });
-  }
+  if (!redisUrl || !redisToken) return res.status(500).json({ success: false });
 
   try {
     const getResponse = await fetch(`${redisUrl}/get/users`, {
@@ -32,12 +30,12 @@ export default async function handler(req, res) {
     }
 
     if (users[username]) {
-      // Passer active à false
       if (typeof users[username] === 'object') {
         users[username].active = false;
+        users[username].sessionId = null;
+        users[username].lastPing = 0;
       } else {
-        // Convertir l'ancien format vers le nouveau
-        users[username] = { pass: users[username], blocked: false, active: false, createdAt: new Date().toISOString() };
+        users[username] = { pass: users[username], blocked: false, active: false, sessionId: null, lastPing: 0, createdAt: new Date().toISOString() };
       }
 
       await fetch(`${redisUrl}/set/users`, {
@@ -48,8 +46,7 @@ export default async function handler(req, res) {
     }
 
     return res.status(200).json({ success: true });
-
   } catch (error) {
-    return res.status(500).json({ success: false, message: 'Erreur serveur' });
+    return res.status(500).json({ success: false });
   }
 }
