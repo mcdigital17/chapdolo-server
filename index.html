@@ -670,12 +670,43 @@ window.addEventListener('popstate', function(event) {
 
 document.addEventListener('DOMContentLoaded', (event) => {
     const savedUser = localStorage.getItem('chapdolo_user');
-    if (savedUser) {
+    const savedSession = localStorage.getItem('chapdolo_session');
+    if (savedUser && savedSession) {
         currentLoggedUser = savedUser;
+        startHeartbeat(); // Va vérifier si la session est toujours valide
         showApp();
     }
 });
+let heartbeatInterval;
 
+async function startHeartbeat() {
+    clearInterval(heartbeatInterval);
+    await sendPing(); // Envoie un ping immédiat au démarrage
+    
+    // Ensuite, envoie un ping toutes les 1 minute (60000 ms)
+    heartbeatInterval = setInterval(sendPing, 60000); 
+}
+
+async function sendPing() {
+    const u = localStorage.getItem('chapdolo_user');
+    const s = localStorage.getItem('chapdolo_session');
+    if(!u || !s) return;
+    
+    try {
+        const r = await fetch('/api/ping', { 
+            method:'POST', 
+            headers:{'Content-Type':'application/json'}, 
+            body:JSON.stringify({username:u, sessionId:s}) 
+        });
+        const d = await r.json();
+        
+        // Si le serveur dit que la session n'est plus valide (quelqu'un d'autre s'est connecté)
+        if(!d.valid) {
+            alert('Votre session a expiré ou vous avez été connecté sur un autre appareil.');
+            logout();
+        }
+    } catch(e) {} // Erreur réseau ignorée pour ne pas bloquer l'app
+}
 document.getElementById('main-logo').addEventListener('click', function() {
     let count = parseInt(this.dataset.clicks || 0); count++; this.dataset.clicks = count;
     clearTimeout(window.logoClickTimer);
@@ -686,10 +717,9 @@ document.getElementById('main-logo').addEventListener('click', function() {
 function verifyAdmin() { if (document.getElementById('admin-pass-modal').value === 'chapdel220605') { document.getElementById('admin-modal').classList.add('hidden'); document.getElementById('login-screen').classList.add('hidden'); document.getElementById('admin-screen').classList.remove('hidden'); document.getElementById('admin-pass-modal').value = ''; loadUsers(); loadSavedIPTVUrl(); } else { alert('Mot de passe incorrect !'); } }
 function closeAdminModal() { document.getElementById('admin-modal').classList.add('hidden'); document.getElementById('admin-pass-modal').value = ''; }
 
-async function login() { const u = document.getElementById('login-user').value; const p = document.getElementById('login-pass').value; const e = document.getElementById('login-error'); e.style.color='#00E5FF'; e.innerText='Connexion...'; try { const r = await fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username:u,password:p}) }); const d = await r.json(); if(d.success){currentLoggedUser=u; localStorage.setItem('chapdolo_user', u); showApp();}else{e.style.color='#ff4d4d';e.innerText=d.message||'Erreur';} } catch(x){e.style.color='#ff4d4d';e.innerText='Réseau';} }
+async function login() { const u=document.getElementById('login-user').value; const p=document.getElementById('login-pass').value; const e=document.getElementById('login-error'); e.style.color='#00E5FF'; e.innerText='Connexion...'; try { const r=await fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username:u,password:p}) }); const d=await r.json(); if(d.success){currentLoggedUser=u; localStorage.setItem('chapdolo_user', u); localStorage.setItem('chapdolo_session', d.sessionId); startHeartbeat(); showApp();}else{e.style.color='#ff4d4d';e.innerText=d.message||'Erreur';} } catch(x){e.style.color='#ff4d4d';e.innerText='Réseau';} }
 
-async function logout() { if(currentLoggedUser){try{await fetch('/api/logout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:currentLoggedUser})});}catch(e){} currentLoggedUser='';} localStorage.removeItem('chapdolo_user'); document.getElementById('app-screen').classList.add('hidden'); document.getElementById('admin-screen').classList.add('hidden'); document.getElementById('login-screen').classList.remove('hidden'); document.getElementById('login-user').value=''; document.getElementById('login-pass').value=''; document.getElementById('login-error').innerText=''; backToMain(); }
-
+async function logout() { if(currentLoggedUser){try{await fetch('/api/logout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:currentLoggedUser})});}catch(e){} currentLoggedUser='';} clearInterval(heartbeatInterval); localStorage.removeItem('chapdolo_user'); localStorage.removeItem('chapdolo_session'); document.getElementById('app-screen').classList.add('hidden'); document.getElementById('admin-screen').classList.add('hidden'); document.getElementById('login-screen').classList.remove('hidden'); document.getElementById('login-user').value=''; document.getElementById('login-pass').value=''; document.getElementById('login-error').innerText=''; backToMain(); }
 function autoGenerate() { const c="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"; let p=""; for(let i=0;i<8;i++) p+=c.charAt(Math.floor(Math.random()*c.length)); document.getElementById('new-password').value=p; }
 
 async function generateUser() { const u=document.getElementById('new-username').value; const p=document.getElementById('new-password').value; const m=document.getElementById('admin-message'); m.style.color='#00E5FF';m.innerText='Création...'; if(!u||!p){m.style.color='#ff4d4d';m.innerText='Remplissez tout.';return;} try { const r=await fetch('/api/generate-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminPassword:'chapdel220605',newUser:u,newPass:p})}); const d=await r.json(); if(d.success){m.style.color='#2ecc71';m.innerText='SUCCÈS !';document.getElementById('new-username').value='';document.getElementById('new-password').value='';loadUsers();}else{m.style.color='#ff4d4d';m.innerText=d.message||'Erreur';} } catch(e){m.style.color='#ff4d4d';m.innerText='Critique';} }
