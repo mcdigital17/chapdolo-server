@@ -299,6 +299,7 @@ let currentChannelName = '';
 let playerControlTimeout;
 let zapSequence = '';
 let zapTimeout;
+let heartbeatInterval;
 
 // Variables Contrôle Parental (Synchronisées via le serveur)
 let adultPin = '';
@@ -365,7 +366,7 @@ function toggleShowRecents() {
     }
 }
 
-// --- NAVIGATION SPATIALE TV ROBUSTE ---
+// --- NAVIGATION SPATIALE TV (VERSION 2 - ULTRA FLUIDE) ---
 function setupSpatialNavigation() {
     const channelContainer = document.getElementById('iptv-channels');
     const topNavElements = ['iptv-search', 'iptv-category-filter', 'fav-toggle-btn', 'recent-toggle-btn'];
@@ -374,7 +375,7 @@ function setupSpatialNavigation() {
         const arrows = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
         if (!arrows.includes(e.key)) return;
         
-        e.preventDefault();
+        e.preventDefault(); // Bloque le scroll natif de la TV qui bug
         
         const buttons = Array.from(this.querySelectorAll('button'));
         if (buttons.length === 0) return;
@@ -387,35 +388,47 @@ function setupSpatialNavigation() {
         }
         
         const currentRect = current.getBoundingClientRect();
-        let bestDiff = Infinity;
+        const currentCenterX = currentRect.left + (currentRect.width / 2);
+        
         let bestIdx = index;
+        let bestScore = Infinity;
         
         for (let i = 0; i < buttons.length; i++) {
             if (i === index) continue;
             const rect = buttons[i].getBoundingClientRect();
             let isCandidate = false;
-            let diff = 0;
+            let primaryDiff = 0; // Différence principale (Y pour haut/bas, X pour gauche/droite)
+            let secondaryDiff = 0; // Différence secondaire (X pour haut/bas, Y pour gauche/droite)
             
-            if (e.key === 'ArrowRight' && rect.left > currentRect.left + 2) {
+            if (e.key === 'ArrowDown' && rect.top > currentRect.top + 2) {
                 isCandidate = true;
-                diff = (rect.left - currentRect.left) + Math.abs(rect.top - currentRect.top) * 5;
-            } else if (e.key === 'ArrowLeft' && rect.right < currentRect.right - 2) {
-                isCandidate = true;
-                diff = (currentRect.right - rect.right) + Math.abs(rect.top - currentRect.top) * 5;
-            } else if (e.key === 'ArrowDown' && rect.top > currentRect.top + 2) {
-                isCandidate = true;
-                diff = (rect.top - currentRect.top) + Math.abs(rect.left - currentRect.left) * 5;
+                primaryDiff = rect.top - currentRect.top;
+                secondaryDiff = Math.abs((rect.left + rect.width / 2) - currentCenterX);
             } else if (e.key === 'ArrowUp' && rect.bottom < currentRect.bottom - 2) {
                 isCandidate = true;
-                diff = (currentRect.bottom - rect.bottom) + Math.abs(rect.left - currentRect.left) * 5;
+                primaryDiff = currentRect.top - rect.top;
+                secondaryDiff = Math.abs((rect.left + rect.width / 2) - currentCenterX);
+            } else if (e.key === 'ArrowRight' && rect.left > currentRect.left + 2) {
+                isCandidate = true;
+                primaryDiff = rect.left - currentRect.left;
+                secondaryDiff = Math.abs(rect.top - currentRect.top);
+            } else if (e.key === 'ArrowLeft' && rect.right < currentRect.right - 2) {
+                isCandidate = true;
+                primaryDiff = currentRect.left - rect.left;
+                secondaryDiff = Math.abs(rect.top - currentRect.top);
             }
             
-            if (isCandidate && diff < bestDiff) {
-                bestDiff = diff;
-                bestIdx = i;
+            if (isCandidate) {
+                // Le score privilégie fortement la ligne/colonne directe
+                const score = primaryDiff + (secondaryDiff * 3);
+                if (score < bestScore) {
+                    bestScore = score;
+                    bestIdx = i;
+                }
             }
         }
         
+        // Gestion des bords (passage à la ligne ou retour en haut)
         if (bestIdx === index) {
             if (e.key === 'ArrowRight') {
                 const nextRowBtn = buttons.find(b => b.getBoundingClientRect().top > currentRect.top + 2);
@@ -431,18 +444,12 @@ function setupSpatialNavigation() {
         
         if (bestIdx !== index) {
             buttons[bestIdx].focus();
-            const container = this;
-            const elRect = buttons[bestIdx].getBoundingClientRect();
-            const contRect = container.getBoundingClientRect();
-            
-            if (elRect.top < contRect.top) {
-                container.scrollTop -= (contRect.top - elRect.top + 10);
-            } else if (elRect.bottom > contRect.bottom) {
-                container.scrollTop += (elRect.bottom - contRect.bottom + 10);
-            }
+            // Scroll natif fluide sécurisé pour TV
+            buttons[bestIdx].scrollIntoView({ block: 'nearest', inline: 'nearest' });
         }
     });
 
+    // Permettre de redescendre dans la liste depuis la barre du haut
     topNavElements.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
@@ -677,12 +684,10 @@ document.addEventListener('DOMContentLoaded', (event) => {
         showApp();
     }
 });
-let heartbeatInterval;
 
 async function startHeartbeat() {
     clearInterval(heartbeatInterval);
     await sendPing(); // Envoie un ping immédiat au démarrage
-    
     // Ensuite, envoie un ping toutes les 1 minute (60000 ms)
     heartbeatInterval = setInterval(sendPing, 60000); 
 }
@@ -699,7 +704,6 @@ async function sendPing() {
             body:JSON.stringify({username:u, sessionId:s}) 
         });
         const d = await r.json();
-        
         // Si le serveur dit que la session n'est plus valide (quelqu'un d'autre s'est connecté)
         if(!d.valid) {
             alert('Votre session a expiré ou vous avez été connecté sur un autre appareil.');
@@ -707,6 +711,7 @@ async function sendPing() {
         }
     } catch(e) {} // Erreur réseau ignorée pour ne pas bloquer l'app
 }
+
 document.getElementById('main-logo').addEventListener('click', function() {
     let count = parseInt(this.dataset.clicks || 0); count++; this.dataset.clicks = count;
     clearTimeout(window.logoClickTimer);
@@ -720,6 +725,7 @@ function closeAdminModal() { document.getElementById('admin-modal').classList.ad
 async function login() { const u=document.getElementById('login-user').value; const p=document.getElementById('login-pass').value; const e=document.getElementById('login-error'); e.style.color='#00E5FF'; e.innerText='Connexion...'; try { const r=await fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username:u,password:p}) }); const d=await r.json(); if(d.success){currentLoggedUser=u; localStorage.setItem('chapdolo_user', u); localStorage.setItem('chapdolo_session', d.sessionId); startHeartbeat(); showApp();}else{e.style.color='#ff4d4d';e.innerText=d.message||'Erreur';} } catch(x){e.style.color='#ff4d4d';e.innerText='Réseau';} }
 
 async function logout() { if(currentLoggedUser){try{await fetch('/api/logout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:currentLoggedUser})});}catch(e){} currentLoggedUser='';} clearInterval(heartbeatInterval); localStorage.removeItem('chapdolo_user'); localStorage.removeItem('chapdolo_session'); document.getElementById('app-screen').classList.add('hidden'); document.getElementById('admin-screen').classList.add('hidden'); document.getElementById('login-screen').classList.remove('hidden'); document.getElementById('login-user').value=''; document.getElementById('login-pass').value=''; document.getElementById('login-error').innerText=''; backToMain(); }
+
 function autoGenerate() { const c="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"; let p=""; for(let i=0;i<8;i++) p+=c.charAt(Math.floor(Math.random()*c.length)); document.getElementById('new-password').value=p; }
 
 async function generateUser() { const u=document.getElementById('new-username').value; const p=document.getElementById('new-password').value; const m=document.getElementById('admin-message'); m.style.color='#00E5FF';m.innerText='Création...'; if(!u||!p){m.style.color='#ff4d4d';m.innerText='Remplissez tout.';return;} try { const r=await fetch('/api/generate-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminPassword:'chapdel220605',newUser:u,newPass:p})}); const d=await r.json(); if(d.success){m.style.color='#2ecc71';m.innerText='SUCCÈS !';document.getElementById('new-username').value='';document.getElementById('new-password').value='';loadUsers();}else{m.style.color='#ff4d4d';m.innerText=d.message||'Erreur';} } catch(e){m.style.color='#ff4d4d';m.innerText='Critique';} }
