@@ -27,14 +27,18 @@ export default async function handler(req, res) {
       if (typeof rawResult === 'string' && rawResult.startsWith('"') && rawResult.endsWith('"')) {
         rawResult = rawResult.substring(1, rawResult.length - 1);
       }
-      try { users = JSON.parse(rawResult || '{}'); } catch(e) { users = {}; }
+      try { 
+        const parsed = JSON.parse(rawResult || '{}'); 
+        if (typeof parsed === 'object' && parsed !== null) {
+          users = parsed;
+        }
+      } catch(e) { users = {}; }
     }
 
     if (!users[username]) {
       return res.status(200).json({ success: false, message: 'Utilisateur introuvable' });
     }
 
-    // Convertir l'ancien format vers le nouveau si nécessaire
     if (typeof users[username] === 'string') {
       users[username] = { pass: users[username], blocked: false, active: false, lastPing: 0, sessionId: null, createdAt: new Date().toISOString() };
     }
@@ -43,13 +47,13 @@ export default async function handler(req, res) {
       delete users[username];
     } else if (action === 'block') {
       users[username].blocked = true;
-      users[username].active = false; // Le bloquer le déconnecte instantanément
+      users[username].active = false;
       users[username].sessionId = null;
       users[username].lastPing = 0;
     } else if (action === 'unblock') {
       users[username].blocked = false;
     } else if (action === 'disconnect') {
-      users[username].active = false; // Force la déconnexion
+      users[username].active = false;
       users[username].sessionId = null;
       users[username].lastPing = 0;
     }
