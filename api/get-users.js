@@ -13,19 +13,17 @@ export default async function handler(req, res) {
   try {
     const getResponse = await fetch(`${redisUrl}/get/users`, { headers: { 'Authorization': `Bearer ${redisToken}` } });
     const getData = await getResponse.json();
+    
     let users = {};
     if (getData.result) {
-      let rawResult = getData.result;
-      if (typeof rawResult === 'string' && rawResult.startsWith('"') && rawResult.endsWith('"')) {
-        rawResult = rawResult.substring(1, rawResult.length - 1);
+      let raw = getData.result;
+      if (typeof raw === 'string' && raw.startsWith('"') && raw.endsWith('"')) {
+        raw = raw.substring(1, raw.length - 1);
+        raw = raw.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
       }
       try {
-        const parsed = JSON.parse(rawResult || '{}');
-        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-          users = parsed;
-        } else {
-          users = {}; // Nettoyage si c'est corrompu (un tableau ou autre)
-        }
+        const parsed = JSON.parse(raw || '{}');
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) users = parsed;
       } catch (e) { users = {}; }
     }
     return res.status(200).json({ success: true, users: users });
