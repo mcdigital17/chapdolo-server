@@ -17,7 +17,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 1. Récupérer tous les utilisateurs
     const getResponse = await fetch(`${redisUrl}/get/users`, {
       headers: { 'Authorization': `Bearer ${redisToken}` }
     });
@@ -32,39 +31,35 @@ export default async function handler(req, res) {
       try { users = JSON.parse(rawResult || '{}'); } catch(e) { users = {}; }
     }
 
-    // 2. Vérifier l'utilisateur
     const user = users[username];
-    if (!user) {
-      return res.status(200).json({ success: false, message: 'Identifiant introuvable' });
-    }
+    if (!user) return res.status(200).json({ success: false, message: 'Identifiant introuvable' });
 
-    // Gérer les anciens comptes (où l'utilisateur était juste une chaîne de caractères = mot de passe)
     const userPass = typeof user === 'string' ? user : user.pass;
     const isBlocked = typeof user === 'string' ? false : user.blocked;
     const isActive = typeof user === 'string' ? false : user.active;
+    const lastPing = typeof user === 'string' ? 0 : (user.lastPing || 0);
 
-    if (userPass !== password) {
-      return res.status(200).json({ success: false, message: 'Mot de passe incorrect' });
-    }
+    if (userPass !== password) return res.status(200).json({ success: false, message: 'Mot de passe incorrect' });
+    if (isBlocked) return res.status(200).json({ success: false, message: 'Compte bloqué par l\'administrateur' });
 
-    if (isBlocked) {
-      return res.status(200).json({ success: false, message: 'Compte bloqué par l\'administrateur' });
-    }
-
-    // 3. NOUVEAU : Vérifier si déjà connecté ailleurs
-    if (isActive) {
+    // NOUVEAU : Vérifie si l'utilisateur est actif ET qu'il a pingé dans les 2 dernières minutes
+    const twoMinutes = 2 * 60 * 1000;
+    if (isActive && (Date.now() - lastPing < twoMinutes)) {
       return res.status(200).json({ success: false, message: '⚠️ Ce compte est déjà connecté sur un autre appareil.' });
     }
 
-    // 4. Connecter l'utilisateur (Mettre active à true)
+    // Création du ticket de session
+    const sessionId = Date.now() + '_' + Math.random().toString(36).substring(2);
+
     users[username] = {
       pass: userPass,
       blocked: isBlocked,
       active: true,
+      lastPing: Date.now(),
+      sessionId: sessionId,
       createdAt: typeof user === 'string' ? new Date().toISOString() : user.createdAt
     };
 
-    // 5. Sauvegarder dans Redis
     const setResponse = await fetch(`${redisUrl}/set/users`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${redisToken}`, 'Content-Type': 'application/json' },
@@ -73,11 +68,10 @@ export default async function handler(req, res) {
     const setData = await setResponse.json();
 
     if (setData.result === 'OK') {
-      return res.status(200).json({ success: true, message: 'Connexion réussie' });
+      return res.status(200).json({ success: true, sessionId: sessionId });
     } else {
-      return res.status(500).json({ success: false, message: 'Erreur de sauvegarde de l\'état connecté' });
+      return res.status(500).json({ success: false, message: 'Erreur de sauvegarde' });
     }
-
   } catch (error) {
     return res.status(500).json({ success: false, message: 'Erreur serveur' });
   }
