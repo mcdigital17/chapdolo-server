@@ -1,25 +1,54 @@
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
-  let body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-  const { username } = body;
-  if (!username) return res.status(400).json({ error: 'Champs manquants' });
-
-  const url = process.env.KV_REST_API_URL;
-  const token = process.env.KV_REST_API_TOKEN;
+  
+  let body;
   try {
-    const getResponse = await fetch(`${url}/get/users`, { headers: { 'Authorization': `Bearer ${token}` } });
+    body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+  } catch (e) {
+    return res.status(400).json({ success: false, message: 'Invalid JSON' });
+  }
+
+  const { username } = body;
+  const redisUrl = process.env.KV_REST_API_URL;
+  const redisToken = process.env.KV_REST_API_TOKEN;
+
+  if (!redisUrl || !redisToken) {
+    return res.status(500).json({ success: false, message: 'Variables base de données manquantes sur Vercel' });
+  }
+
+  try {
+    const getResponse = await fetch(`${redisUrl}/get/users`, {
+      headers: { 'Authorization': `Bearer ${redisToken}` }
+    });
     const getData = await getResponse.json();
-    const users = getData.result ? JSON.parse(getData.result) : {};
+    
+    let users = {};
+    if (getData.result) {
+      let rawResult = getData.result;
+      if (typeof rawResult === 'string' && rawResult.startsWith('"') && rawResult.endsWith('"')) {
+        rawResult = rawResult.substring(1, rawResult.length - 1);
+      }
+      try { users = JSON.parse(rawResult || '{}'); } catch(e) { users = {}; }
+    }
 
     if (users[username]) {
-      users[username].active = false;
-      await fetch(`${url}/set/users`, {
+      // Passer active à false
+      if (typeof users[username] === 'object') {
+        users[username].active = false;
+      } else {
+        // Convertir l'ancien format vers le nouveau
+        users[username] = { pass: users[username], blocked: false, active: false, createdAt: new Date().toISOString() };
+      }
+
+      await fetch(`${redisUrl}/set/users`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(users)
+        headers: { 'Authorization': `Bearer ${redisToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(JSON.stringify(users))
       });
     }
+
     return res.status(200).json({ success: true });
+
   } catch (error) {
     return res.status(500).json({ success: false, message: 'Erreur serveur' });
   }
