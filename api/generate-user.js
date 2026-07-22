@@ -1,6 +1,8 @@
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
   
+  res.setHeader('Cache-Control', 'no-store'); // Empêche Vercel de mettre en cache
+
   let body;
   try {
     body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
@@ -29,9 +31,7 @@ export default async function handler(req, res) {
       }
       try { 
         const parsed = JSON.parse(rawResult || '{}'); 
-        if (typeof parsed === 'object' && parsed !== null) {
-          users = parsed;
-        }
+        if (typeof parsed === 'object' && parsed !== null) users = parsed;
       } catch(e) { users = {}; }
     }
 
@@ -48,10 +48,11 @@ export default async function handler(req, res) {
       createdAt: new Date().toISOString()
     };
 
+    // CORRECTION REDIS : Le body doit être un tableau contenant la chaîne JSON
     const setResponse = await fetch(`${redisUrl}/set/users`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${redisToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(JSON.stringify(users))
+      body: JSON.stringify([JSON.stringify(users)])
     });
     const setData = await setResponse.json();
 
