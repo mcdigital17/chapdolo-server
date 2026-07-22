@@ -13,12 +13,13 @@ export default async function handler(req, res) {
     const getData = await getResponse.json();
     let users = {};
     if (getData.result) {
-      let rawResult = getData.result;
-      if (typeof rawResult === 'string' && rawResult.startsWith('"') && rawResult.endsWith('"')) {
-        rawResult = rawResult.substring(1, rawResult.length - 1);
+      let raw = getData.result;
+      if (typeof raw === 'string' && raw.startsWith('"') && raw.endsWith('"')) {
+        raw = raw.substring(1, raw.length - 1);
+        raw = raw.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
       }
       try {
-        const parsed = JSON.parse(rawResult || '{}');
+        const parsed = JSON.parse(raw || '{}');
         if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) users = parsed;
       } catch (e) { users = {}; }
     }
@@ -42,10 +43,11 @@ export default async function handler(req, res) {
     const sessionId = Date.now() + '_' + Math.random().toString(36).substring(2);
     users[username] = { pass: userPass, blocked: isBlocked, active: true, lastPing: Date.now(), sessionId: sessionId, createdAt: typeof user === 'string' ? new Date().toISOString() : (user.createdAt || new Date().toISOString()) };
 
+    const usersString = JSON.stringify(users);
     await fetch(`${redisUrl}/set/users`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${redisToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify([JSON.stringify(users)])
+      body: JSON.stringify(usersString)
     });
     return res.status(200).json({ success: true, sessionId: sessionId });
   } catch (error) { return res.status(500).json({ success: false }); }
