@@ -1,6 +1,8 @@
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
   
+  res.setHeader('Cache-Control', 'no-store'); // Empêche Vercel de mettre en cache
+
   let body;
   try {
     body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
@@ -29,10 +31,7 @@ export default async function handler(req, res) {
       }
       try { 
         const parsed = JSON.parse(rawResult || '{}'); 
-        // SÉCURITÉ : On s'assure que c'est bien un objet et pas du texte corrompu
-        if (typeof parsed === 'object' && parsed !== null) {
-          users = parsed;
-        }
+        if (typeof parsed === 'object' && parsed !== null) users = parsed;
       } catch(e) { users = {}; }
     }
 
