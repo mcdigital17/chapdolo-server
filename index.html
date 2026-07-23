@@ -56,7 +56,7 @@ button:active { transform: scale(0.96); }
 .iptv-channels { display: grid; grid-template-columns: repeat(auto-fill, 280px); gap: 10px; justify-content: center; max-height: 450px; overflow-y: auto; padding: 10px; position: relative; }
 .channel-item { display: flex; margin: 0; padding: 0; }
 .iptv-btn { padding: 8px 12px; font-size: 14px; font-weight: 600; border: 1px solid #333; background: #1a1a1a; color: white; cursor: pointer; transition: background 0.1s, box-shadow 0.1s; display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; margin: 0; border-radius: 6px 0 0 6px; }
-.iptv-btn.fav-btn { flex: 0 0 50px; width: 50px; padding: 12px 10px; justify-content: center; border-radius: 0 6px 6px 0; border-left: none; }
+.iptv-btn.fav-btn { flex: 0 0 50px; width: 50px; padding: 12px 10px; justify-content: center; border-radius: 0 6px 6px 0; border-left: none; font-size: 16px; }
 .iptv-btn:hover { background: #00E5FF; border-color: #00E5FF; color: black; }
 .ch-num { color: #00E5FF; font-weight: bold; font-size: 12px; min-width: 20px; text-align: right; }
 .ch-logo { height: 24px; width: auto; max-width: 40px; object-fit: contain; border-radius: 3px; }
@@ -128,7 +128,7 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
 .player-btn {
     background: rgba(0, 0, 0, 0.6); color: white; border: 2px solid #00E5FF;
     padding: 15px 30px; border-radius: 50px; font-size: 20px; cursor: pointer;
-    margin: 0 15px; transition: all 0.2s; display: flex; align-items: center; gap: 10px;
+    margin: 0 10px; transition: all 0.2s; display: flex; align-items: center; gap: 10px;
 }
 .player-btn:focus { background: #00E5FF; color: black; box-shadow: 0 0 0 4px #00E5FF; outline: none; }
 
@@ -249,7 +249,7 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
            <div class="search-bar">
               <button class="btn-secondary" tabindex="0" onclick="document.getElementById('iptv-search').focus()">🔍 Lancer la recherche</button>
               <input type="text" id="iptv-search" tabindex="-1" placeholder="🔍 Rechercher une chaîne..." style="width: 300px; margin: 0;" oninput="filterChannels()">
-              <button id="fav-toggle-btn" class="btn-auto" tabindex="0" onclick="toggleShowFavorites()">⭐ Voir les favoris</button>
+              <button id="fav-toggle-btn" class="btn-auto" tabindex="0" onclick="toggleShowFavorites()">❤️ Voir les favoris</button>
               <button id="recent-toggle-btn" class="btn-auto" tabindex="0" onclick="toggleShowRecents()">⏱ Vues récemment</button>
            </div>
            <div style="margin-bottom: 15px;">
@@ -276,6 +276,7 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
 
         <div id="custom-player-controls">
             <button id="player-pause-btn" class="player-btn" onclick="togglePlayPause()" tabindex="0">⏸ Pause</button>
+            <button id="player-fav-btn" class="player-btn" onclick="toggleFavoriteFromPlayer()" tabindex="0">🤍 Favori</button>
             <button class="player-btn" onclick="reloadChannel()" tabindex="0">🔄 Recharger</button>
             <button class="player-btn" onclick="backToMain()" tabindex="0">✕ Quitter</button>
         </div>
@@ -332,7 +333,7 @@ function toggleShowFavorites() {
         document.getElementById('iptv-category-filter').value = 'all';
         renderChannels(favorites);
     } else {
-        btn.innerText = "⭐ Voir les favoris";
+        btn.innerText = "❤️ Voir les favoris";
         filterChannels(); 
     }
 }
@@ -356,7 +357,7 @@ function addRecent(ch) {
 function toggleShowRecents() {
     showRecentsOnly = !showRecentsOnly;
     showFavsOnly = false; 
-    document.getElementById('fav-toggle-btn').innerText = "⭐ Voir les favoris";
+    document.getElementById('fav-toggle-btn').innerText = "❤️ Voir les favoris";
     
     const btn = document.getElementById('recent-toggle-btn');
     const currentRecents = isAdultMode ? adultRecents : recents;
@@ -394,8 +395,8 @@ function setupSpatialNavigation() {
         e.preventDefault(); 
         
         const currentRect = current.getBoundingClientRect();
-        const ccx = currentRect.left + (currentRect.width / 2); // Centre X actuel
-        const ccy = currentRect.top + (currentRect.height / 2); // Centre Y actuel
+        const ccx = currentRect.left + (currentRect.width / 2); 
+        const ccy = currentRect.top + (currentRect.height / 2); 
         
         let bestIdx = -1;
         let bestScore = Infinity;
@@ -428,7 +429,6 @@ function setupSpatialNavigation() {
             }
             
             if (isCandidate) {
-                // L'alignement (secondaryDiff) est multiplié par 10 pour forcer le bouton le plus aligné
                 const score = (secondaryDiff * 10) + primaryDiff;
                 if (score < bestScore) {
                     bestScore = score;
@@ -437,7 +437,6 @@ function setupSpatialNavigation() {
             }
         }
         
-        // Gestion des bords
         if (bestIdx === -1) {
             if (e.key === 'ArrowUp') {
                 document.getElementById('iptv-category-filter').focus();
@@ -445,10 +444,8 @@ function setupSpatialNavigation() {
             return;
         }
         
-        // Déplacement immédiat
         buttons[bestIdx].focus();
         
-        // Scroll manuel précis et instantané
         const el = buttons[bestIdx];
         const elRect = el.getBoundingClientRect();
         const contRect = this.getBoundingClientRect();
@@ -478,6 +475,13 @@ function showPlayerControls() {
     const controls = document.getElementById('custom-player-controls');
     const wasActive = controls.classList.contains('active');
     controls.classList.add('active');
+    
+    // Met à jour l'icône du cœur dans le lecteur
+    const favBtn = document.getElementById('player-fav-btn');
+    if (favBtn) {
+        favBtn.innerHTML = isFavorite(currentChannelUrl) ? '❤️ Favori' : '🤍 Favori';
+    }
+    
     if (!wasActive) document.getElementById('player-pause-btn').focus();
     clearTimeout(playerControlTimeout);
     playerControlTimeout = setTimeout(() => {
@@ -493,6 +497,16 @@ function togglePlayPause() {
     const btn = document.getElementById('player-pause-btn');
     if (video.paused) { video.play(); btn.innerText = "⏸ Pause"; } 
     else { video.pause(); btn.innerText = "▶ Lecture"; }
+    showPlayerControls();
+}
+
+function toggleFavoriteFromPlayer() {
+    const chData = globalChannels.find(c => c.url === currentChannelUrl) || { name: currentChannelName, url: currentChannelUrl, group: 'Non classé', logo: '' };
+    toggleFavorite(chData);
+    const favBtn = document.getElementById('player-fav-btn');
+    if (favBtn) {
+        favBtn.innerHTML = isFavorite(currentChannelUrl) ? '❤️ Favori' : '🤍 Favori';
+    }
     showPlayerControls();
 }
 
@@ -775,7 +789,7 @@ function renderChannels(channelsToRender) {
     channelList.innerHTML = ''; 
     channelButtons = []; 
     
-    if (showFavsOnly && favorites.length === 0) { channelList.innerHTML = '<p style="color:#888;">Aucun favori pour le moment. Cliquez sur l\'étoile d\'une chaîne pour l\'ajouter !</p>'; return; }
+    if (showFavsOnly && favorites.length === 0) { channelList.innerHTML = '<p style="color:#888;">Aucun favori pour le moment. Cliquez sur le cœur d\'une chaîne pour l\'ajouter !</p>'; return; }
     const currentRecents = isAdultMode ? adultRecents : recents;
     if (showRecentsOnly && currentRecents.length === 0) { channelList.innerHTML = '<p style="color:#888;">Aucun historique pour le moment. Lancez une chaîne pour la voir apparaître ici !</p>'; return; }
 
@@ -812,15 +826,15 @@ function renderChannels(channelsToRender) {
         
         const favBtn = document.createElement('button');
         favBtn.className = 'iptv-btn fav-btn';
-        favBtn.innerHTML = isFavorite(ch.url) ? '⭐' : '☆';
-        favBtn.setAttribute('tabindex', '-1'); 
-        favBtn.style.background = isFavorite(ch.url) ? '#333' : '#1a1a1a';
+        favBtn.innerHTML = isFavorite(ch.url) ? '❤️' : '🤍';
+        favBtn.setAttribute('tabindex', '0'); // Rend le bouton focusable par la télécommande
+        favBtn.style.background = isFavorite(ch.url) ? '#2a0a0a' : '#1a1a1a';
         
         favBtn.onclick = (e) => {
             e.stopPropagation();
             toggleFavorite(ch);
-            favBtn.innerHTML = isFavorite(ch.url) ? '⭐' : '☆';
-            favBtn.style.background = isFavorite(ch.url) ? '#333' : '#1a1a1a';
+            favBtn.innerHTML = isFavorite(ch.url) ? '❤️' : '🤍';
+            favBtn.style.background = isFavorite(ch.url) ? '#2a0a0a' : '#1a1a1a';
             if (showFavsOnly) renderChannels(favorites);
         };
 
@@ -829,6 +843,7 @@ function renderChannels(channelsToRender) {
         channelList.appendChild(itemDiv); 
         
         channelButtons.push(btn); 
+        channelButtons.push(favBtn); // Ajoute le cœur à la navigation pour pouvoir y accéder
         
         if (i === 0 && document.activeElement !== document.getElementById('iptv-search')) { 
             setTimeout(() => btn.focus(), 100); 
