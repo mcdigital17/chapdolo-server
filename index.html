@@ -52,9 +52,9 @@ button:active { transform: scale(0.96); }
 .iptv-container.adult-mode { border-color: #ff4d4d; box-shadow: 0 0 15px rgba(255, 77, 77, 0.2); }
 .search-bar { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; }
 
-/* --- GRILLE IPTV OPTIMISÉE TV (Largeur fixe pour calcul mathématique) --- */
-.iptv-channels { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; max-height: 450px; overflow-y: auto; padding: 10px; position: relative; }
-.channel-item { display: flex; width: 280px; flex: 0 0 280px; margin: 0; padding: 0; }
+/* --- GRILLE IPTV OPTIMISÉE TV (Grille stricte pour empêcher le zigzag) --- */
+.iptv-channels { display: grid; grid-template-columns: repeat(auto-fill, 280px); gap: 10px; justify-content: center; max-height: 450px; overflow-y: auto; padding: 10px; position: relative; }
+.channel-item { display: flex; margin: 0; padding: 0; }
 .iptv-btn { padding: 8px 12px; font-size: 14px; font-weight: 600; border: 1px solid #333; background: #1a1a1a; color: white; cursor: pointer; transition: background 0.1s, box-shadow 0.1s; display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; margin: 0; border-radius: 6px 0 0 6px; }
 .iptv-btn.fav-btn { flex: 0 0 50px; width: 50px; padding: 12px 10px; justify-content: center; border-radius: 0 6px 6px 0; border-left: none; }
 .iptv-btn:hover { background: #00E5FF; border-color: #00E5FF; color: black; }
@@ -77,7 +77,7 @@ button:active { transform: scale(0.96); }
   button { padding: 10px 15px; font-size: 14px; margin: 5px; }
   .tv-player-container { width: 100%; height: auto; max-height: 70vh; }
   #tv-player { width: 100%; height: auto; object-fit: contain; }
-  .channel-item { width: 240px; flex: 0 0 240px; }
+  .iptv-channels { grid-template-columns: repeat(auto-fill, 240px); }
   .iptv-btn { font-size: 12px; padding: 6px 10px; }
   .ch-logo { height: 20px; max-width: 35px; }
   input, select { padding: 10px 15px; font-size: 14px; }
@@ -304,7 +304,7 @@ let playerControlTimeout;
 let zapSequence = '';
 let zapTimeout;
 let heartbeatInterval;
-let channelButtons = []; // Cache des boutons pour navigation ultra rapide
+let channelButtons = []; 
 
 // Variables Contrôle Parental (Synchronisées via le serveur)
 let adultPin = '';
@@ -371,7 +371,7 @@ function toggleShowRecents() {
     }
 }
 
-// --- NAVIGATION SPATIALE TV (VERSION 3 - MATHÉMATIQUE INSTANTANÉE) ---
+// --- NAVIGATION SPATIALE TV (VERSION 4 - COORDONNÉES RÉELLES) ---
 function setupSpatialNavigation() {
     const channelContainer = document.getElementById('iptv-channels');
     const topNavElements = ['iptv-search', 'iptv-category-filter', 'fav-toggle-btn', 'recent-toggle-btn'];
@@ -391,36 +391,65 @@ function setupSpatialNavigation() {
             return;
         }
         
-        e.preventDefault(); // Bloque le scroll natif
+        e.preventDefault(); 
         
-        // Calcul du nombre de colonnes exactes basé sur la largeur réelle
-        const containerWidth = this.clientWidth;
-        const wrapperWidth = buttons[0].parentElement.offsetWidth;
-        const itemTotalWidth = wrapperWidth + 10; // 10px de gap
-        const columns = Math.max(1, Math.floor(containerWidth / itemTotalWidth));
+        const currentRect = current.getBoundingClientRect();
+        const ccx = currentRect.left + (currentRect.width / 2); // Centre X actuel
+        const ccy = currentRect.top + (currentRect.height / 2); // Centre Y actuel
         
-        let newIndex = index;
-        if (e.key === 'ArrowRight') newIndex = index + 1;
-        else if (e.key === 'ArrowLeft') newIndex = index - 1;
-        else if (e.key === 'ArrowDown') newIndex = index + columns;
-        else if (e.key === 'ArrowUp') newIndex = index - columns;
+        let bestIdx = -1;
+        let bestScore = Infinity;
+        
+        for (let i = 0; i < buttons.length; i++) {
+            if (i === index) continue;
+            const rect = buttons[i].getBoundingClientRect();
+            const cx = rect.left + (rect.width / 2);
+            const cy = rect.top + (rect.height / 2);
+            let isCandidate = false;
+            let primaryDiff = 0; 
+            let secondaryDiff = 0; 
+            
+            if (e.key === 'ArrowDown' && rect.top > currentRect.top + 2) {
+                isCandidate = true;
+                primaryDiff = rect.top - currentRect.top;
+                secondaryDiff = Math.abs(cx - ccx);
+            } else if (e.key === 'ArrowUp' && rect.bottom < currentRect.bottom - 2) {
+                isCandidate = true;
+                primaryDiff = currentRect.top - rect.top;
+                secondaryDiff = Math.abs(cx - ccx);
+            } else if (e.key === 'ArrowRight' && rect.left > currentRect.left + 2) {
+                isCandidate = true;
+                primaryDiff = rect.left - currentRect.left;
+                secondaryDiff = Math.abs(cy - ccy);
+            } else if (e.key === 'ArrowLeft' && rect.right < currentRect.right - 2) {
+                isCandidate = true;
+                primaryDiff = currentRect.left - rect.left;
+                secondaryDiff = Math.abs(cy - ccy);
+            }
+            
+            if (isCandidate) {
+                // L'alignement (secondaryDiff) est multiplié par 10 pour forcer le bouton le plus aligné
+                const score = (secondaryDiff * 10) + primaryDiff;
+                if (score < bestScore) {
+                    bestScore = score;
+                    bestIdx = i;
+                }
+            }
+        }
         
         // Gestion des bords
-        if (newIndex < 0) {
+        if (bestIdx === -1) {
             if (e.key === 'ArrowUp') {
                 document.getElementById('iptv-category-filter').focus();
             }
             return;
         }
-        if (newIndex >= buttons.length) {
-            return; // Bloqué à la fin
-        }
         
-        // Déplacement instantané
-        buttons[newIndex].focus();
+        // Déplacement immédiat
+        buttons[bestIdx].focus();
         
-        // Scroll manuel précis et sans transition (instantané)
-        const el = buttons[newIndex];
+        // Scroll manuel précis et instantané
+        const el = buttons[bestIdx];
         const elRect = el.getBoundingClientRect();
         const contRect = this.getBoundingClientRect();
         
@@ -744,7 +773,7 @@ function renderChannels(channelsToRender) {
     currentChannelList = channelsToRender; 
     const channelList = document.getElementById('iptv-channels'); 
     channelList.innerHTML = ''; 
-    channelButtons = []; // Vide le cache des boutons
+    channelButtons = []; 
     
     if (showFavsOnly && favorites.length === 0) { channelList.innerHTML = '<p style="color:#888;">Aucun favori pour le moment. Cliquez sur l\'étoile d\'une chaîne pour l\'ajouter !</p>'; return; }
     const currentRecents = isAdultMode ? adultRecents : recents;
@@ -784,7 +813,7 @@ function renderChannels(channelsToRender) {
         const favBtn = document.createElement('button');
         favBtn.className = 'iptv-btn fav-btn';
         favBtn.innerHTML = isFavorite(ch.url) ? '⭐' : '☆';
-        favBtn.setAttribute('tabindex', '-1'); // La télécommande ignore ce bouton
+        favBtn.setAttribute('tabindex', '-1'); 
         favBtn.style.background = isFavorite(ch.url) ? '#333' : '#1a1a1a';
         
         favBtn.onclick = (e) => {
@@ -799,7 +828,7 @@ function renderChannels(channelsToRender) {
         itemDiv.appendChild(favBtn);
         channelList.appendChild(itemDiv); 
         
-        channelButtons.push(btn); // Ajoute le bouton principal au cache pour la navigation
+        channelButtons.push(btn); 
         
         if (i === 0 && document.activeElement !== document.getElementById('iptv-search')) { 
             setTimeout(() => btn.focus(), 100); 
