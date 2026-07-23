@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Chapdolo</title>
+
+<!-- LIGNES PWA AJOUTÉES ICI -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#00E5FF">
+<link rel="apple-touch-icon" href="/icon-192.png">
+
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
@@ -1003,6 +1009,19 @@ function backToMain() {
     document.getElementById('main-content').classList.remove('hidden'); 
     document.getElementById('back-main-btn').classList.add('hidden'); 
 }
+</script>
+
+<!-- SCRIPT PWA AJOUTÉ ICI -->
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').then(registration => {
+        console.log('ServiceWorker enregistré avec succès');
+      }).catch(err => {
+        console.log('Erreur ServiceWorker: ', err);
+      });
+    });
+  }
 </script>
 </body>
 </html>
