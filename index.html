@@ -104,14 +104,17 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
 .iptv-btn:focus { background: #00E5FF !important; border-color: #00E5FF !important; color: black !important; box-shadow: 0 0 0 4px #00E5FF, 0 0 15px rgba(0, 229, 255, 0.8) !important; z-index: 5; position: relative; }
 .iptv-btn:focus .ch-num { color: black !important; }
 
-/* --- PLEIN ÉCRAN VIDÉO (100vh POUR PC) --- */
+/* --- PLEIN ÉCRAN VIDÉO ABSOLU (IGNORE LES MEDIA QUERIES) --- */
 .app-fullscreen #app-screen nav.nav-bar { display: none !important; }
 .app-fullscreen #player-section {
-    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-    padding: 0 !important; margin: 0 !important; z-index: 9999; background: black; animation: none;
+    position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important;
+    padding: 0 !important; margin: 0 !important; z-index: 9999 !important; background: black !important; animation: none !important;
 }
-.app-fullscreen .tv-player-container { max-width: 100%; width: 100vw; height: 100vh; border-radius: 0; box-shadow: none; display: block !important; aspect-ratio: auto; margin: 0 !important; }
-.app-fullscreen #tv-player { width: 100%; height: 100%; object-fit: contain; }
+.app-fullscreen .tv-player-container { 
+    max-width: 100% !important; width: 100vw !important; height: 100vh !important; max-height: 100vh !important;
+    border-radius: 0 !important; box-shadow: none !important; display: block !important; aspect-ratio: auto !important; margin: 0 !important;
+}
+.app-fullscreen #tv-player { width: 100% !important; height: 100% !important; max-height: 100vh !important; object-fit: contain !important; }
 .app-fullscreen #player-title { display: none; }
 #exit-fullscreen-btn {
     position: absolute; top: 20px; right: 20px; z-index: 10000;
@@ -120,18 +123,17 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
 }
 #exit-fullscreen-btn.hidden-btn { opacity: 0; pointer-events: none; }
 
-/* --- MODE SOURCE (GARDE LA BARRE NAV VISIBLE) --- */
+/* --- MODE SOURCE (BOUTON FLOTTANT AU-DESSUS DU SITE) --- */
 .site-active #main-content { display: none !important; }
 .site-active #site-iframe { 
-    position: fixed; 
-    top: 70px; /* Laisse de la place pour la barre de navigation */
-    left: 0; 
-    width: 100vw; 
-    height: calc(100vh - 70px); /* Prend tout le reste de l'écran */
-    z-index: 10; 
-    border: none; 
-    margin: 0; 
-    display: block !important;
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
+    z-index: 10; border: none; margin: 0; display: block !important; background: #000;
+}
+#exit-site-btn {
+    position: fixed; top: 20px; right: 20px; z-index: 10000;
+    background: rgba(0, 0, 0, 0.8); color: white; border: 2px solid #00E5FF;
+    padding: 10px 20px; border-radius: 8px; font-size: 16px; cursor: pointer; font-weight: 600;
+    box-shadow: 0 0 15px rgba(0, 229, 255, 0.5);
 }
 
 #video-error-overlay {
@@ -143,14 +145,10 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
 
 #custom-player-controls {
     position: absolute; bottom: 0; left: 0; width: 100%; height: 100%;
-    display: none; 
-    align-items: flex-end; justify-content: center; padding-bottom: 40px;
-    background: linear-gradient(to top, rgba(0,0,0,0.7), transparent 60%);
-    z-index: 4;
+    display: none; align-items: flex-end; justify-content: center; padding-bottom: 40px;
+    background: linear-gradient(to top, rgba(0,0,0,0.7), transparent 60%); z-index: 4;
 }
-#custom-player-controls.active { 
-    display: flex !important; 
-}
+#custom-player-controls.active { display: flex !important; }
 .player-btn {
     background: rgba(0, 0, 0, 0.6); color: white; border: 2px solid #00E5FF;
     padding: 15px 30px; border-radius: 50px; font-size: 20px; cursor: pointer;
@@ -204,18 +202,10 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
 
 <div id="admin-screen" class="section hidden">
   <h1 style="color:white; margin-bottom:30px;">Panneau Administrateur</h1>
-  
   <div class="stats-grid">
-     <div class="stat-card stat-total">
-        <h3>Total Utilisateurs</h3>
-        <p id="stat-total-users">0</p>
-     </div>
-     <div class="stat-card stat-online">
-        <h3>En Ligne</h3>
-        <p id="stat-online-users">0</p>
-     </div>
+     <div class="stat-card stat-total"><h3>Total Utilisateurs</h3><p id="stat-total-users">0</p></div>
+     <div class="stat-card stat-online"><h3>En Ligne</h3><p id="stat-online-users">0</p></div>
   </div>
-
   <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px;">
      <div style="background:#111; padding:25px; border-radius:12px; width: 320px; border:1px solid #222;">
         <h3 style="color:white;">Créer un accès</h3>
@@ -231,7 +221,6 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
         <div id="user-list" style="margin-top:10px; max-height: 400px; overflow-y: auto;"></div>
      </div>
   </div>
-
   <div style="margin-top: 30px; background:#111; padding:25px; border-radius:12px; max-width: 600px; margin-left: auto; margin-right: auto; border: 1px solid #00E5FF; box-shadow: 0 0 20px rgba(0,229,255,0.1);">
      <h3 style="color:#00E5FF;">📺 Source IPTV (TV Live)</h3>
      <p style="color:#888; font-size:14px;">Collez le lien m3u8 d'une source IPTV ici.</p>
@@ -239,7 +228,6 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
      <button class="btn-primary" onclick="saveAndLoadIPTV()">Sauvegarder & Charger</button>
      <p id="iptv-msg" style="font-size:14px;"></p>
   </div>
-
   <div style="margin-top: 30px; background:#111; padding:25px; border-radius:12px; max-width: 600px; margin-left: auto; margin-right: auto; border: 1px solid #ff4d4d; box-shadow: 0 0 20px rgba(255,77,77,0.1);">
      <h3 style="color:#ff4d4d;">🔒 Contrôle Parental (Adultes)</h3>
      <p style="color:#888; font-size:14px;">Configurez le code PIN et le lien M3U réservé aux adultes (Synchronisé sur tous les appareils).</p>
@@ -271,14 +259,12 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
   <div id="main-content" style="text-align: center; padding: 60px 20px;">
      <h2 style="color:white; font-size:44px; margin-bottom:10px;">Bienvenue sur Chapdolo</h2>
      <p style="color:#888; font-size:20px; margin-bottom:40px;">Sélectionnez une source de streaming</p>
-     
      <div class="source-grid">
         <button class="source-btn btn-primary" onclick="loadSite('https://oha.to')">SOURCE 1</button>
         <button class="source-btn btn-secondary" onclick="loadSite('https://huhu.to')">SOURCE 2</button>
         <button class="source-btn btn-secondary" onclick="loadSite('https://huhu.bz')">SOURCE 3</button>
         <button class="source-btn btn-lock" onclick="promptAdultPin()">🔒 ADULTES</button>
      </div>
-
      <div style="margin-top: 60px; border-top: 1px solid #222; padding-top: 40px;">
         <h3 id="iptv-title" style="color:white; cursor:pointer;" onclick="loadSavedIPTVForUser()">📺 TV Live (Sans Pub)</h3>
         <div id="iptv-container" class="iptv-container hidden">
@@ -301,15 +287,16 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
 
   <div id="player-section" class="hidden" style="padding: 20px; animation: fadeIn 0.3s ease;">
      <button id="exit-fullscreen-btn" class="hidden" onclick="backToMain()">✕ Quitter</button>
+     <!-- NOUVEAU BOUTON RETOUR SOURCE -->
+     <button id="exit-site-btn" class="hidden" onclick="backToMain()">✕ Retour à Chapdolo</button>
+     
      <h2 id="player-title" style="color: white; text-align: center; margin-top:0; font-size:28px;">Lecture TV</h2>
      <div class="tv-player-container" style="display:block; margin-top:0;">
         <video id="tv-player" autoplay></video>
-        
         <div id="video-error-overlay">
             <p>⚠️ Erreur de lecture<br>Le flux est peut-être hors-ligne.</p>
             <button class="btn-primary" onclick="backToMain()">Retour au menu</button>
         </div>
-
         <div id="custom-player-controls">
             <button id="player-pause-btn" class="player-btn" onclick="togglePlayPause()" tabindex="0">⏸ Pause</button>
             <button id="player-fav-btn" class="player-btn" onclick="toggleFavoriteFromPlayer()" tabindex="0">🤍 Favori</button>
@@ -369,7 +356,6 @@ function toggleShowFavorites() {
     showFavsOnly = !showFavsOnly;
     showRecentsOnly = false; 
     document.getElementById('recent-toggle-btn').innerText = "⏱ Vues récemment";
-    
     const btn = document.getElementById('fav-toggle-btn');
     if(showFavsOnly) {
         btn.innerText = "📺 Toutes les chaînes";
@@ -384,16 +370,10 @@ function toggleShowFavorites() {
 function addRecent(ch) {
     let targetRecents = isAdultMode ? adultRecents : recents;
     let storageKey = isAdultMode ? 'chapdolo_adult_recents' : 'chapdolo_recents';
-    
     targetRecents = targetRecents.filter(r => r.url !== ch.url);
     targetRecents.unshift(ch);
     if (targetRecents.length > 10) targetRecents = targetRecents.slice(0, 10);
-    
-    if (isAdultMode) {
-        adultRecents = targetRecents;
-    } else {
-        recents = targetRecents;
-    }
+    if (isAdultMode) { adultRecents = targetRecents; } else { recents = targetRecents; }
     localStorage.setItem(storageKey, JSON.stringify(targetRecents));
 }
 
@@ -401,10 +381,8 @@ function toggleShowRecents() {
     showRecentsOnly = !showRecentsOnly;
     showFavsOnly = false; 
     document.getElementById('fav-toggle-btn').innerText = "❤️ Voir les favoris";
-    
     const btn = document.getElementById('recent-toggle-btn');
     const currentRecents = isAdultMode ? adultRecents : recents;
-    
     if(showRecentsOnly) {
         btn.innerText = "📺 Toutes les chaînes";
         document.getElementById('iptv-category-filter').value = 'all';
@@ -422,91 +400,50 @@ function setupSpatialNavigation() {
     channelContainer.addEventListener('keydown', function(e) {
         const arrows = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
         if (!arrows.includes(e.key)) return;
-        
         const buttons = channelButtons;
         if (buttons.length === 0) return;
-        
         const current = document.activeElement;
         let index = buttons.indexOf(current);
-        if (index === -1) {
-            e.preventDefault();
-            buttons[0].focus();
-            return;
-        }
-        
+        if (index === -1) { e.preventDefault(); buttons[0].focus(); return; }
         e.preventDefault(); 
-        
         const currentRect = current.getBoundingClientRect();
         const ccx = currentRect.left + (currentRect.width / 2); 
         const ccy = currentRect.top + (currentRect.height / 2); 
-        
         let bestIdx = -1;
         let bestScore = Infinity;
-        
         for (let i = 0; i < buttons.length; i++) {
             if (i === index) continue;
             const rect = buttons[i].getBoundingClientRect();
             const cx = rect.left + (rect.width / 2);
             const cy = rect.top + (rect.height / 2);
             let isCandidate = false;
-            let primaryDiff = 0; 
-            let secondaryDiff = 0; 
-            
-            if (e.key === 'ArrowDown' && rect.top > currentRect.top + 2) {
-                isCandidate = true;
-                primaryDiff = rect.top - currentRect.top;
-                secondaryDiff = Math.abs(cx - ccx);
-            } else if (e.key === 'ArrowUp' && rect.bottom < currentRect.bottom - 2) {
-                isCandidate = true;
-                primaryDiff = currentRect.top - rect.top;
-                secondaryDiff = Math.abs(cx - ccx);
-            } else if (e.key === 'ArrowRight' && rect.left > currentRect.left + 2) {
-                isCandidate = true;
-                primaryDiff = rect.left - currentRect.left;
-                secondaryDiff = Math.abs(cy - ccy);
-            } else if (e.key === 'ArrowLeft' && rect.right < currentRect.right - 2) {
-                isCandidate = true;
-                primaryDiff = currentRect.left - rect.left;
-                secondaryDiff = Math.abs(cy - ccy);
-            }
-            
+            let primaryDiff = 0; let secondaryDiff = 0; 
+            if (e.key === 'ArrowDown' && rect.top > currentRect.top + 2) { isCandidate = true; primaryDiff = rect.top - currentRect.top; secondaryDiff = Math.abs(cx - ccx); } 
+            else if (e.key === 'ArrowUp' && rect.bottom < currentRect.bottom - 2) { isCandidate = true; primaryDiff = currentRect.top - rect.top; secondaryDiff = Math.abs(cx - ccx); } 
+            else if (e.key === 'ArrowRight' && rect.left > currentRect.left + 2) { isCandidate = true; primaryDiff = rect.left - currentRect.left; secondaryDiff = Math.abs(cy - ccy); } 
+            else if (e.key === 'ArrowLeft' && rect.right < currentRect.right - 2) { isCandidate = true; primaryDiff = currentRect.left - rect.left; secondaryDiff = Math.abs(cy - ccy); }
             if (isCandidate) {
                 const score = (secondaryDiff * 10) + primaryDiff;
-                if (score < bestScore) {
-                    bestScore = score;
-                    bestIdx = i;
-                }
+                if (score < bestScore) { bestScore = score; bestIdx = i; }
             }
         }
-        
         if (bestIdx === -1) {
-            if (e.key === 'ArrowUp') {
-                document.getElementById('iptv-category-filter').focus();
-            }
+            if (e.key === 'ArrowUp') { document.getElementById('iptv-category-filter').focus(); }
             return;
         }
-        
         buttons[bestIdx].focus();
-        
         const el = buttons[bestIdx];
         const elRect = el.getBoundingClientRect();
         const contRect = this.getBoundingClientRect();
-        
-        if (elRect.top < contRect.top) {
-            this.scrollTop -= (contRect.top - elRect.top + 10);
-        } else if (elRect.bottom > contRect.bottom) {
-            this.scrollTop += (elRect.bottom - contRect.bottom + 10);
-        }
+        if (elRect.top < contRect.top) { this.scrollTop -= (contRect.top - elRect.top + 10); } 
+        else if (elRect.bottom > contRect.bottom) { this.scrollTop += (elRect.bottom - contRect.bottom + 10); }
     });
 
     topNavElements.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
             el.addEventListener('keydown', function(e) {
-                if (e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    if (channelButtons.length > 0) channelButtons[0].focus();
-                }
+                if (e.key === 'ArrowDown') { e.preventDefault(); if (channelButtons.length > 0) channelButtons[0].focus(); }
             });
         }
     });
@@ -516,12 +453,8 @@ function showPlayerControls() {
     const controls = document.getElementById('custom-player-controls');
     const wasActive = controls.classList.contains('active');
     controls.classList.add('active');
-    
     const favBtn = document.getElementById('player-fav-btn');
-    if (favBtn) {
-        favBtn.innerHTML = isFavorite(currentChannelUrl) ? '❤️ Favori' : '🤍 Favori';
-    }
-    
+    if (favBtn) { favBtn.innerHTML = isFavorite(currentChannelUrl) ? '❤️ Favori' : '🤍 Favori'; }
     if (!wasActive) document.getElementById('player-pause-btn').focus();
     clearTimeout(playerControlTimeout);
     playerControlTimeout = setTimeout(() => {
@@ -535,8 +468,7 @@ function hidePlayerControls() { document.getElementById('custom-player-controls'
 function togglePlayPause() {
     const video = document.getElementById('tv-player');
     const btn = document.getElementById('player-pause-btn');
-    if (video.paused) { video.play(); btn.innerText = "⏸ Pause"; } 
-    else { video.pause(); btn.innerText = "▶ Lecture"; }
+    if (video.paused) { video.play(); btn.innerText = "⏸ Pause"; } else { video.pause(); btn.innerText = "▶ Lecture"; }
     showPlayerControls();
 }
 
@@ -544,35 +476,26 @@ function toggleFavoriteFromPlayer() {
     const chData = globalChannels.find(c => c.url === currentChannelUrl) || { name: currentChannelName, url: currentChannelUrl, group: 'Non classé', logo: '' };
     toggleFavorite(chData);
     const favBtn = document.getElementById('player-fav-btn');
-    if (favBtn) {
-        favBtn.innerHTML = isFavorite(currentChannelUrl) ? '❤️ Favori' : '🤍 Favori';
-    }
+    if (favBtn) { favBtn.innerHTML = isFavorite(currentChannelUrl) ? '❤️ Favori' : '🤍 Favori'; }
     showPlayerControls();
 }
 
-function reloadChannel() {
-    showPlayerControls();
-    if (currentChannelUrl) playChannel(currentChannelUrl, currentChannelName, true);
-}
+function reloadChannel() { showPlayerControls(); if (currentChannelUrl) playChannel(currentChannelUrl, currentChannelName, true); }
 
 document.addEventListener('keydown', function(e) {
     const playerSection = document.getElementById('player-section');
     if (playerSection.classList.contains('hidden')) return; 
     if(document.getElementById('video-error-overlay').style.display === 'flex') return;
-
     const triggerKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter'];
     if (!triggerKeys.includes(e.key)) return;
-
     e.preventDefault(); 
     const controls = document.getElementById('custom-player-controls');
     const isHidden = !controls.classList.contains('active');
     if (isHidden) { showPlayerControls(); return; }
     showPlayerControls();
-
     const btns = Array.from(controls.querySelectorAll('.player-btn'));
     let currentIdx = btns.indexOf(document.activeElement);
     if (currentIdx === -1) currentIdx = 0; 
-
     if (e.key === 'ArrowRight') { currentIdx = Math.min(currentIdx + 1, btns.length - 1); btns[currentIdx].focus(); } 
     else if (e.key === 'ArrowLeft') { currentIdx = Math.max(currentIdx - 1, 0); btns[currentIdx].focus(); } 
     else if (e.key === 'Enter') { btns[currentIdx].click(); }
@@ -583,7 +506,6 @@ document.addEventListener('keydown', function(e) {
     if (!isAppScreen) return;
     if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT') return;
     if(document.getElementById('video-error-overlay').style.display === 'flex') return;
-
     if ((e.key >= '0' && e.key <= '9')) {
         e.preventDefault();
         zapSequence += e.key;
@@ -593,7 +515,6 @@ document.addEventListener('keydown', function(e) {
         overlay.classList.remove('error');
         clearTimeout(zapTimeout);
         if (!document.getElementById('player-section').classList.contains('hidden')) hidePlayerControls();
-
         zapTimeout = setTimeout(() => {
             const channelNum = parseInt(zapSequence);
             const targetIndex = channelNum - 1; 
@@ -665,11 +586,9 @@ window.addEventListener('popstate', function(event) {
 document.addEventListener('DOMContentLoaded', (event) => {
     updateClock();
     setInterval(updateClock, 1000); 
-
     const savedAdmin = localStorage.getItem('chapdolo_admin');
     const savedUser = localStorage.getItem('chapdolo_user');
     const savedSession = localStorage.getItem('chapdolo_session');
-    
     if (savedAdmin === 'true') {
         document.getElementById('login-screen').classList.add('hidden');
         document.getElementById('app-screen').classList.add('hidden');
@@ -714,13 +633,9 @@ function verifyAdmin() {
         document.getElementById('login-screen').classList.add('hidden'); 
         document.getElementById('admin-screen').classList.remove('hidden'); 
         document.getElementById('admin-pass-modal').value = ''; 
-        loadUsers(); 
-        loadSavedIPTVUrl(); 
-    } else { 
-        alert('Mot de passe incorrect !'); 
-    } 
+        loadUsers(); loadSavedIPTVUrl(); 
+    } else { alert('Mot de passe incorrect !'); } 
 }
-
 function closeAdminModal() { document.getElementById('admin-modal').classList.add('hidden'); document.getElementById('admin-pass-modal').value = ''; }
 
 async function login() { const u=document.getElementById('login-user').value; const p=document.getElementById('login-pass').value; const e=document.getElementById('login-error'); e.style.color='#00E5FF'; e.innerText='Connexion...'; try { const r=await fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username:u,password:p}) }); const d=await r.json(); if(d.success){currentLoggedUser=u; localStorage.setItem('chapdolo_user', u); localStorage.setItem('chapdolo_session', d.sessionId); startHeartbeat(); showApp();}else{e.style.color='#ff4d4d';e.innerText=d.message||'Erreur';} } catch(x){e.style.color='#ff4d4d';e.innerText='Réseau';} }
@@ -750,20 +665,12 @@ async function loadUsers() {
     try { 
         const r=await fetch('/api/get-users',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminPassword:'chapdel220605'})}); 
         const d=await r.json(); 
-        
         if(d.success && d.users) { 
-            const us=d.users; 
-            const un=Object.keys(us); 
-            
+            const us=d.users; const un=Object.keys(us); 
             let onlineCount = 0;
-            un.forEach(u => {
-                const i = us[u];
-                const act = typeof i === 'string' ? false : i.active;
-                if (act) onlineCount++;
-            });
+            un.forEach(u => { const i = us[u]; const act = typeof i === 'string' ? false : i.active; if (act) onlineCount++; });
             document.getElementById('stat-total-users').innerText = un.length;
             document.getElementById('stat-online-users').innerText = onlineCount;
-            
             if(un.length===0){l.innerHTML='<p style="color:#888;">Aucun.</p>';return;} 
             l.innerHTML=''; 
             un.forEach(u=>{ 
@@ -780,18 +687,17 @@ function showApp() {
     document.getElementById('login-screen').classList.add('hidden'); 
     document.getElementById('admin-screen').classList.add('hidden'); 
     document.getElementById('app-screen').classList.remove('hidden'); 
-    backToMain(); 
-    loadSavedIPTVForUser(); 
+    backToMain(); loadSavedIPTVForUser(); 
 }
 
-// --- CORRECTION SOURCE OHA.TO / HUHU.TO (GARDE LA BARRE NAV) ---
+// --- CORRECTION SOURCE OHA.TO / HUHU.TO ---
 function loadSite(url) { 
     document.getElementById('main-content').classList.add('hidden'); 
     document.getElementById('player-section').classList.add('hidden'); 
     document.getElementById('site-iframe').style.display = 'block'; 
     document.getElementById('site-iframe').src = url; 
-    document.getElementById('back-main-btn').classList.remove('hidden'); // Affiche le bouton retour dans la barre nav
-    document.body.classList.add('site-active'); // Utilise la nouvelle classe au lieu de app-fullscreen
+    document.getElementById('exit-site-btn').classList.remove('hidden'); // Affiche le bouton flottant
+    document.body.classList.add('site-active'); 
     window.history.pushState({ page: 'site' }, '', '#site');
 }
 
@@ -829,58 +735,34 @@ async function loadIPTVList(url) {
     const msg = document.getElementById('iptv-status-msg'); 
     const iptvContainer = document.getElementById('iptv-container'); 
     const channelList = document.getElementById('iptv-channels'); 
-    msg.style.display = 'block'; 
-    msg.style.color = '#e6b800'; 
-    msg.innerText = 'Chargement de la liste IPTV...'; 
-    channelList.innerHTML = ''; 
-    document.getElementById('iptv-search').value = ''; 
+    msg.style.display = 'block'; msg.style.color = '#e6b800'; msg.innerText = 'Chargement de la liste IPTV...'; 
+    channelList.innerHTML = ''; document.getElementById('iptv-search').value = ''; 
     try { 
         const proxyUrl = `/api/proxy-iptv?url=${encodeURIComponent(url)}`; 
-        const response = await fetch(proxyUrl); 
-        const text = await response.text(); 
-        const lines = text.split('\n'); 
-        let channels = []; 
-        let currentName = ''; 
-        let currentGroup = ''; 
-        let currentLogo = '';
-        const groups = new Set(); 
-
+        const response = await fetch(proxyUrl); const text = await response.text(); 
+        const lines = text.split('\n'); let channels = []; let currentName = ''; let currentGroup = ''; let currentLogo = ''; const groups = new Set(); 
         for (let i = 0; i < lines.length; i++) { 
             const line = lines[i].trim(); 
             if (line.startsWith('#EXTINF')) { 
-                const commaIndex = line.lastIndexOf(','); 
-                if (commaIndex !== -1) { currentName = line.substring(commaIndex + 1).trim(); } 
-                const groupMatch = line.match(/group-title="([^"]+)"/);
-                currentGroup = groupMatch ? groupMatch[1] : 'Non classé';
-                groups.add(currentGroup);
-                const logoMatch = line.match(/tvg-logo="([^"]+)"/);
-                currentLogo = logoMatch ? logoMatch[1] : '';
+                const commaIndex = line.lastIndexOf(','); if (commaIndex !== -1) { currentName = line.substring(commaIndex + 1).trim(); } 
+                const groupMatch = line.match(/group-title="([^"]+)"/); currentGroup = groupMatch ? groupMatch[1] : 'Non classé'; groups.add(currentGroup);
+                const logoMatch = line.match(/tvg-logo="([^"]+)"/); currentLogo = logoMatch ? logoMatch[1] : '';
             } else if (line.startsWith('http') && currentName) { 
                 channels.push({ name: currentName, url: line, group: currentGroup, logo: currentLogo }); 
                 currentName = ''; currentGroup = ''; currentLogo = '';
             } 
         } 
         if (channels.length === 0) { msg.style.color = '#ff4d4d'; msg.innerText = 'Aucune chaîne trouvée.'; iptvContainer.classList.add('hidden'); return; } 
-        msg.style.display = 'none'; 
-        iptvContainer.classList.remove('hidden'); 
-        globalChannels = channels; 
-        
+        msg.style.display = 'none'; iptvContainer.classList.remove('hidden'); globalChannels = channels; 
         const catSelect = document.getElementById('iptv-category-filter');
         catSelect.innerHTML = '<option value="all">Toutes les catégories</option>';
-        Array.from(groups).sort().forEach(g => {
-            const opt = document.createElement('option');
-            opt.value = g; opt.innerText = g; catSelect.appendChild(opt);
-        });
-
+        Array.from(groups).sort().forEach(g => { const opt = document.createElement('option'); opt.value = g; opt.innerText = g; catSelect.appendChild(opt); });
         renderChannels(globalChannels); 
-    } catch (e) { 
-        msg.style.color = '#ff4d4d'; msg.innerText = 'Erreur de chargement.'; iptvContainer.classList.add('hidden'); 
-    } 
+    } catch (e) { msg.style.color = '#ff4d4d'; msg.innerText = 'Erreur de chargement.'; iptvContainer.classList.add('hidden'); } 
 }
 
 function filterChannels() { 
-    clearTimeout(searchTimeout); 
-    searchTimeout = setTimeout(() => { 
+    clearTimeout(searchTimeout); searchTimeout = setTimeout(() => { 
         const searchTerm = document.getElementById('iptv-search').value.toLowerCase(); 
         const selectedCat = document.getElementById('iptv-category-filter').value; 
         let filtered = globalChannels; 
@@ -891,110 +773,53 @@ function filterChannels() {
 }
 
 function renderChannels(channelsToRender) { 
-    currentChannelList = channelsToRender; 
-    const channelList = document.getElementById('iptv-channels'); 
-    channelList.innerHTML = ''; 
-    channelButtons = []; 
-    
+    currentChannelList = channelsToRender; const channelList = document.getElementById('iptv-channels'); 
+    channelList.innerHTML = ''; channelButtons = []; 
     if (showFavsOnly && favorites.length === 0) { channelList.innerHTML = '<p style="color:#888;">Aucun favori pour le moment. Cliquez sur le cœur d\'une chaîne pour l\'ajouter !</p>'; return; }
     const currentRecents = isAdultMode ? adultRecents : recents;
     if (showRecentsOnly && currentRecents.length === 0) { channelList.innerHTML = '<p style="color:#888;">Aucun historique pour le moment. Lancez une chaîne pour la voir apparaître ici !</p>'; return; }
-
     const limit = Math.min(channelsToRender.length, 50); 
-    
     for (let i = 0; i < limit; i++) { 
         const ch = channelsToRender[i]; 
-        
-        const itemDiv = document.createElement('div');
-        itemDiv.className = 'channel-item';
-
-        const btn = document.createElement('button'); 
-        btn.className = 'iptv-btn'; 
-        btn.setAttribute('tabindex', '0'); 
-        btn.onclick = () => playChannel(ch.url, ch.name); 
-
-        const numSpan = document.createElement('span');
-        numSpan.className = 'ch-num';
-        numSpan.innerText = (i + 1);
-        btn.appendChild(numSpan);
-
-        if (ch.logo) {
-            const img = document.createElement('img');
-            img.className = 'ch-logo';
-            img.src = ch.logo;
-            img.onerror = () => img.style.display = 'none';
-            btn.appendChild(img);
-        }
-
-        const nameSpan = document.createElement('span');
-        nameSpan.className = 'ch-name';
-        nameSpan.innerText = ch.name;
-        btn.appendChild(nameSpan);
-        
-        const favBtn = document.createElement('button');
-        favBtn.className = 'iptv-btn fav-btn';
-        favBtn.innerHTML = isFavorite(ch.url) ? '❤️' : '🤍';
-        favBtn.setAttribute('tabindex', '0'); 
-        favBtn.style.background = isFavorite(ch.url) ? '#2a0a0a' : '#1a1a1a';
-        
-        favBtn.onclick = (e) => {
-            e.stopPropagation();
-            toggleFavorite(ch);
-            favBtn.innerHTML = isFavorite(ch.url) ? '❤️' : '🤍';
-            favBtn.style.background = isFavorite(ch.url) ? '#2a0a0a' : '#1a1a1a';
-            if (showFavsOnly) renderChannels(favorites);
-        };
-
-        itemDiv.appendChild(btn);
-        itemDiv.appendChild(favBtn);
-        channelList.appendChild(itemDiv); 
-        
-        channelButtons.push(btn); 
-        channelButtons.push(favBtn); 
-        
-        if (i === 0 && document.activeElement !== document.getElementById('iptv-search')) { 
-            setTimeout(() => btn.focus(), 100); 
-        }
+        const itemDiv = document.createElement('div'); itemDiv.className = 'channel-item';
+        const btn = document.createElement('button'); btn.className = 'iptv-btn'; btn.setAttribute('tabindex', '0'); btn.onclick = () => playChannel(ch.url, ch.name); 
+        const numSpan = document.createElement('span'); numSpan.className = 'ch-num'; numSpan.innerText = (i + 1); btn.appendChild(numSpan);
+        if (ch.logo) { const img = document.createElement('img'); img.className = 'ch-logo'; img.src = ch.logo; img.onerror = () => img.style.display = 'none'; btn.appendChild(img); }
+        const nameSpan = document.createElement('span'); nameSpan.className = 'ch-name'; nameSpan.innerText = ch.name; btn.appendChild(nameSpan);
+        const favBtn = document.createElement('button'); favBtn.className = 'iptv-btn fav-btn'; favBtn.innerHTML = isFavorite(ch.url) ? '❤️' : '🤍'; favBtn.setAttribute('tabindex', '0'); favBtn.style.background = isFavorite(ch.url) ? '#2a0a0a' : '#1a1a1a';
+        favBtn.onclick = (e) => { e.stopPropagation(); toggleFavorite(ch); favBtn.innerHTML = isFavorite(ch.url) ? '❤️' : '🤍'; favBtn.style.background = isFavorite(ch.url) ? '#2a0a0a' : '#1a1a1a'; if (showFavsOnly) renderChannels(favorites); };
+        itemDiv.appendChild(btn); itemDiv.appendChild(favBtn); channelList.appendChild(itemDiv); 
+        channelButtons.push(btn); channelButtons.push(favBtn); 
+        if (i === 0 && document.activeElement !== document.getElementById('iptv-search')) { setTimeout(() => btn.focus(), 100); }
     } 
-    
     if (channelsToRender.length > 50) { 
-        const info = document.createElement('p'); 
-        info.innerText = `Affichage des 50 premiers sur ${channelsToRender.length}. Affinez votre recherche.`; 
-        info.style.color = "#e6b800"; info.style.width = '100%'; info.style.marginTop = '15px';
-        channelList.appendChild(info); 
+        const info = document.createElement('p'); info.innerText = `Affichage des 50 premiers sur ${channelsToRender.length}. Affinez votre recherche.`; 
+        info.style.color = "#e6b800"; info.style.width = '100%'; info.style.marginTop = '15px'; channelList.appendChild(info); 
     } 
 }
 
 function showVideoError() { clearTimeout(videoLoadTimeout); hidePlayerControls(); document.getElementById('video-error-overlay').style.display = 'flex'; }
 
 function playChannel(url, name, isReload = false) { 
-    const video = document.getElementById('tv-player'); 
-    const errorOverlay = document.getElementById('video-error-overlay');
+    const video = document.getElementById('tv-player'); const errorOverlay = document.getElementById('video-error-overlay');
     errorOverlay.style.display = 'none'; 
     document.getElementById('main-content').classList.add('hidden'); 
-    document.getElementById('site-iframe').style.display = 'none'; 
-    document.getElementById('site-iframe').src = ''; 
+    document.getElementById('site-iframe').style.display = 'none'; document.getElementById('site-iframe').src = ''; 
+    document.getElementById('exit-site-btn').classList.add('hidden'); // Cache le bouton source si on lance une chaîne
     document.getElementById('player-section').classList.remove('hidden'); 
     document.getElementById('back-main-btn').classList.remove('hidden'); 
     document.getElementById('player-title').innerText = name; 
-    
     currentChannelUrl = url; currentChannelName = name;
     const chData = globalChannels.find(c => c.url === url) || { name: name, url: url, group: 'Non classé', logo: '' };
     if (!isReload) addRecent(chData);
-
     document.body.classList.add('app-fullscreen');
     const exitBtn = document.getElementById('exit-fullscreen-btn');
     exitBtn.classList.remove('hidden');
     setTimeout(() => { exitBtn.classList.add('hidden-btn'); }, 4000);
     window.history.pushState({ page: 'player' }, '', '#player');
-
     clearTimeout(videoLoadTimeout);
-    videoLoadTimeout = setTimeout(() => {
-        if (video.readyState < 3) { showVideoError(); if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; } video.pause(); }
-    }, 15000);
-
+    videoLoadTimeout = setTimeout(() => { if (video.readyState < 3) { showVideoError(); if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; } video.pause(); } }, 15000);
     showPlayerControls();
-
     if (Hls.isSupported()) { 
         if (hlsInstance) hlsInstance.destroy(); 
         hlsInstance = new Hls(); hlsInstance.loadSource(url); hlsInstance.attachMedia(video); 
@@ -1012,8 +837,9 @@ function playChannel(url, name, isReload = false) {
 function backToMain() { 
     clearTimeout(videoLoadTimeout); clearTimeout(playerControlTimeout); hidePlayerControls();
     document.getElementById('video-error-overlay').style.display = 'none';
-    document.body.classList.remove('app-fullscreen', 'site-active'); // Retire les deux modes
+    document.body.classList.remove('app-fullscreen', 'site-active'); 
     document.getElementById('exit-fullscreen-btn').classList.add('hidden');
+    document.getElementById('exit-site-btn').classList.add('hidden'); // Cache le bouton flottant
     document.getElementById('site-iframe').src = ''; document.getElementById('site-iframe').style.display = 'none'; 
     document.getElementById('player-section').classList.add('hidden'); 
     const video = document.getElementById('tv-player'); video.pause(); video.src = ''; 
