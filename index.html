@@ -74,6 +74,10 @@ button:active { transform: scale(0.96); }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 .nav-bar { background: rgba(10, 10, 10, 0.95); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 50; border-bottom: 1px solid #222; backdrop-filter: blur(10px); }
 
+/* --- HORLOGE --- */
+#clock { font-size: 24px; color: #00E5FF; font-weight: 600; text-shadow: 0 0 5px rgba(0, 229, 255, 0.3); margin-right: 20px; font-variant-numeric: tabular-nums; }
+.nav-actions { display: flex; align-items: center; }
+
 @media screen and (min-width: 1024px) {
   body { zoom: 0.8; }
   .nav-bar { padding: 5px 15px; }
@@ -87,6 +91,7 @@ button:active { transform: scale(0.96); }
   .iptv-btn { font-size: 12px; padding: 6px 10px; }
   .ch-logo { height: 20px; max-width: 35px; }
   input, select { padding: 10px 15px; font-size: 14px; }
+  #clock { font-size: 16px; margin-right: 10px; }
 }
 
 *:focus { outline: none !important; }
@@ -237,7 +242,8 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
        <div class="logo-icon" style="width:40px; height:40px;"></div>
        <div class="logo-text" style="font-size:32px; color:#00E5FF;">CHAPDOLO</div>
     </div>
-    <div>
+    <div class="nav-actions">
+       <div id="clock"></div>
        <button id="back-main-btn" class="btn-secondary hidden" onclick="backToMain()">↩ Retour</button>
        <button class="btn-secondary" onclick="logout()" style="margin-left:10px;">Déconnexion</button>
     </div>
@@ -320,6 +326,15 @@ let channelButtons = [];
 
 let adultPin = '';
 let adultUrl = '';
+
+// --- FONCTION HORLOGE ---
+function updateClock() {
+    const now = new Date();
+    const h = String(now.getHours()).padStart(2, '0');
+    const m = String(now.getMinutes()).padStart(2, '0');
+    const clockEl = document.getElementById('clock');
+    if (clockEl) clockEl.innerText = `${h}:${m}`;
+}
 
 function isFavorite(url) { return favorites.some(f => f.url === url); }
 
@@ -602,7 +617,7 @@ function promptAdultPin() {
     setTimeout(() => document.getElementById('pin-entry').focus(), 100);
 }
 
-function closePinModal() { document.getElementById('pin-modal').classList.remove('hidden'); }
+function closePinModal() { document.getElementById('pin-modal').classList.add('hidden'); }
 
 function verifyAdultPin() {
     const enteredPin = document.getElementById('pin-entry').value;
@@ -630,6 +645,10 @@ window.addEventListener('popstate', function(event) {
 });
 
 document.addEventListener('DOMContentLoaded', (event) => {
+    // --- INITIALISATION HORLOGE ---
+    updateClock();
+    setInterval(updateClock, 1000); // Met à jour l'heure toutes les secondes
+
     const savedAdmin = localStorage.getItem('chapdolo_admin');
     const savedUser = localStorage.getItem('chapdolo_user');
     const savedSession = localStorage.getItem('chapdolo_session');
