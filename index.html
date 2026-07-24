@@ -125,7 +125,7 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
 }
 #exit-fullscreen-btn.hidden-btn { opacity: 0; pointer-events: none; }
 
-/* --- MODE SOURCE (PLEIN ÉCRAN TOTAL) --- */
+/* --- MODE SOURCE --- */
 .site-active #main-content { display: none !important; }
 .site-active #app-screen nav.nav-bar { display: none !important; } 
 .site-active #site-iframe { 
@@ -134,7 +134,7 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
     z-index: 10 !important; border: none !important; margin: 0 !important; display: block !important; background: #000 !important;
 }
 
-/* --- BOUTON FLOTTANT (DISPARAIT ET REAPPARAIT A LA SOURIS) --- */
+/* --- BOUTON FLOTTANT --- */
 #exit-site-btn {
     position: fixed !important; bottom: 20px !important; left: 20px !important; z-index: 100000 !important;
     background: rgba(0, 229, 255, 0.8) !important; color: black !important; border: none !important;
@@ -142,8 +142,8 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
     font-size: 24px !important; cursor: pointer !important; font-weight: 700 !important; 
     box-shadow: 0 0 10px rgba(0, 229, 255, 0.5) !important;
     display: flex !important; align-items: center !important; justify-content: center !important; padding: 0 !important;
-    opacity: 0 !important; /* CACHÉ PAR DÉFAUT */
-    pointer-events: none !important; /* NE BLOQUE PAS LES CLICS QUAND INVISIBLE */
+    opacity: 0 !important; 
+    pointer-events: none !important; 
     transition: opacity 0.3s ease-in-out !important;
 }
 #exit-site-btn.visible {
@@ -557,7 +557,7 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-// --- GESTION DU BOUTON SOURIS (FLOTTANT) ---
+// --- GESTION DU BOUTON SOURIS ---
 function showSiteBtnTemporarily() {
     const btn = document.getElementById('exit-site-btn');
     if (!btn || btn.classList.contains('hidden')) return;
@@ -566,7 +566,7 @@ function showSiteBtnTemporarily() {
     clearTimeout(siteBtnTimeout);
     siteBtnTimeout = setTimeout(() => {
         btn.classList.remove('visible');
-    }, 3000); // Disparait après 3 secondes sans bouger la souris
+    }, 3000);
 }
 
 async function saveAdultConfig() {
@@ -737,12 +737,11 @@ function loadSite(url) {
     document.getElementById('site-iframe').style.display = 'block'; 
     document.getElementById('site-iframe').src = url; 
     
-    // Gestion intelligente du bouton flottant
     const siteBtn = document.getElementById('exit-site-btn');
     siteBtn.classList.remove('hidden');
-    showSiteBtnTemporarily(); // Affiche et lance le compteur de 3s
+    showSiteBtnTemporarily(); 
     document.addEventListener('mousemove', showSiteBtnTemporarily);
-    document.addEventListener('touchstart', showSiteBtnTemporarily); // Pour mobile
+    document.addEventListener('touchstart', showSiteBtnTemporarily); 
     
     document.body.classList.add('site-active'); 
     window.history.pushState({ page: 'site' }, '', '#site');
@@ -886,7 +885,14 @@ function backToMain() {
     document.body.classList.remove('app-fullscreen', 'site-active'); 
     document.getElementById('exit-fullscreen-btn').classList.add('hidden');
     
-    // Nettoyage du bouton flottant et des écouteurs souris/tactile
+    // NETTOYAGE EN DOUCEUR DE L'IFRAME POUR ÉVITER L'ERREUR "NO INTERNET"
+    const siteIframe = document.getElementById('site-iframe');
+    siteIframe.src = 'about:blank'; // Demande au cadre de se vider proprement
+    setTimeout(() => {
+        siteIframe.src = '';
+        siteIframe.style.display = 'none';
+    }, 100);
+
     const siteBtn = document.getElementById('exit-site-btn');
     siteBtn.classList.add('hidden');
     siteBtn.classList.remove('visible');
@@ -894,7 +900,6 @@ function backToMain() {
     document.removeEventListener('touchstart', showSiteBtnTemporarily);
     clearTimeout(siteBtnTimeout);
 
-    document.getElementById('site-iframe').src = ''; document.getElementById('site-iframe').style.display = 'none'; 
     document.getElementById('player-section').classList.add('hidden'); 
     const video = document.getElementById('tv-player'); video.pause(); video.src = ''; 
     if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; } 
