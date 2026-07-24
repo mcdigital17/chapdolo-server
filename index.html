@@ -104,7 +104,7 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
 .iptv-btn:focus { background: #00E5FF !important; border-color: #00E5FF !important; color: black !important; box-shadow: 0 0 0 4px #00E5FF, 0 0 15px rgba(0, 229, 255, 0.8) !important; z-index: 5; position: relative; }
 .iptv-btn:focus .ch-num { color: black !important; }
 
-/* --- PLEIN ÉCRAN VIDÉO (TOP/BOTTOM POUR COMPATIBILITÉ MAX) --- */
+/* --- PLEIN ÉCRAN VIDÉO --- */
 .app-fullscreen #app-screen nav.nav-bar { display: none !important; }
 .app-fullscreen #player-section {
     position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
@@ -125,8 +125,9 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
 }
 #exit-fullscreen-btn.hidden-btn { opacity: 0; pointer-events: none; }
 
-/* --- MODE SOURCE (PLEIN ÉCRAN SANS BOUTON FLOTTANT) --- */
+/* --- MODE SOURCE (PLEIN ÉCRAN TOTAL SANS BARRE CHAPDOLO) --- */
 .site-active #main-content { display: none !important; }
+.site-active #app-screen nav.nav-bar { display: none !important; } /* CACHE LA BARRE NOIRE CHAPDOLO */
 .site-active #site-iframe { 
     position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
     width: 100% !important; height: 100% !important;
@@ -522,15 +523,13 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-// --- NOUVEAU : QUITTER AVEC LA TOUCHE ÉCHAP ---
+// --- QUITTER AVEC LA TOUCHE ÉCHAP ---
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         const adminModal = document.getElementById('admin-modal');
         const pinModal = document.getElementById('pin-modal');
-        // Si une modale est ouverte, on laisse le comportement par défaut (ne rien faire)
         if (!adminModal.classList.contains('hidden') || !pinModal.classList.contains('hidden')) return;
 
-        // Si on est sur un site (oha.to) ou en plein écran vidéo
         if (document.body.classList.contains('site-active') || document.body.classList.contains('app-fullscreen')) {
             backToMain();
         }
