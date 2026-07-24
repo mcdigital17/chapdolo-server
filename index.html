@@ -125,18 +125,12 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
 }
 #exit-fullscreen-btn.hidden-btn { opacity: 0; pointer-events: none; }
 
-/* --- MODE SOURCE (BOUTON FLOTTANT) --- */
+/* --- MODE SOURCE (PLEIN ÉCRAN SANS BOUTON FLOTTANT) --- */
 .site-active #main-content { display: none !important; }
 .site-active #site-iframe { 
     position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
     width: 100% !important; height: 100% !important;
     z-index: 10 !important; border: none !important; margin: 0 !important; display: block !important; background: #000 !important;
-}
-#exit-site-btn {
-    position: fixed !important; top: 20px !important; right: 20px !important; z-index: 100000 !important;
-    background: #00E5FF !important; color: black !important; border: none !important;
-    padding: 15px 25px !important; border-radius: 8px !important; font-size: 18px !important; cursor: pointer !important; 
-    font-weight: 700 !important; box-shadow: 0 0 15px rgba(0, 229, 255, 0.8) !important;
 }
 
 #video-error-overlay {
@@ -246,9 +240,6 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
 
 <div id="app-screen" class="hidden">
   <div id="zap-overlay"></div>
-  
-  <!-- BOUTON FLOTTANT SORTI DE LA SECTION VIDÉO -->
-  <button id="exit-site-btn" class="hidden" onclick="backToMain()">✕ Retour à Chapdolo</button>
   
   <nav class="nav-bar">
     <div class="logo-container" style="margin-bottom:0; cursor: default;">
@@ -531,6 +522,21 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
+// --- NOUVEAU : QUITTER AVEC LA TOUCHE ÉCHAP ---
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const adminModal = document.getElementById('admin-modal');
+        const pinModal = document.getElementById('pin-modal');
+        // Si une modale est ouverte, on laisse le comportement par défaut (ne rien faire)
+        if (!adminModal.classList.contains('hidden') || !pinModal.classList.contains('hidden')) return;
+
+        // Si on est sur un site (oha.to) ou en plein écran vidéo
+        if (document.body.classList.contains('site-active') || document.body.classList.contains('app-fullscreen')) {
+            backToMain();
+        }
+    }
+});
+
 async function saveAdultConfig() {
     const pin = document.getElementById('iptv-pin-input').value;
     const url = document.getElementById('iptv-adult-url-input').value;
@@ -698,7 +704,6 @@ function loadSite(url) {
     document.getElementById('player-section').classList.add('hidden'); 
     document.getElementById('site-iframe').style.display = 'block'; 
     document.getElementById('site-iframe').src = url; 
-    document.getElementById('exit-site-btn').classList.remove('hidden'); // Affiche le bouton flottant
     document.body.classList.add('site-active'); 
     window.history.pushState({ page: 'site' }, '', '#site');
 }
@@ -807,7 +812,6 @@ function playChannel(url, name, isReload = false) {
     errorOverlay.style.display = 'none'; 
     document.getElementById('main-content').classList.add('hidden'); 
     document.getElementById('site-iframe').style.display = 'none'; document.getElementById('site-iframe').src = ''; 
-    document.getElementById('exit-site-btn').classList.add('hidden'); // Cache le bouton source si on lance une chaîne
     document.getElementById('player-section').classList.remove('hidden'); 
     document.getElementById('back-main-btn').classList.remove('hidden'); 
     document.getElementById('player-title').innerText = name; 
@@ -841,7 +845,6 @@ function backToMain() {
     document.getElementById('video-error-overlay').style.display = 'none';
     document.body.classList.remove('app-fullscreen', 'site-active'); 
     document.getElementById('exit-fullscreen-btn').classList.add('hidden');
-    document.getElementById('exit-site-btn').classList.add('hidden'); // Cache le bouton flottant
     document.getElementById('site-iframe').src = ''; document.getElementById('site-iframe').style.display = 'none'; 
     document.getElementById('player-section').classList.add('hidden'); 
     const video = document.getElementById('tv-player'); video.pause(); video.src = ''; 
