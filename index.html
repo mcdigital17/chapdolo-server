@@ -13,14 +13,18 @@
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
-body { background-color: #0a0a0a; color: white; font-family: 'Inter', sans-serif; margin: 0; }
-.section { text-align: center; padding: 60px 20px; animation: fadeIn 0.5s ease; }
-input, select { padding: 16px 20px; margin: 8px; border-radius: 6px; border: 1px solid #333; background: #111; color: white; font-size: 16px; width: 320px; transition: all 0.3s ease; box-sizing: border-box; }
+body { background-color: #0a0a0a; color: white; font-family: 'Inter', sans-serif; margin: 0; min-height: 100vh; display: flex; flex-direction: column; }
+
+/* --- SECTION CONNEXION (CENTRÉE POUR PC) --- */
+.section { text-align: center; padding: 60px 20px; animation: fadeIn 0.5s ease; flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+.section > * { width: 100%; max-width: 400px; box-sizing: border-box; }
+
+input, select { padding: 16px 20px; margin: 8px 0; border-radius: 6px; border: 1px solid #333; background: #111; color: white; font-size: 16px; width: 100%; transition: all 0.3s ease; box-sizing: border-box; }
 input:focus, select:focus { outline: none; border-color: #00E5FF; box-shadow: 0 0 0 2px rgba(0, 229, 255, 0.3); }
-button { padding: 16px 32px; font-size: 16px; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; margin: 8px; transition: all 0.2s ease; }
+button { padding: 16px 32px; font-size: 16px; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; margin: 8px 0; transition: all 0.2s ease; width: 100%; }
 button:active { transform: scale(0.96); }
 
-.btn-primary { background: #00E5FF; color: black; box-shadow: 0 4px 15px rgba(0, 229, 255, 0.3); }
+.btn-primary { background: #00E5FF; color: black; box-shadow: 0 4px 15px rgba(0, 229, 255, 0.3); width: auto; padding: 16px 64px; }
 .btn-primary:hover { background: #33ECFF; box-shadow: 0 6px 20px rgba(0, 229, 255, 0.5); transform: translateY(-2px); }
 .btn-danger { background: #b2b2b2; color: black; } .btn-danger:hover { background: #fff; }
 .btn-secondary { background: rgba(255,255,255,0.1); color: white; border: 1px solid #444; } .btn-secondary:hover { background: rgba(255,255,255,0.2); border-color: #fff; }
@@ -54,7 +58,7 @@ button:active { transform: scale(0.96); }
 .logo-text { font-size: 56px; font-weight: 800; color: white; letter-spacing: -2px; text-shadow: 2px 2px 10px rgba(0,0,0,0.8); }
 
 .source-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-top: 40px; }
-.source-btn { padding: 24px 36px; font-size: 20px; font-weight: bold; border-radius: 8px; min-width: 160px; letter-spacing: 1px; position: relative; overflow: hidden; }
+.source-btn { padding: 24px 36px; font-size: 20px; font-weight: bold; border-radius: 8px; min-width: 160px; letter-spacing: 1px; position: relative; overflow: hidden; width: auto; }
 .source-btn::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, rgba(255,255,255,0.1), transparent); pointer-events: none; }
 
 .tv-player-container { width: 100%; max-width: 1000px; margin: 20px auto; background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8); display: none; aspect-ratio: 16/9; position: relative; }
@@ -62,7 +66,7 @@ button:active { transform: scale(0.96); }
 #tv-player:focus { outline: none !important; }
 #iptv-msg { color: #00E5FF; margin-top: 10px; font-weight: bold; }
 
-.iptv-container { margin-top: 30px; background: #111; border-radius: 12px; padding: 20px; border: 1px solid #222; transition: border-color 0.3s; }
+.iptv-container { margin-top: 30px; background: #111; border-radius: 12px; padding: 20px; border: 1px solid #222; transition: border-color 0.3s; width: 100%; max-width: 900px; box-sizing: border-box; }
 .iptv-container.adult-mode { border-color: #ff4d4d; box-shadow: 0 0 15px rgba(255, 77, 77, 0.2); }
 .search-bar { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; }
 
@@ -84,7 +88,7 @@ button:active { transform: scale(0.96); }
 .nav-actions { display: flex; align-items: center; }
 
 @media screen and (min-width: 1024px) {
-  body { zoom: 0.8; }
+  /* body { zoom: 0.8; } <-- LIGNE SUPPRIMÉE POUR NE PAS RÉTRÉCIR L'INTERFACE SUR PC */
   .nav-bar { padding: 5px 15px; }
   .logo-text { font-size: 20px; }
   .logo-icon { width: 25px; height: 25px; }
@@ -221,8 +225,8 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
      <div class="stat-card stat-total"><h3>Total Utilisateurs</h3><p id="stat-total-users">0</p></div>
      <div class="stat-card stat-online"><h3>En Ligne</h3><p id="stat-online-users">0</p></div>
   </div>
-  <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px;">
-     <div style="background:#111; padding:25px; border-radius:12px; width: 320px; border:1px solid #222;">
+  <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; width: 100%; max-width: 1000px;">
+     <div style="background:#111; padding:25px; border-radius:12px; width: 320px; border:1px solid #222; box-sizing: border-box;">
         <h3 style="color:white;">Créer un accès</h3>
         <input type="text" id="new-username" placeholder="Nom d'utilisateur" style="width:100%;"><br>
         <input type="text" id="new-password" placeholder="Mot de passe" style="width:65%;">
@@ -230,20 +234,20 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
         <button class="btn-primary" onclick="generateUser()">Créer l'accès</button>
         <p id="admin-message" style="color:#00E5FF; font-size:14px; font-weight:bold; height:20px;">En attente...</p>
      </div>
-     <div style="background:#111; padding:25px; border-radius:12px; width: 600px; border:1px solid #222;">
+     <div style="background:#111; padding:25px; border-radius:12px; width: 600px; border:1px solid #222; box-sizing: border-box;">
         <h3 style="color:white;">Utilisateurs créés</h3>
         <button class="btn-secondary" onclick="loadUsers()" style="font-size:14px;">🔄 Rafraîchir</button>
         <div id="user-list" style="margin-top:10px; max-height: 400px; overflow-y: auto;"></div>
      </div>
   </div>
-  <div style="margin-top: 30px; background:#111; padding:25px; border-radius:12px; max-width: 600px; margin-left: auto; margin-right: auto; border: 1px solid #00E5FF; box-shadow: 0 0 20px rgba(0,229,255,0.1);">
+  <div style="margin-top: 30px; background:#111; padding:25px; border-radius:12px; max-width: 600px; width: 100%; margin-left: auto; margin-right: auto; border: 1px solid #00E5FF; box-shadow: 0 0 20px rgba(0,229,255,0.1); box-sizing: border-box;">
      <h3 style="color:#00E5FF;">📺 Source IPTV (TV Live)</h3>
      <p style="color:#888; font-size:14px;">Collez le lien m3u8 d'une source IPTV ici.</p>
      <input type="text" id="iptv-url-input" placeholder="https://lien-vers-fichier-iptv.m3u" style="width: 100%; margin: 5px 0 15px 0;">
      <button class="btn-primary" onclick="saveAndLoadIPTV()">Sauvegarder & Charger</button>
      <p id="iptv-msg" style="font-size:14px;"></p>
   </div>
-  <div style="margin-top: 30px; background:#111; padding:25px; border-radius:12px; max-width: 600px; margin-left: auto; margin-right: auto; border: 1px solid #ff4d4d; box-shadow: 0 0 20px rgba(255,77,77,0.1);">
+  <div style="margin-top: 30px; background:#111; padding:25px; border-radius:12px; max-width: 600px; width: 100%; margin-left: auto; margin-right: auto; border: 1px solid #ff4d4d; box-shadow: 0 0 20px rgba(255,77,77,0.1); box-sizing: border-box;">
      <h3 style="color:#ff4d4d;">🔒 Contrôle Parental (Adultes)</h3>
      <p style="color:#888; font-size:14px;">Configurez le code PIN et le lien M3U réservé aux adultes (Synchronisé sur tous les appareils).</p>
      <input type="text" id="iptv-pin-input" maxlength="4" placeholder="Code PIN (4 chiffres)" style="width: 100%; margin: 5px 0 15px 0; letter-spacing: 5px; text-align: center;">
@@ -274,7 +278,7 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
     </div>
   </nav>
 
-  <div id="main-content" style="text-align: center; padding: 60px 20px;">
+  <div id="main-content" style="text-align: center; padding: 60px 20px; flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center;">
      <h2 style="color:white; font-size:44px; margin-bottom:10px;">Bienvenue sur Chapdolo</h2>
      <p style="color:#888; font-size:20px; margin-bottom:40px;">Sélectionnez une source de streaming</p>
      <div class="source-grid">
@@ -283,7 +287,7 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
         <button class="source-btn btn-secondary" onclick="loadSite('https://huhu.bz')">SOURCE 3</button>
         <button class="source-btn btn-lock" onclick="promptAdultPin()">🔒 ADULTES</button>
      </div>
-     <div style="margin-top: 60px; border-top: 1px solid #222; padding-top: 40px;">
+     <div style="margin-top: 60px; border-top: 1px solid #222; padding-top: 40px; width: 100%; max-width: 900px; box-sizing: border-box;">
         <h3 id="iptv-title" style="color:white; cursor:pointer;" onclick="loadSavedIPTVForUser()">📺 TV Live (Sans Pub)</h3>
         <div id="iptv-container" class="iptv-container hidden">
            <div class="search-bar">
