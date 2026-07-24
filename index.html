@@ -125,7 +125,7 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
 }
 #exit-fullscreen-btn.hidden-btn { opacity: 0; pointer-events: none; }
 
-/* --- MODE SOURCE (PLEIN ÉCRAN TOTAL SANS BARRE CHAPDOLO) --- */
+/* --- MODE SOURCE (PLEIN ÉCRAN TOTAL) --- */
 .site-active #main-content { display: none !important; }
 .site-active #app-screen nav.nav-bar { display: none !important; } 
 .site-active #site-iframe { 
@@ -134,7 +134,7 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
     z-index: 10 !important; border: none !important; margin: 0 !important; display: block !important; background: #000 !important;
 }
 
-/* --- PETIT BOUTON FLOTTANT DE SECOURS (EN BAS À GAUCHE) --- */
+/* --- BOUTON FLOTTANT (DISPARAIT ET REAPPARAIT A LA SOURIS) --- */
 #exit-site-btn {
     position: fixed !important; bottom: 20px !important; left: 20px !important; z-index: 100000 !important;
     background: rgba(0, 229, 255, 0.8) !important; color: black !important; border: none !important;
@@ -142,6 +142,13 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
     font-size: 24px !important; cursor: pointer !important; font-weight: 700 !important; 
     box-shadow: 0 0 10px rgba(0, 229, 255, 0.5) !important;
     display: flex !important; align-items: center !important; justify-content: center !important; padding: 0 !important;
+    opacity: 0 !important; /* CACHÉ PAR DÉFAUT */
+    pointer-events: none !important; /* NE BLOQUE PAS LES CLICS QUAND INVISIBLE */
+    transition: opacity 0.3s ease-in-out !important;
+}
+#exit-site-btn.visible {
+    opacity: 1 !important;
+    pointer-events: auto !important;
 }
 
 #video-error-overlay {
@@ -252,7 +259,7 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
 <div id="app-screen" class="hidden">
   <div id="zap-overlay"></div>
   
-  <!-- PETIT BOUTON FLOTTANT DE SECOURS -->
+  <!-- BOUTON FLOTTANT -->
   <button id="exit-site-btn" class="hidden" onclick="backToMain()">✕</button>
   
   <nav class="nav-bar">
@@ -337,6 +344,7 @@ let zapSequence = '';
 let zapTimeout;
 let heartbeatInterval;
 let channelButtons = []; 
+let siteBtnTimeout;
 
 let adultPin = '';
 let adultUrl = '';
@@ -549,6 +557,18 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
+// --- GESTION DU BOUTON SOURIS (FLOTTANT) ---
+function showSiteBtnTemporarily() {
+    const btn = document.getElementById('exit-site-btn');
+    if (!btn || btn.classList.contains('hidden')) return;
+    
+    btn.classList.add('visible');
+    clearTimeout(siteBtnTimeout);
+    siteBtnTimeout = setTimeout(() => {
+        btn.classList.remove('visible');
+    }, 3000); // Disparait après 3 secondes sans bouger la souris
+}
+
 async function saveAdultConfig() {
     const pin = document.getElementById('iptv-pin-input').value;
     const url = document.getElementById('iptv-adult-url-input').value;
@@ -716,7 +736,14 @@ function loadSite(url) {
     document.getElementById('player-section').classList.add('hidden'); 
     document.getElementById('site-iframe').style.display = 'block'; 
     document.getElementById('site-iframe').src = url; 
-    document.getElementById('exit-site-btn').classList.remove('hidden'); // Affiche le petit bouton
+    
+    // Gestion intelligente du bouton flottant
+    const siteBtn = document.getElementById('exit-site-btn');
+    siteBtn.classList.remove('hidden');
+    showSiteBtnTemporarily(); // Affiche et lance le compteur de 3s
+    document.addEventListener('mousemove', showSiteBtnTemporarily);
+    document.addEventListener('touchstart', showSiteBtnTemporarily); // Pour mobile
+    
     document.body.classList.add('site-active'); 
     window.history.pushState({ page: 'site' }, '', '#site');
 }
@@ -825,7 +852,6 @@ function playChannel(url, name, isReload = false) {
     errorOverlay.style.display = 'none'; 
     document.getElementById('main-content').classList.add('hidden'); 
     document.getElementById('site-iframe').style.display = 'none'; document.getElementById('site-iframe').src = ''; 
-    document.getElementById('exit-site-btn').classList.add('hidden'); // Cache le bouton lors de la vidéo
     document.getElementById('player-section').classList.remove('hidden'); 
     document.getElementById('back-main-btn').classList.remove('hidden'); 
     document.getElementById('player-title').innerText = name; 
@@ -859,7 +885,15 @@ function backToMain() {
     document.getElementById('video-error-overlay').style.display = 'none';
     document.body.classList.remove('app-fullscreen', 'site-active'); 
     document.getElementById('exit-fullscreen-btn').classList.add('hidden');
-    document.getElementById('exit-site-btn').classList.add('hidden'); // Cache le bouton flottant
+    
+    // Nettoyage du bouton flottant et des écouteurs souris/tactile
+    const siteBtn = document.getElementById('exit-site-btn');
+    siteBtn.classList.add('hidden');
+    siteBtn.classList.remove('visible');
+    document.removeEventListener('mousemove', showSiteBtnTemporarily);
+    document.removeEventListener('touchstart', showSiteBtnTemporarily);
+    clearTimeout(siteBtnTimeout);
+
     document.getElementById('site-iframe').src = ''; document.getElementById('site-iframe').style.display = 'none'; 
     document.getElementById('player-section').classList.add('hidden'); 
     const video = document.getElementById('tv-player'); video.pause(); video.src = ''; 
