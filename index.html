@@ -294,6 +294,7 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
               <input type="text" id="iptv-search" tabindex="-1" placeholder="🔍 Rechercher une chaîne..." style="width: 300px; margin: 0;" oninput="filterChannels()">
               <button id="fav-toggle-btn" class="btn-auto" tabindex="0" onclick="toggleShowFavorites()">❤️ Voir les favoris</button>
               <button id="recent-toggle-btn" class="btn-auto" tabindex="0" onclick="toggleShowRecents()">⏱ Vues récemment</button>
+              <button id="sort-az-btn" class="btn-auto" tabindex="0" onclick="sortChannelsAZ()">🔤 Trier A-Z</button>
            </div>
            <div style="margin-bottom: 15px;">
               <select id="iptv-category-filter" onchange="filterChannels()" style="padding: 12px 15px; border-radius: 6px; border: 1px solid #333; background: #1a1a1a; color: white; font-size: 14px; width: 100%; max-width: 300px; cursor: pointer;">
@@ -348,7 +349,7 @@ let zapTimeout;
 let heartbeatInterval;
 let channelButtons = []; 
 let siteBtnTimeout;
-let currentAdminPass = ''; // Variable pour le mot de passe admin sécurisé
+let currentAdminPass = ''; 
 
 let adultPin = '';
 let adultUrl = '';
@@ -413,9 +414,33 @@ function toggleShowRecents() {
     }
 }
 
+// --- NOUVELLE FONCTION : TRIER A-Z ---
+function sortChannelsAZ() {
+    if (globalChannels.length === 0) return;
+    
+    // Trie le tableau global par ordre alphabétique du nom de la chaîne
+    globalChannels.sort((a, b) => {
+        const nameA = a.name.toLowerCase();
+        const nameB = b.name.toLowerCase();
+        if (nameA < nameB) return -1;
+        if (nameA > nameB) return 1;
+        return 0;
+    });
+    
+    // Réinitialise les filtres pour voir le résultat du tri
+    document.getElementById('iptv-search').value = '';
+    document.getElementById('iptv-category-filter').value = 'all';
+    showFavsOnly = false;
+    showRecentsOnly = false;
+    document.getElementById('fav-toggle-btn').innerText = "❤️ Voir les favoris";
+    document.getElementById('recent-toggle-btn').innerText = "⏱ Vues récemment";
+    
+    renderChannels(globalChannels);
+}
+
 function setupSpatialNavigation() {
     const channelContainer = document.getElementById('iptv-channels');
-    const topNavElements = ['iptv-search', 'iptv-category-filter', 'fav-toggle-btn', 'recent-toggle-btn'];
+    const topNavElements = ['iptv-search', 'iptv-category-filter', 'fav-toggle-btn', 'recent-toggle-btn', 'sort-az-btn'];
 
     channelContainer.addEventListener('keydown', function(e) {
         const arrows = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
@@ -593,7 +618,6 @@ async function saveAdultConfig() {
     if (!url) { msg.style.color = '#ff4d4d'; msg.innerText = 'Veuillez coller un lien.'; return; }
     msg.style.color = '#e6b800'; msg.innerText = 'Sauvegarde sur le serveur...';
     try {
-        // Utilisation de currentAdminPass au lieu du mot de passe en dur
         const res = await fetch('/api/iptv-config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action: 'save', adminPassword: currentAdminPass, adultPin: pin, adultUrl: url}) });
         const data = await res.json();
         if(data.success) { adultPin = pin; adultUrl = url; msg.style.color = '#2ecc71'; msg.innerText = 'Configuration sauvegardée et synchronisée !'; } 
@@ -651,7 +675,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
         document.getElementById('login-screen').classList.add('hidden');
         document.getElementById('app-screen').classList.add('hidden');
         document.getElementById('admin-screen').classList.remove('hidden');
-        // On affiche la modale de mot de passe car on ne garde plus le mdp en mémoire local
         document.getElementById('admin-modal').classList.remove('hidden');
     } else if (savedUser && savedSession) {
         currentLoggedUser = savedUser;
@@ -684,7 +707,6 @@ document.getElementById('main-logo').addEventListener('click', function() {
     else { window.logoClickTimer = setTimeout(() => { this.dataset.clicks = 0; }, 5000); }
 });
 
-// --- NOUVELLE FONCTION VERIFYADMIN SÉCURISÉE ---
 async function verifyAdmin() { 
     const passTyped = document.getElementById('admin-pass-modal').value;
     if (!passTyped) { alert('Veuillez entrer le mot de passe.'); return; }
@@ -702,7 +724,7 @@ async function verifyAdmin() {
         
         const d = await r.json(); 
         if(d.success) {
-            currentAdminPass = passTyped; // Sauvegarde le mot de passe en mémoire pour les futures actions
+            currentAdminPass = passTyped; 
             localStorage.setItem('chapdolo_admin', 'true'); 
             document.getElementById('admin-modal').classList.add('hidden'); 
             document.getElementById('login-screen').classList.add('hidden'); 
@@ -727,7 +749,7 @@ async function logout() {
     localStorage.removeItem('chapdolo_user'); 
     localStorage.removeItem('chapdolo_session'); 
     localStorage.removeItem('chapdolo_admin'); 
-    currentAdminPass = ''; // Efface le mot de passe de la mémoire
+    currentAdminPass = ''; 
     document.getElementById('app-screen').classList.add('hidden'); 
     document.getElementById('admin-screen').classList.add('hidden'); 
     document.getElementById('login-screen').classList.remove('hidden'); 
@@ -740,16 +762,13 @@ async function logout() {
 function autoGenerate() { const c="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"; let p=""; for(let i=0;i<8;i++) p+=c.charAt(Math.floor(Math.random()*c.length)); document.getElementById('new-password').value=p; }
 
 async function generateUser() { const u=document.getElementById('new-username').value; const p=document.getElementById('new-password').value; const m=document.getElementById('admin-message'); m.style.color='#00E5FF';m.innerText='Création...'; if(!u||!p){m.style.color='#ff4d4d';m.innerText='Remplissez tout.';return;} try { 
-    // Utilisation de currentAdminPass
     const r=await fetch('/api/generate-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminPassword: currentAdminPass, newUser:u, newPass:p})}); 
     const d=await r.json(); if(d.success){m.style.color='#2ecc71';m.innerText='SUCCÈS !';document.getElementById('new-username').value='';document.getElementById('new-password').value='';loadUsers();}else{m.style.color='#ff4d4d';m.innerText=d.message||'Erreur';} } catch(e){m.style.color='#ff4d4d';m.innerText='Critique';} }
 
-// --- NOUVELLE FONCTION LOADUSERS SÉCURISÉE ---
 async function loadUsers() { 
     const l=document.getElementById('user-list'); 
     l.innerHTML='<p style="color:#888;">Chargement...</p>'; 
     try { 
-        // Utilisation de currentAdminPass
         const r=await fetch('/api/get-users',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminPassword: currentAdminPass})}); 
         const d=await r.json(); 
         
@@ -770,11 +789,9 @@ async function loadUsers() {
     } catch(e){l.innerHTML='<p style="color:#ff4d4d;">Réseau</p>';} 
 }
 
-// --- FONCTION MANAGEUSER SÉCURISÉE ---
 async function manageUser(u,a) { 
     if(a==='delete') if(!confirm('Supprimer '+u+' ?')) return; 
     try { 
-        // Utilisation de currentAdminPass
         const r=await fetch('/api/manage-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminPassword: currentAdminPass, username:u, action:a})}); 
         const d=await r.json(); if(d.success) loadUsers(); else alert('Erreur'); 
     } catch(e){alert('Réseau');} 
@@ -818,14 +835,12 @@ async function loadSavedIPTVUrl() {
     } catch(e) {} 
 }
 
-// --- FONCTION SAVEANDLOADIPTV SÉCURISÉE ---
 async function saveAndLoadIPTV() { 
     const url = document.getElementById('iptv-url-input').value; 
     const msg = document.getElementById('iptv-msg'); 
     if (!url) { msg.style.color='#ff4d4d'; msg.innerText='Veuillez coller un lien !'; return; } 
     msg.style.color = '#e6b800'; msg.innerText = 'Sauvegarde...'; 
     try { 
-        // Utilisation de currentAdminPass
         const res = await fetch('/api/iptv-config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action: 'save', adminPassword: currentAdminPass, iptvUrl: url}) }); 
         const data = await res.json(); 
         if(data.success) { msg.style.color = '#2ecc71'; msg.innerText = 'Sauvegardé ! Chargement...'; loadIPTVList(url); } else { msg.style.color = '#ff4d4d'; msg.innerText = 'Erreur de sauvegarde.'; } 
