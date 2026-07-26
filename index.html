@@ -88,7 +88,6 @@ button:active { transform: scale(0.96); }
 .nav-actions { display: flex; align-items: center; }
 
 @media screen and (min-width: 1024px) {
-  /* body { zoom: 0.8; } <-- LIGNE SUPPRIMÉE POUR NE PAS RÉTRÉCIR L'INTERFACE SUR PC */
   .nav-bar { padding: 5px 15px; }
   .logo-text { font-size: 20px; }
   .logo-icon { width: 25px; height: 25px; }
@@ -349,6 +348,7 @@ let zapTimeout;
 let heartbeatInterval;
 let channelButtons = []; 
 let siteBtnTimeout;
+let currentAdminPass = ''; // Variable pour le mot de passe admin sécurisé
 
 let adultPin = '';
 let adultUrl = '';
@@ -573,7 +573,7 @@ function showSiteBtnTemporarily() {
     }, 3000);
 }
 
-// --- NOUVELLE FONCTION : DÉTRUIRE L'IFRAME PROPREMENT ---
+// --- DÉTRUIRE L'IFRAME PROPREMENT ---
 function destroySiteIframe() {
     const oldIframe = document.getElementById('site-iframe');
     if (oldIframe) {
@@ -593,7 +593,8 @@ async function saveAdultConfig() {
     if (!url) { msg.style.color = '#ff4d4d'; msg.innerText = 'Veuillez coller un lien.'; return; }
     msg.style.color = '#e6b800'; msg.innerText = 'Sauvegarde sur le serveur...';
     try {
-        const res = await fetch('/api/iptv-config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action: 'save', adminPassword: 'chapdel220605', adultPin: pin, adultUrl: url}) });
+        // Utilisation de currentAdminPass au lieu du mot de passe en dur
+        const res = await fetch('/api/iptv-config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action: 'save', adminPassword: currentAdminPass, adultPin: pin, adultUrl: url}) });
         const data = await res.json();
         if(data.success) { adultPin = pin; adultUrl = url; msg.style.color = '#2ecc71'; msg.innerText = 'Configuration sauvegardée et synchronisée !'; } 
         else { msg.style.color = '#ff4d4d'; msg.innerText = 'Erreur de sauvegarde sur le serveur.'; }
@@ -650,8 +651,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
         document.getElementById('login-screen').classList.add('hidden');
         document.getElementById('app-screen').classList.add('hidden');
         document.getElementById('admin-screen').classList.remove('hidden');
-        loadUsers();
-        loadSavedIPTVUrl();
+        // On affiche la modale de mot de passe car on ne garde plus le mdp en mémoire local
+        document.getElementById('admin-modal').classList.remove('hidden');
     } else if (savedUser && savedSession) {
         currentLoggedUser = savedUser;
         startHeartbeat(); 
@@ -683,15 +684,38 @@ document.getElementById('main-logo').addEventListener('click', function() {
     else { window.logoClickTimer = setTimeout(() => { this.dataset.clicks = 0; }, 5000); }
 });
 
-function verifyAdmin() { 
-    if (document.getElementById('admin-pass-modal').value === 'chapdel220605') { 
-        localStorage.setItem('chapdolo_admin', 'true'); 
-        document.getElementById('admin-modal').classList.add('hidden'); 
-        document.getElementById('login-screen').classList.add('hidden'); 
-        document.getElementById('admin-screen').classList.remove('hidden'); 
-        document.getElementById('admin-pass-modal').value = ''; 
-        loadUsers(); loadSavedIPTVUrl(); 
-    } else { alert('Mot de passe incorrect !'); } 
+// --- NOUVELLE FONCTION VERIFYADMIN SÉCURISÉE ---
+async function verifyAdmin() { 
+    const passTyped = document.getElementById('admin-pass-modal').value;
+    if (!passTyped) { alert('Veuillez entrer le mot de passe.'); return; }
+    
+    const l = document.getElementById('user-list'); 
+    l.innerHTML='<p style="color:#888;">Vérification...</p>'; 
+    try { 
+        const r = await fetch('/api/get-users',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminPassword: passTyped})}); 
+        
+        if (r.status === 403) { 
+            alert('Mot de passe incorrect !'); 
+            l.innerHTML = '';
+            return;
+        }
+        
+        const d = await r.json(); 
+        if(d.success) {
+            currentAdminPass = passTyped; // Sauvegarde le mot de passe en mémoire pour les futures actions
+            localStorage.setItem('chapdolo_admin', 'true'); 
+            document.getElementById('admin-modal').classList.add('hidden'); 
+            document.getElementById('login-screen').classList.add('hidden'); 
+            document.getElementById('admin-screen').classList.remove('hidden'); 
+            document.getElementById('admin-pass-modal').value = ''; 
+            loadUsers(); 
+            loadSavedIPTVUrl(); 
+        } else { 
+            alert('Erreur'); 
+        } 
+    } catch(e) { 
+        alert('Erreur réseau'); 
+    } 
 }
 function closeAdminModal() { document.getElementById('admin-modal').classList.add('hidden'); document.getElementById('admin-pass-modal').value = ''; }
 
@@ -703,6 +727,7 @@ async function logout() {
     localStorage.removeItem('chapdolo_user'); 
     localStorage.removeItem('chapdolo_session'); 
     localStorage.removeItem('chapdolo_admin'); 
+    currentAdminPass = ''; // Efface le mot de passe de la mémoire
     document.getElementById('app-screen').classList.add('hidden'); 
     document.getElementById('admin-screen').classList.add('hidden'); 
     document.getElementById('login-screen').classList.remove('hidden'); 
@@ -714,20 +739,28 @@ async function logout() {
 
 function autoGenerate() { const c="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"; let p=""; for(let i=0;i<8;i++) p+=c.charAt(Math.floor(Math.random()*c.length)); document.getElementById('new-password').value=p; }
 
-async function generateUser() { const u=document.getElementById('new-username').value; const p=document.getElementById('new-password').value; const m=document.getElementById('admin-message'); m.style.color='#00E5FF';m.innerText='Création...'; if(!u||!p){m.style.color='#ff4d4d';m.innerText='Remplissez tout.';return;} try { const r=await fetch('/api/generate-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminPassword:'chapdel220605',newUser:u,newPass:p})}); const d=await r.json(); if(d.success){m.style.color='#2ecc71';m.innerText='SUCCÈS !';document.getElementById('new-username').value='';document.getElementById('new-password').value='';loadUsers();}else{m.style.color='#ff4d4d';m.innerText=d.message||'Erreur';} } catch(e){m.style.color='#ff4d4d';m.innerText='Critique';} }
+async function generateUser() { const u=document.getElementById('new-username').value; const p=document.getElementById('new-password').value; const m=document.getElementById('admin-message'); m.style.color='#00E5FF';m.innerText='Création...'; if(!u||!p){m.style.color='#ff4d4d';m.innerText='Remplissez tout.';return;} try { 
+    // Utilisation de currentAdminPass
+    const r=await fetch('/api/generate-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminPassword: currentAdminPass, newUser:u, newPass:p})}); 
+    const d=await r.json(); if(d.success){m.style.color='#2ecc71';m.innerText='SUCCÈS !';document.getElementById('new-username').value='';document.getElementById('new-password').value='';loadUsers();}else{m.style.color='#ff4d4d';m.innerText=d.message||'Erreur';} } catch(e){m.style.color='#ff4d4d';m.innerText='Critique';} }
 
+// --- NOUVELLE FONCTION LOADUSERS SÉCURISÉE ---
 async function loadUsers() { 
     const l=document.getElementById('user-list'); 
     l.innerHTML='<p style="color:#888;">Chargement...</p>'; 
     try { 
-        const r=await fetch('/api/get-users',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminPassword:'chapdel220605'})}); 
+        // Utilisation de currentAdminPass
+        const r=await fetch('/api/get-users',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminPassword: currentAdminPass})}); 
         const d=await r.json(); 
+        
         if(d.success && d.users) { 
             const us=d.users; const un=Object.keys(us); 
+            
             let onlineCount = 0;
             un.forEach(u => { const i = us[u]; const act = typeof i === 'string' ? false : i.active; if (act) onlineCount++; });
             document.getElementById('stat-total-users').innerText = un.length;
             document.getElementById('stat-online-users').innerText = onlineCount;
+            
             if(un.length===0){l.innerHTML='<p style="color:#888;">Aucun.</p>';return;} 
             l.innerHTML=''; 
             un.forEach(u=>{ 
@@ -737,7 +770,15 @@ async function loadUsers() {
     } catch(e){l.innerHTML='<p style="color:#ff4d4d;">Réseau</p>';} 
 }
 
-async function manageUser(u,a) { if(a==='delete') if(!confirm('Supprimer '+u+' ?')) return; try { const r=await fetch('/api/manage-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminPassword:'chapdel220605',username:u,action:a})}); const d=await r.json(); if(d.success) loadUsers(); else alert('Erreur'); } catch(e){alert('Réseau');} }
+// --- FONCTION MANAGEUSER SÉCURISÉE ---
+async function manageUser(u,a) { 
+    if(a==='delete') if(!confirm('Supprimer '+u+' ?')) return; 
+    try { 
+        // Utilisation de currentAdminPass
+        const r=await fetch('/api/manage-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminPassword: currentAdminPass, username:u, action:a})}); 
+        const d=await r.json(); if(d.success) loadUsers(); else alert('Erreur'); 
+    } catch(e){alert('Réseau');} 
+}
 
 function showApp() { 
     localStorage.removeItem('chapdolo_admin'); 
@@ -777,7 +818,19 @@ async function loadSavedIPTVUrl() {
     } catch(e) {} 
 }
 
-async function saveAndLoadIPTV() { const url = document.getElementById('iptv-url-input').value; const msg = document.getElementById('iptv-msg'); if (!url) { msg.style.color='#ff4d4d'; msg.innerText='Veuillez coller un lien !'; return; } msg.style.color = '#e6b800'; msg.innerText = 'Sauvegarde...'; try { const res = await fetch('/api/iptv-config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action: 'save', adminPassword: 'chapdel220605', iptvUrl: url}) }); const data = await res.json(); if(data.success) { msg.style.color = '#2ecc71'; msg.innerText = 'Sauvegardé ! Chargement...'; loadIPTVList(url); } else { msg.style.color = '#ff4d4d'; msg.innerText = 'Erreur de sauvegarde.'; } } catch(e) { msg.style.color = '#ff4d4d'; msg.innerText = 'Erreur réseau.'; } }
+// --- FONCTION SAVEANDLOADIPTV SÉCURISÉE ---
+async function saveAndLoadIPTV() { 
+    const url = document.getElementById('iptv-url-input').value; 
+    const msg = document.getElementById('iptv-msg'); 
+    if (!url) { msg.style.color='#ff4d4d'; msg.innerText='Veuillez coller un lien !'; return; } 
+    msg.style.color = '#e6b800'; msg.innerText = 'Sauvegarde...'; 
+    try { 
+        // Utilisation de currentAdminPass
+        const res = await fetch('/api/iptv-config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action: 'save', adminPassword: currentAdminPass, iptvUrl: url}) }); 
+        const data = await res.json(); 
+        if(data.success) { msg.style.color = '#2ecc71'; msg.innerText = 'Sauvegardé ! Chargement...'; loadIPTVList(url); } else { msg.style.color = '#ff4d4d'; msg.innerText = 'Erreur de sauvegarde.'; } 
+    } catch(e) { msg.style.color = '#ff4d4d'; msg.innerText = 'Erreur réseau.'; } 
+}
 
 async function loadSavedIPTVForUser() { 
     isAdultMode = false;
@@ -868,7 +921,6 @@ function playChannel(url, name, isReload = false) {
     errorOverlay.style.display = 'none'; 
     document.getElementById('main-content').classList.add('hidden'); 
     
-    // Détruit l'iframe proprement si on lance une chaîne IPTV pendant qu'on est sur oha.to
     destroySiteIframe(); 
     
     document.getElementById('player-section').classList.remove('hidden'); 
@@ -905,7 +957,6 @@ function backToMain() {
     document.body.classList.remove('app-fullscreen', 'site-active'); 
     document.getElementById('exit-fullscreen-btn').classList.add('hidden');
     
-    // Détruit totalement l'iframe pour couper le son, la vidéo et éviter l'écran d'erreur "Retry"
     destroySiteIframe();
 
     const siteBtn = document.getElementById('exit-site-btn');
