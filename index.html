@@ -12,8 +12,20 @@
 
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
+<!-- DÉTECTION TV / PC POUR APPLIQUER LE ZOOM -->
+<script>
+  const userAgent = navigator.userAgent.toLowerCase();
+  if ((userAgent.includes('android') && !userAgent.includes('mobile')) || userAgent.includes('tv') || userAgent.includes('gonative')) {
+      document.documentElement.classList.add('tv-mode'); // Appliqué sur <html> pour pouvoir zoomer le <body>
+  }
+</script>
+
 <style>
 body { background-color: #0a0a0a; color: white; font-family: 'Inter', sans-serif; margin: 0; min-height: 100vh; display: flex; flex-direction: column; }
+
+/* --- MODE TV (ZOOM 80% POUR GRANDS ÉCRANS) --- */
+html.tv-mode body { zoom: 0.8; }
 
 /* --- SECTION CONNEXION (CENTRÉE POUR PC) --- */
 .section { text-align: center; padding: 60px 20px; animation: fadeIn 0.5s ease; flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; }
@@ -66,18 +78,64 @@ button:active { transform: scale(0.96); }
 #tv-player:focus { outline: none !important; }
 #iptv-msg { color: #00E5FF; margin-top: 10px; font-weight: bold; }
 
-.iptv-container { margin-top: 30px; background: #111; border-radius: 12px; padding: 20px; border: 1px solid #222; transition: border-color 0.3s; width: 100%; max-width: 900px; box-sizing: border-box; }
+.iptv-container { margin-top: 30px; background: #111; border-radius: 12px; padding: 20px; border: 1px solid #222; transition: border-color 0.3s; width: 100%; max-width: 1200px; box-sizing: border-box; }
 .iptv-container.adult-mode { border-color: #ff4d4d; box-shadow: 0 0 15px rgba(255, 77, 77, 0.2); }
-.search-bar { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; }
+.search-bar { display: flex; justify-content: center; gap: 15px; margin-bottom: 30px; align-items: center; flex-wrap: wrap; }
+/* Boutons de la barre de recherche en forme de pilule */
+.search-bar button { border-radius: 50px !important; padding: 10px 20px !important; font-size: 14px !important; width: auto !important; margin: 0 !important; }
 
-.iptv-channels { display: grid; grid-template-columns: repeat(auto-fill, 280px); gap: 10px; justify-content: center; max-height: 450px; overflow-y: auto; padding: 10px; position: relative; }
-.channel-item { display: flex; margin: 0; padding: 0; }
-.iptv-btn { padding: 8px 12px; font-size: 14px; font-weight: 600; border: 1px solid #333; background: #1a1a1a; color: white; cursor: pointer; transition: background 0.1s, box-shadow 0.1s; display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; margin: 0; border-radius: 6px 0 0 6px; }
-.iptv-btn.fav-btn { flex: 0 0 50px; width: 50px; padding: 12px 10px; justify-content: center; border-radius: 0 6px 6px 0; border-left: none; font-size: 16px; }
-.iptv-btn:hover { background: #00E5FF; border-color: #00E5FF; color: black; }
-.ch-num { color: #00E5FF; font-weight: bold; font-size: 12px; min-width: 20px; text-align: right; }
-.ch-logo { height: 24px; width: auto; max-width: 40px; object-fit: contain; border-radius: 3px; }
-.ch-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* --- GRILLE IPTV NOUVEAU DESIGN (CARTES) --- */
+.iptv-channels { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; max-height: calc(100vh - 280px); overflow-y: auto; padding: 10px; position: relative; }
+.iptv-channels::-webkit-scrollbar { width: 8px; }
+.iptv-channels::-webkit-scrollbar-track { background: #111; border-radius: 4px; }
+.iptv-channels::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+
+.channel-item {
+    position: relative;
+    background: #1a1a1a;
+    border: 2px solid #2a2a2a;
+    border-radius: 12px;
+    height: 130px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    overflow: visible;
+}
+.channel-item:focus-within {
+    border-color: #00E5FF;
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
+    transform: scale(1.05);
+    z-index: 10;
+    background: #222;
+}
+
+.iptv-btn {
+    background: transparent !important;
+    border: none !important;
+    width: 100%; height: 100%;
+    display: flex !important; flex-direction: column;
+    align-items: center; justify-content: center; gap: 12px;
+    border-radius: 12px; margin: 0 !important; padding: 15px !important;
+    box-sizing: border-box; cursor: pointer;
+}
+/* On supprime le focus du bouton intérieur car c'est la carte (.channel-item) qui gère le visuel */
+.iptv-btn:focus { outline: none !important; box-shadow: none !important; transform: none !important; background: transparent !important; }
+
+.iptv-btn.fav-btn {
+    position: absolute !important; top: 8px; right: 8px;
+    width: 32px !important; height: 32px !important;
+    background: rgba(0,0,0,0.6) !important; border-radius: 50% !important;
+    padding: 0 !important; font-size: 14px !important;
+    display: flex !important; align-items: center !important; justify-content: center !important;
+    z-index: 2;
+}
+.iptv-btn.fav-btn:focus { background: #00E5FF !important; color: black !important; }
+
+.ch-num { display: none; /* On cache le numéro pour un écran plus propre, le zapping télécommande marche toujours */ }
+.ch-logo { height: 50px; width: auto; max-width: 90px; object-fit: contain; border-radius: 3px; }
+.ch-name { color: #ccc; font-size: 14px; font-weight: 500; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90%; }
 
 #site-iframe { width: 100%; height: 800px; border: none; margin-top: 20px; display: none; background: #000; }
 
@@ -87,25 +145,21 @@ button:active { transform: scale(0.96); }
 #clock { font-size: 24px; color: #00E5FF; font-weight: 600; text-shadow: 0 0 5px rgba(0, 229, 255, 0.3); margin-right: 20px; font-variant-numeric: tabular-nums; }
 .nav-actions { display: flex; align-items: center; }
 
-@media screen and (min-width: 1024px) {
-  .nav-bar { padding: 5px 15px; }
-  .logo-text { font-size: 20px; }
-  .logo-icon { width: 25px; height: 25px; }
-  .logo-icon::after { border-left-width: 14px; border-top-width: 9px; border-bottom-width: 9px; margin-left: 3px; }
-  button { padding: 10px 15px; font-size: 14px; margin: 5px; }
-  .tv-player-container { width: 100%; height: auto; max-height: 70vh; }
-  #tv-player { width: 100%; height: auto; object-fit: contain; }
-  .iptv-channels { grid-template-columns: repeat(auto-fill, 240px); }
-  .iptv-btn { font-size: 12px; padding: 6px 10px; }
-  .ch-logo { height: 20px; max-width: 35px; }
-  input, select { padding: 10px 15px; font-size: 14px; }
-  #clock { font-size: 16px; margin-right: 10px; }
-}
+/* --- AJUSTEMENTS POUR LE MODE TV (ZOOM 0.8) --- */
+html.tv-mode .nav-bar { padding: 5px 15px; }
+html.tv-mode .logo-text { font-size: 20px; }
+html.tv-mode .logo-icon { width: 25px; height: 25px; }
+html.tv-mode .logo-icon::after { border-left-width: 14px; border-top-width: 9px; border-bottom-width: 9px; margin-left: 3px; }
+html.tv-mode .nav-bar button { padding: 10px 15px; font-size: 14px; margin: 5px; }
+html.tv-mode #clock { font-size: 16px; margin-right: 10px; }
+html.tv-mode .iptv-channels { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; max-height: calc(100vh - 250px); }
+html.tv-mode .channel-item { height: 160px; }
+html.tv-mode .ch-logo { height: 60px; max-width: 100px; }
+html.tv-mode .ch-name { font-size: 16px; }
+html.tv-mode input, html.tv-mode select { padding: 10px 15px; font-size: 14px; }
 
 *:focus { outline: none !important; }
 button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; }
-.iptv-btn:focus { background: #00E5FF !important; border-color: #00E5FF !important; color: black !important; box-shadow: 0 0 0 4px #00E5FF, 0 0 15px rgba(0, 229, 255, 0.8) !important; z-index: 5; position: relative; }
-.iptv-btn:focus .ch-num { color: black !important; }
 
 /* --- PLEIN ÉCRAN VIDÉO --- */
 .app-fullscreen #app-screen nav.nav-bar { display: none !important; }
@@ -145,14 +199,9 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
     font-size: 24px !important; cursor: pointer !important; font-weight: 700 !important; 
     box-shadow: 0 0 10px rgba(0, 229, 255, 0.5) !important;
     display: flex !important; align-items: center !important; justify-content: center !important; padding: 0 !important;
-    opacity: 0 !important; 
-    pointer-events: none !important; 
-    transition: opacity 0.3s ease-in-out !important;
+    opacity: 0 !important; pointer-events: none !important; transition: opacity 0.3s ease-in-out !important;
 }
-#exit-site-btn.visible {
-    opacity: 1 !important;
-    pointer-events: auto !important;
-}
+#exit-site-btn.visible { opacity: 1 !important; pointer-events: auto !important; }
 
 #video-error-overlay {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -262,7 +311,6 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
 <div id="app-screen" class="hidden">
   <div id="zap-overlay"></div>
   
-  <!-- BOUTON FLOTTANT -->
   <button id="exit-site-btn" class="hidden" onclick="backToMain()">✕</button>
   
   <nav class="nav-bar">
@@ -286,18 +334,18 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
         <button class="source-btn btn-secondary" onclick="loadSite('https://huhu.bz')">SOURCE 3</button>
         <button class="source-btn btn-lock" onclick="promptAdultPin()">🔒 ADULTES</button>
      </div>
-     <div style="margin-top: 60px; border-top: 1px solid #222; padding-top: 40px; width: 100%; max-width: 900px; box-sizing: border-box;">
+     <div style="margin-top: 60px; border-top: 1px solid #222; padding-top: 40px; width: 100%; max-width: 1200px; box-sizing: border-box;">
         <h3 id="iptv-title" style="color:white; cursor:pointer;" onclick="loadSavedIPTVForUser()">📺 TV Live (Sans Pub)</h3>
         <div id="iptv-container" class="iptv-container hidden">
            <div class="search-bar">
               <button class="btn-secondary" tabindex="0" onclick="document.getElementById('iptv-search').focus()">🔍 Lancer la recherche</button>
-              <input type="text" id="iptv-search" tabindex="-1" placeholder="🔍 Rechercher une chaîne..." style="width: 300px; margin: 0;" oninput="filterChannels()">
+              <input type="text" id="iptv-search" tabindex="-1" placeholder="🔍 Rechercher une chaîne..." style="width: 300px; margin: 0; padding: 10px 20px; border-radius: 50px;" oninput="filterChannels()">
               <button id="fav-toggle-btn" class="btn-auto" tabindex="0" onclick="toggleShowFavorites()">❤️ Voir les favoris</button>
               <button id="recent-toggle-btn" class="btn-auto" tabindex="0" onclick="toggleShowRecents()">⏱ Vues récemment</button>
               <button id="sort-az-btn" class="btn-auto" tabindex="0" onclick="sortChannelsAZ()">🔤 Trier A-Z</button>
            </div>
            <div style="margin-bottom: 15px;">
-              <select id="iptv-category-filter" onchange="filterChannels()" style="padding: 12px 15px; border-radius: 6px; border: 1px solid #333; background: #1a1a1a; color: white; font-size: 14px; width: 100%; max-width: 300px; cursor: pointer;">
+              <select id="iptv-category-filter" onchange="filterChannels()" style="padding: 10px 20px; border-radius: 50px; border: 1px solid #333; background: #1a1a1a; color: white; font-size: 14px; width: 100%; max-width: 300px; cursor: pointer;">
                  <option value="all">Toutes les catégories</option>
               </select>
            </div>
@@ -414,11 +462,8 @@ function toggleShowRecents() {
     }
 }
 
-// --- NOUVELLE FONCTION : TRIER A-Z ---
 function sortChannelsAZ() {
     if (globalChannels.length === 0) return;
-    
-    // Trie le tableau global par ordre alphabétique du nom de la chaîne
     globalChannels.sort((a, b) => {
         const nameA = a.name.toLowerCase();
         const nameB = b.name.toLowerCase();
@@ -427,7 +472,6 @@ function sortChannelsAZ() {
         return 0;
     });
     
-    // Réinitialise les filtres pour voir le résultat du tri
     document.getElementById('iptv-search').value = '';
     document.getElementById('iptv-category-filter').value = 'all';
     showFavsOnly = false;
@@ -573,7 +617,6 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-// --- QUITTER AVEC LA TOUCHE ÉCHAP ---
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         const adminModal = document.getElementById('admin-modal');
@@ -586,7 +629,6 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-// --- GESTION DU BOUTON SOURIS ---
 function showSiteBtnTemporarily() {
     const btn = document.getElementById('exit-site-btn');
     if (!btn || btn.classList.contains('hidden')) return;
@@ -598,7 +640,6 @@ function showSiteBtnTemporarily() {
     }, 3000);
 }
 
-// --- DÉTRUIRE L'IFRAME PROPREMENT ---
 function destroySiteIframe() {
     const oldIframe = document.getElementById('site-iframe');
     if (oldIframe) {
@@ -889,7 +930,9 @@ async function loadIPTVList(url) {
         catSelect.innerHTML = '<option value="all">Toutes les catégories</option>';
         Array.from(groups).sort().forEach(g => { const opt = document.createElement('option'); opt.value = g; opt.innerText = g; catSelect.appendChild(opt); });
         renderChannels(globalChannels); 
-    } catch (e) { msg.style.color = '#ff4d4d'; msg.innerText = 'Erreur de chargement.'; iptvContainer.classList.add('hidden'); } 
+    } catch (e) { 
+        msg.style.color = '#ff4d4d'; msg.innerText = 'Erreur de chargement.'; iptvContainer.classList.add('hidden'); 
+    } 
 }
 
 function filterChannels() { 
@@ -914,18 +957,22 @@ function renderChannels(channelsToRender) {
         const ch = channelsToRender[i]; 
         const itemDiv = document.createElement('div'); itemDiv.className = 'channel-item';
         const btn = document.createElement('button'); btn.className = 'iptv-btn'; btn.setAttribute('tabindex', '0'); btn.onclick = () => playChannel(ch.url, ch.name); 
-        const numSpan = document.createElement('span'); numSpan.className = 'ch-num'; numSpan.innerText = (i + 1); btn.appendChild(numSpan);
+        
+        const numSpan = document.createElement('span'); numSpan.className = 'ch-num'; numSpan.innerText = (i + 1); btn.appendChild(numSpan); // Caché par CSS mais gardé pour le zapping
+        
         if (ch.logo) { const img = document.createElement('img'); img.className = 'ch-logo'; img.src = ch.logo; img.onerror = () => img.style.display = 'none'; btn.appendChild(img); }
         const nameSpan = document.createElement('span'); nameSpan.className = 'ch-name'; nameSpan.innerText = ch.name; btn.appendChild(nameSpan);
-        const favBtn = document.createElement('button'); favBtn.className = 'iptv-btn fav-btn'; favBtn.innerHTML = isFavorite(ch.url) ? '❤️' : '🤍'; favBtn.setAttribute('tabindex', '0'); favBtn.style.background = isFavorite(ch.url) ? '#2a0a0a' : '#1a1a1a';
-        favBtn.onclick = (e) => { e.stopPropagation(); toggleFavorite(ch); favBtn.innerHTML = isFavorite(ch.url) ? '❤️' : '🤍'; favBtn.style.background = isFavorite(ch.url) ? '#2a0a0a' : '#1a1a1a'; if (showFavsOnly) renderChannels(favorites); };
+        
+        const favBtn = document.createElement('button'); favBtn.className = 'iptv-btn fav-btn'; favBtn.innerHTML = isFavorite(ch.url) ? '❤️' : '🤍'; favBtn.setAttribute('tabindex', '0'); favBtn.style.background = isFavorite(ch.url) ? '#2a0a0a' : 'transparent';
+        favBtn.onclick = (e) => { e.stopPropagation(); toggleFavorite(ch); favBtn.innerHTML = isFavorite(ch.url) ? '❤️' : '🤍'; favBtn.style.background = isFavorite(ch.url) ? '#2a0a0a' : 'transparent'; if (showFavsOnly) renderChannels(favorites); };
+        
         itemDiv.appendChild(btn); itemDiv.appendChild(favBtn); channelList.appendChild(itemDiv); 
         channelButtons.push(btn); channelButtons.push(favBtn); 
         if (i === 0 && document.activeElement !== document.getElementById('iptv-search')) { setTimeout(() => btn.focus(), 100); }
     } 
     if (channelsToRender.length > 50) { 
         const info = document.createElement('p'); info.innerText = `Affichage des 50 premiers sur ${channelsToRender.length}. Affinez votre recherche.`; 
-        info.style.color = "#e6b800"; info.style.width = '100%'; info.style.marginTop = '15px'; channelList.appendChild(info); 
+        info.style.color = "#e6b800"; info.style.width = '100%'; info.style.marginTop = '15px'; info.style.gridColumn = "1 / -1"; channelList.appendChild(info); 
     } 
 }
 
