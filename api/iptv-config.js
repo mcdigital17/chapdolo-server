@@ -1,7 +1,8 @@
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
   
-  // Lecture sécurisée des données reçues
+  res.setHeader('Cache-Control', 'no-store');
+
   let body;
   try {
     body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
@@ -10,7 +11,6 @@ export default async function handler(req, res) {
   }
 
   const { action, adminPassword, iptvUrl, adultPin, adultUrl } = body;
-
   const redisUrl = process.env.KV_REST_API_URL;
   const redisToken = process.env.KV_REST_API_TOKEN;
 
@@ -18,7 +18,11 @@ export default async function handler(req, res) {
     return res.status(500).json({ success: false, message: 'Variables base de données manquantes sur Vercel' });
   }
 
-  // Fonction utilitaire pour nettoyer les guillemets de Redis
+  // VÉRIFICATION DU MOT DE PASSE SÉCURISÉ
+  if (action === 'save' && adminPassword !== process.env.ADMIN_PASSWORD) {
+    return res.status(403).json({ success: false, message: 'Action interdite' });
+  }
+
   const cleanRedisString = (val) => {
     if (typeof val === 'string' && val.startsWith('"') && val.endsWith('"')) {
       return val.substring(1, val.length - 1);
@@ -26,16 +30,9 @@ export default async function handler(req, res) {
     return val || '';
   };
 
-  // --- ACTION : SAUVEGARDER ---
   if (action === 'save') {
-    if (adminPassword !== 'chapdel220605') {
-      return res.status(403).json({ success: false, message: 'Action interdite' });
-    }
-
     try {
       const promises = [];
-      
-      // On sauvegarde l'URL classique si elle est fournie
       if (iptvUrl) {
         promises.push(fetch(`${redisUrl}/set/iptv_url`, {
           method: 'POST',
@@ -43,8 +40,6 @@ export default async function handler(req, res) {
           body: JSON.stringify(iptvUrl)
         }));
       }
-      
-      // On sauvegarde le PIN adulte s'il est fourni
       if (adultPin) {
         promises.push(fetch(`${redisUrl}/set/adult_pin`, {
           method: 'POST',
@@ -52,8 +47,6 @@ export default async function handler(req, res) {
           body: JSON.stringify(adultPin)
         }));
       }
-      
-      // On sauvegarde l'URL adulte si elle est fournie
       if (adultUrl) {
         promises.push(fetch(`${redisUrl}/set/adult_url`, {
           method: 'POST',
@@ -61,20 +54,15 @@ export default async function handler(req, res) {
           body: JSON.stringify(adultUrl)
         }));
       }
-
-      // On attend que toutes les sauvegardes soient terminées
       await Promise.all(promises);
-      
       return res.status(200).json({ success: true, message: 'Configuration sauvegardée avec succès !' });
     } catch (error) {
       return res.status(500).json({ success: false, message: 'Erreur de connexion au coffre-fort' });
     }
   }
 
-  // --- ACTION : LIRE / RECUPERER ---
   if (action === 'get') {
     try {
-      // On demande les 3 clés à Redis en même temps
       const [getUrlRes, getPinRes, getAdultUrlRes] = await Promise.all([
         fetch(`${redisUrl}/get/iptv_url`, { headers: { 'Authorization': `Bearer ${redisToken}` } }),
         fetch(`${redisUrl}/get/adult_pin`, { headers: { 'Authorization': `Bearer ${redisToken}` } }),
@@ -96,6 +84,5 @@ export default async function handler(req, res) {
     }
   }
 
-  // Si l'action n'est ni save ni get
   return res.status(400).json({ success: false, message: 'Action inconnue' });
 }
