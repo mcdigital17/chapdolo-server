@@ -24,10 +24,8 @@
 <style>
 body { background-color: #0a0a0a; color: white; font-family: 'Inter', sans-serif; margin: 0; min-height: 100vh; display: flex; flex-direction: column; }
 
-/* --- MODE TV (ZOOM 80% POUR GRANDS ÉCRANS) --- */
 html.tv-mode body { zoom: 0.8; }
 
-/* --- SECTION CONNEXION (CENTRÉE POUR PC) --- */
 .section { text-align: center; padding: 60px 20px; animation: fadeIn 0.5s ease; flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; }
 .section > * { width: 100%; max-width: 400px; box-sizing: border-box; }
 
@@ -633,14 +631,11 @@ function showSiteBtnTemporarily() {
     }, 3000);
 }
 
-function destroySiteIframe() {
-    const oldIframe = document.getElementById('site-iframe');
-    if (oldIframe) {
-        const newIframe = document.createElement('iframe');
-        newIframe.id = 'site-iframe';
-        newIframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-presentation allow-popups');
-        newIframe.style.display = 'none';
-        oldIframe.parentNode.replaceChild(newIframe, oldIframe);
+// --- NETTOYAGE EN DOUCEUR (Remplace destroySiteIframe) ---
+function clearSiteIframe() {
+    const siteIframe = document.getElementById('site-iframe');
+    if (siteIframe) {
+        siteIframe.src = 'about:blank'; // Vide proprement sans détruire l'élément
     }
 }
 
@@ -688,9 +683,7 @@ function verifyAdultPin() {
 
 document.addEventListener('DOMContentLoaded', setupSpatialNavigation);
 
-// --- NOUVEAU : PIÈGE DU BOUTON RETOUR POUR ANDROID TV ---
 window.addEventListener('popstate', function(event) {
-    // 1. Si on est dans la barre de recherche
     if (document.activeElement === document.getElementById('iptv-search')) {
         document.getElementById('iptv-search').blur();
         document.getElementById('iptv-search').value = '';
@@ -698,18 +691,7 @@ window.addEventListener('popstate', function(event) {
         window.history.pushState({ page: 'app' }, '', '#app');
         return;
     }
-    
-    // 2. Si on est sur un site (oha.to) ou en plein écran vidéo
-    if (document.body.classList.contains('site-active') || document.body.classList.contains('app-fullscreen')) {
-        backToMain();
-        window.history.pushState({ page: 'app' }, '', '#app'); // Empêche le bouton retour de quitter l'app
-        return;
-    }
-    
-    // 3. Si on est sur l'écran d'accueil de l'application
-    if (!document.getElementById('app-screen').classList.contains('hidden')) {
-        window.history.pushState({ page: 'app' }, '', '#app'); // Bloque le bouton retour pour rester dans l'app
-    }
+    if (document.getElementById('main-content').classList.contains('hidden')) backToMain();
 });
 
 document.addEventListener('DOMContentLoaded', (event) => {
@@ -728,8 +710,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
         startHeartbeat(); 
         showApp();
     }
-    // Crée un historique initial pour piéger le bouton retour
-    window.history.pushState({ page: 'app' }, '', '#app');
 });
 
 async function startHeartbeat() {
@@ -991,7 +971,7 @@ function playChannel(url, name, isReload = false) {
     errorOverlay.style.display = 'none'; 
     document.getElementById('main-content').classList.add('hidden'); 
     
-    destroySiteIframe(); 
+    clearSiteIframe(); // Utilise le nettoyage en douceur
     
     document.getElementById('player-section').classList.remove('hidden'); 
     document.getElementById('back-main-btn').classList.remove('hidden'); 
@@ -1027,7 +1007,9 @@ function backToMain() {
     document.body.classList.remove('app-fullscreen', 'site-active'); 
     document.getElementById('exit-fullscreen-btn').classList.add('hidden');
     
-    destroySiteIframe();
+    clearSiteIframe(); // Utilise le nettoyage en douceur
+    const siteIframe = document.getElementById('site-iframe');
+    siteIframe.style.display = 'none';
 
     const siteBtn = document.getElementById('exit-site-btn');
     siteBtn.classList.add('hidden');
@@ -1044,9 +1026,6 @@ function backToMain() {
 }
 </script>
 
-<!-- SCRIPT PWA -->
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js').then(registration => {
-        console.log('ServiceWorker enregistré avec succès
+<!-- SERVICE WORKER SUPPRIMÉ POUR ÉVITER L'ERREUR "NO INTERNET CONNECTION" SUR TV -->
+</body>
+</html>
