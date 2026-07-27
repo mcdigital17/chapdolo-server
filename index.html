@@ -392,7 +392,7 @@ let heartbeatInterval;
 let channelButtons = []; 
 let siteBtnTimeout;
 let currentAdminPass = ''; 
-let allUsersCache = {}; // NOUVEAU : Cache pour la recherche d'utilisateurs
+let allUsersCache = {}; 
 
 let adultPin = '';
 let adultUrl = '';
@@ -635,10 +635,15 @@ function showSiteBtnTemporarily() {
     }, 3000);
 }
 
-function clearSiteIframe() {
-    const siteIframe = document.getElementById('site-iframe');
-    if (siteIframe) {
-        siteIframe.src = 'about:blank'; 
+// --- RETOUR À LA DESTRUCTION STRICTE DE L'IFRAME ---
+function destroySiteIframe() {
+    const oldIframe = document.getElementById('site-iframe');
+    if (oldIframe) {
+        const newIframe = document.createElement('iframe');
+        newIframe.id = 'site-iframe';
+        newIframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-presentation allow-popups');
+        newIframe.style.display = 'none';
+        oldIframe.parentNode.replaceChild(newIframe, oldIframe);
     }
 }
 
@@ -797,7 +802,6 @@ async function generateUser() { const u=document.getElementById('new-username').
     const r=await fetch('/api/generate-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminPassword: currentAdminPass, newUser:u, newPass:p})}); 
     const d=await r.json(); if(d.success){m.style.color='#2ecc71';m.innerText='SUCCÈS !';document.getElementById('new-username').value='';document.getElementById('new-password').value='';loadUsers();}else{m.style.color='#ff4d4d';m.innerText=d.message||'Erreur';} } catch(e){m.style.color='#ff4d4d';m.innerText='Critique';} }
 
-// --- NOUVELLE FONCTION LOADUSERS (AVEC CACHE POUR LA RECHERCHE) ---
 async function loadUsers() { 
     const l=document.getElementById('user-list'); 
     l.innerHTML='<p style="color:#888;">Chargement...</p>'; 
@@ -806,7 +810,7 @@ async function loadUsers() {
         const d=await r.json(); 
         
         if(d.success && d.users) { 
-            allUsersCache = d.users; // Sauvegarde dans le cache
+            allUsersCache = d.users; 
             const un = Object.keys(allUsersCache);
             
             let onlineCount = 0;
@@ -814,14 +818,13 @@ async function loadUsers() {
             document.getElementById('stat-total-users').innerText = un.length;
             document.getElementById('stat-online-users').innerText = onlineCount;
             
-            renderUserList(document.getElementById('user-search').value); // Affiche en gardant le filtre actuel
+            renderUserList(document.getElementById('user-search').value); 
         } else {
             l.innerHTML = '<p style="color:#ff4d4d;">'+(d.message || 'Erreur')+'</p>';
         }
     } catch(e){l.innerHTML='<p style="color:#ff4d4d;">Réseau</p>';} 
 }
 
-// --- NOUVELLE FONCTION RENDERUSERLIST (FILTRE LA LISTE) ---
 function renderUserList(filterText) {
     const l = document.getElementById('user-list');
     l.innerHTML = '';
@@ -1004,7 +1007,7 @@ function playChannel(url, name, isReload = false) {
     errorOverlay.style.display = 'none'; 
     document.getElementById('main-content').classList.add('hidden'); 
     
-    clearSiteIframe(); 
+    destroySiteIframe(); // Retour à la destruction stricte
     
     document.getElementById('player-section').classList.remove('hidden'); 
     document.getElementById('back-main-btn').classList.remove('hidden'); 
@@ -1040,9 +1043,7 @@ function backToMain() {
     document.body.classList.remove('app-fullscreen', 'site-active'); 
     document.getElementById('exit-fullscreen-btn').classList.add('hidden');
     
-    clearSiteIframe(); 
-    const siteIframe = document.getElementById('site-iframe');
-    siteIframe.style.display = 'none';
+    destroySiteIframe(); // Retour à la destruction stricte
 
     const siteBtn = document.getElementById('exit-site-btn');
     siteBtn.classList.add('hidden');
@@ -1059,5 +1060,15 @@ function backToMain() {
 }
 </script>
 
+<!-- DÉSINSTALLATION FORCÉE DU SERVICE WORKER -->
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function(registrations) {
+      for(let registration of registrations) {
+        registration.unregister();
+      }
+    });
+  }
+</script>
 </body>
 </html>
