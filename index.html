@@ -275,7 +275,10 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
      </div>
      <div style="background:#111; padding:25px; border-radius:12px; width: 600px; border:1px solid #222; box-sizing: border-box;">
         <h3 style="color:white;">Utilisateurs créés</h3>
-        <button class="btn-secondary" onclick="loadUsers()" style="font-size:14px;">🔄 Rafraîchir</button>
+        <div style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center;">
+           <input type="text" id="user-search" placeholder="🔍 Rechercher un utilisateur..." style="margin: 0; padding: 10px 15px; font-size: 14px; border-radius: 50px;" oninput="renderUserList(this.value)">
+           <button class="btn-secondary" onclick="loadUsers()" style="font-size:14px; width: auto; margin: 0; padding: 10px 15px; border-radius: 50px;">🔄 Rafraîchir</button>
+        </div>
         <div id="user-list" style="margin-top:10px; max-height: 400px; overflow-y: auto;"></div>
      </div>
   </div>
@@ -389,6 +392,7 @@ let heartbeatInterval;
 let channelButtons = []; 
 let siteBtnTimeout;
 let currentAdminPass = ''; 
+let allUsersCache = {}; // NOUVEAU : Cache pour la recherche d'utilisateurs
 
 let adultPin = '';
 let adultUrl = '';
@@ -793,6 +797,7 @@ async function generateUser() { const u=document.getElementById('new-username').
     const r=await fetch('/api/generate-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminPassword: currentAdminPass, newUser:u, newPass:p})}); 
     const d=await r.json(); if(d.success){m.style.color='#2ecc71';m.innerText='SUCCÈS !';document.getElementById('new-username').value='';document.getElementById('new-password').value='';loadUsers();}else{m.style.color='#ff4d4d';m.innerText=d.message||'Erreur';} } catch(e){m.style.color='#ff4d4d';m.innerText='Critique';} }
 
+// --- NOUVELLE FONCTION LOADUSERS (AVEC CACHE POUR LA RECHERCHE) ---
 async function loadUsers() { 
     const l=document.getElementById('user-list'); 
     l.innerHTML='<p style="color:#888;">Chargement...</p>'; 
@@ -801,27 +806,56 @@ async function loadUsers() {
         const d=await r.json(); 
         
         if(d.success && d.users) { 
-            const us=d.users; const un=Object.keys(us); 
+            allUsersCache = d.users; // Sauvegarde dans le cache
+            const un = Object.keys(allUsersCache);
             
             let onlineCount = 0;
-            un.forEach(u => { const i = us[u]; const act = typeof i === 'string' ? false : i.active; if (act) onlineCount++; });
+            un.forEach(u => { const i = allUsersCache[u]; const act = typeof i === 'string' ? false : i.active; if (act) onlineCount++; });
             document.getElementById('stat-total-users').innerText = un.length;
             document.getElementById('stat-online-users').innerText = onlineCount;
             
-            if(un.length===0){l.innerHTML='<p style="color:#888;">Aucun.</p>';return;} 
-            l.innerHTML=''; 
-            un.forEach(u=>{ 
-                const i=us[u]; const old=typeof i==='string'; const pass=old?i:i.pass; const blk=old?false:i.blocked; const act=old?false:i.active; const rawDate = old ? null : i.createdAt; const createdDate = rawDate ? new Date(rawDate).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Ancien'; const c=document.createElement('div'); c.className='user-card'; c.innerHTML=`<div class="user-info"><h4>${u}</h4><p>Mdp: ${pass} | Créé: ${createdDate} | ${blk?'<span style="color:#ff4d4d;">Bloqué</span>':'<span style="color:#2ecc71;">Actif</span>'} | ${act?'<span style="color:#e6b800;">En ligne</span>':'Hors ligne'}</p></div><div class="user-actions">${blk?`<button class="btn-success" onclick="manageUser('${u}','unblock')">Débloquer</button>`:`<button class="btn-warn" onclick="manageUser('${u}','block')">Bloquer</button>`} ${act?`<button class="btn-danger" onclick="manageUser('${u}','disconnect')">Déco</button>`:''} <button class="btn-delete" onclick="manageUser('${u}','delete')">Suppr</button></div>`; l.appendChild(c); 
-            }); 
-        } 
+            renderUserList(document.getElementById('user-search').value); // Affiche en gardant le filtre actuel
+        } else {
+            l.innerHTML = '<p style="color:#ff4d4d;">'+(d.message || 'Erreur')+'</p>';
+        }
     } catch(e){l.innerHTML='<p style="color:#ff4d4d;">Réseau</p>';} 
+}
+
+// --- NOUVELLE FONCTION RENDERUSERLIST (FILTRE LA LISTE) ---
+function renderUserList(filterText) {
+    const l = document.getElementById('user-list');
+    l.innerHTML = '';
+    
+    const searchTerm = (filterText || '').toLowerCase();
+    const un = Object.keys(allUsersCache);
+    
+    const filteredUsers = un.filter(u => u.toLowerCase().includes(searchTerm));
+    
+    if (filteredUsers.length === 0) {
+        l.innerHTML = '<p style="color:#888;">Aucun utilisateur trouvé.</p>';
+        return;
+    }
+
+    filteredUsers.forEach(u => {
+        const i = allUsersCache[u];
+        const old = typeof i === 'string';
+        const pass = old ? i : i.pass;
+        const blk = old ? false : i.blocked;
+        const act = old ? false : i.active;
+        const rawDate = old ? null : i.createdAt;
+        const createdDate = rawDate ? new Date(rawDate).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Ancien';
+        const c = document.createElement('div');
+        c.className = 'user-card';
+        c.innerHTML = `<div class="user-info"><h4>${u}</h4><p>Mdp: ${pass} | Créé: ${createdDate} | ${blk ? '<span style="color:#ff4d4d;">Bloqué</span>' : '<span style="color:#2ecc71;">Actif</span>'} | ${act ? '<span style="color:#e6b800;">En ligne</span>' : 'Hors ligne'}</p></div><div class="user-actions">${blk ? `<button class="btn-success" onclick="manageUser('${u}','unblock')">Débloquer</button>` : `<button class="btn-warn" onclick="manageUser('${u}','block')">Bloquer</button>`} ${act ? `<button class="btn-danger" onclick="manageUser('${u}','disconnect')">Déco</button>` : ''} <button class="btn-delete" onclick="manageUser('${u}','delete')">Suppr</button></div>`;
+        l.appendChild(c);
+    });
 }
 
 async function manageUser(u,a) { 
     if(a==='delete') if(!confirm('Supprimer '+u+' ?')) return; 
     try { 
         const r=await fetch('/api/manage-user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({adminPassword: currentAdminPass, username:u, action:a})}); 
-        const d=await r.json(); if(d.success) loadUsers(); else alert('Erreur'); 
+        const d=await r.json(); if(d.success) loadUsers(); else alert(d.message || 'Erreur'); 
     } catch(e){alert('Réseau');} 
 }
 
@@ -1025,6 +1059,5 @@ function backToMain() {
 }
 </script>
 
-<!-- SERVICE WORKER SUPPRIMÉ POUR ÉVITER L'ERREUR "NO INTERNET CONNECTION" SUR TV -->
 </body>
 </html>
