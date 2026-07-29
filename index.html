@@ -387,28 +387,33 @@ async function loadHuhuCatalog() {
             card.setAttribute('tabindex', '0');
             
             const name = item.name || 'Sans titre';
+            const id = item.id || '';
             const url = item.url || '';
             
             card.innerHTML = `<span>${name}</span>`;
             
             card.onclick = async () => {
-                if (url) {
+                if (id) {
                     try {
-                        // On demande le vrai lien vidéo au proxy
-                        const srcRes = await fetch(`/api/proxy-bundle?action=source&type=iptv&url=${encodeURIComponent(url)}`);
+                        // On demande le vrai lien vidéo au proxy en utilisant l'ID
+                        const srcRes = await fetch(`/api/proxy-bundle?action=source&type=${item.type || 'iptv'}&id=${encodeURIComponent(id)}`);
                         const srcData = await srcRes.json();
                         
-                        // Le vrai lien .m3u8 est souvent dans srcData.sources[0].url
                         if (srcData.sources && srcData.sources.length > 0) {
                             playChannel(srcData.sources[0].url, name);
                         } else if (srcData.url) {
                             playChannel(srcData.url, name);
+                        } else if (url) {
+                            playChannel(url, name); // Fallback
                         } else {
                             alert("Lien vidéo introuvable pour cet élément.");
                         }
                     } catch (e) {
-                        alert("Erreur lors de la récupération du lien vidéo.");
+                        if (url) playChannel(url, name); // Fallback
+                        else alert("Erreur lors de la récupération du lien vidéo.");
                     }
+                } else if (url) {
+                    playChannel(url, name);
                 } else {
                     alert("Aucun lien vidéo disponible pour cet élément.");
                 }
