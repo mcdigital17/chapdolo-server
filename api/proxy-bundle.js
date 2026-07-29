@@ -1,15 +1,25 @@
-export default async function handler(req, res) {
-  // On accepte seulement les requêtes POST
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
+module.exports = async (req, res) => {
+  let body;
   
-  // On récupère le corps de la requête envoyée par Chapdolo
-  let body = req.body;
-  if (typeof body === 'string') {
-    try { body = JSON.parse(body); } catch (e) { return res.status(400).json({ error: 'Invalid JSON' }); }
+  // Si Chapdolo envoie du POST (pour l'application finale)
+  if (req.method === 'POST') {
+    body = req.body;
+    if (typeof body === 'string') { try { body = JSON.parse(body); } catch (e) { return res.status(400).json({ error: 'Invalid JSON' }); } }
+  } 
+  // Si on teste avec le navigateur (GET)
+  else if (req.method === 'GET') {
+    const { action, type, id, sort } = req.query;
+    body = {
+      action: action || 'catalog',
+      type: type || 'movie',
+      id: id || 'tmdb.movie',
+      extra: { sort: sort || 'popularity' }
+    };
+  } else {
+    return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
   try {
-    // On interroge le serveur de huhu.to
     const response = await fetch('https://www.huhu.to/mediaurl.json', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -22,4 +32,4 @@ export default async function handler(req, res) {
   } catch (error) {
     res.status(500).json({ error: 'Erreur de connexion au bundle huhu.to' });
   }
-}
+};
