@@ -4,13 +4,20 @@ module.exports = async (req, res) => {
   if (req.method === 'POST') {
     body = req.body;
     if (typeof body === 'string') { try { body = JSON.parse(body); } catch (e) { return res.status(400).json({ error: 'Invalid JSON' }); } }
+    body.extra = body.extra || {};
+    body.extra.skip = body.extra.skip || 0;
+    body.extra.limit = body.extra.limit || 20;
   } else if (req.method === 'GET') {
     const { action, type, id, sort } = req.query;
     body = {
       action: action || 'catalog',
       type: type || 'movie',
       id: id || 'tmdb.movie',
-      extra: { sort: sort || 'popularity' }
+      extra: { 
+        skip: 0,
+        limit: 20,
+        sort: sort || 'popularity' 
+      }
     };
   } else {
     return res.status(405).json({ error: 'Method Not Allowed' });
