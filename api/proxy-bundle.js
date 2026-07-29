@@ -33,7 +33,8 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const response = await fetch('https://www.huhu.to/mediaurl.json', {
+    // L'URL CORRIGÉE EST ICI 👇
+    const response = await fetch('https://www.huhu.to/mediaurl-catalog.json', {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
