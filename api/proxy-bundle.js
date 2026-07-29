@@ -1,13 +1,10 @@
 module.exports = async (req, res) => {
   let body;
   
-  // Si Chapdolo envoie du POST (pour l'application finale)
   if (req.method === 'POST') {
     body = req.body;
     if (typeof body === 'string') { try { body = JSON.parse(body); } catch (e) { return res.status(400).json({ error: 'Invalid JSON' }); } }
-  } 
-  // Si on teste avec le navigateur (GET)
-  else if (req.method === 'GET') {
+  } else if (req.method === 'GET') {
     const { action, type, id, sort } = req.query;
     body = {
       action: action || 'catalog',
@@ -24,7 +21,9 @@ module.exports = async (req, res) => {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        'User-Agent': 'Watched/2.3.1 (Android)',
+        'Accept': 'application/json',
+        'X-SDK-Version': '2.3.1'
       },
       body: JSON.stringify(body)
     });
