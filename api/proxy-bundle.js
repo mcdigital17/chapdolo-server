@@ -4,28 +4,36 @@ module.exports = async (req, res) => {
   if (req.method === 'POST') {
     body = req.body;
     if (typeof body === 'string') { try { body = JSON.parse(body); } catch (e) { return res.status(400).json({ error: 'Invalid JSON' }); } }
-    body.extra = body.extra || {};
-    body.extra.skip = body.extra.skip || 0;
-    body.extra.limit = body.extra.limit || 20;
   } else if (req.method === 'GET') {
-    const { action, type, id, sort } = req.query;
-    body = {
-      action: action || 'catalog',
-      type: type || 'movie',
-      id: id || 'tmdb.movie',
-      extra: { 
-        skip: 0,
-        limit: 20,
-        sort: sort || 'popularity' 
-      }
-    };
+    const { action, type, id, sort, url } = req.query;
+    
+    // Si on demande la source vidéo d'un élément
+    if (action === 'source') {
+      body = {
+        action: 'source',
+        type: type || 'movie',
+        url: url
+      };
+    } 
+    // Sinon, on demande le catalogue
+    else {
+      body = {
+        action: action || 'catalog',
+        type: type || 'movie',
+        id: id || 'tmdb.movie',
+        extra: { 
+          skip: 0,
+          limit: 20,
+          sort: sort || 'popularity' 
+        }
+      };
+    }
   } else {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
   try {
-    // NOUVELLE URL : mediaurl-catalog.json
-    const response = await fetch('https://www.huhu.to/mediaurl-catalog.json', {
+    const response = await fetch('https://www.huhu.to/mediaurl.json', {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
