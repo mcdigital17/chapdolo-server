@@ -80,15 +80,6 @@ button:active { transform: scale(0.96); }
 .source-btn { padding: 24px 36px; font-size: 20px; font-weight: bold; border-radius: 8px; min-width: 160px; letter-spacing: 1px; position: relative; overflow: hidden; width: auto; }
 .source-btn::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, rgba(255,255,255,0.1), transparent); pointer-events: none; }
 
-/* --- CATALOGUE HUHU (JSON) --- */
-#huhu-catalog { width: 100%; max-width: 1200px; margin-top: 40px; text-align: center; }
-.huhu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; margin-top: 20px; }
-.huhu-card { background: #1a1a1a; border: 2px solid #2a2a2a; border-radius: 12px; height: 130px; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.2s ease; cursor: pointer; padding: 10px; box-sizing: border-box; }
-.huhu-card:focus-within { border-color: #00E5FF; box-shadow: 0 0 20px rgba(0, 229, 255, 0.4); transform: scale(1.05); z-index: 10; background: #222; }
-.huhu-card span { color: white; font-size: 14px; font-weight: 500; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-.huhu-back-btn { margin-bottom: 20px; width: auto; padding: 10px 20px !important; border-radius: 50px !important; font-size: 14px !important; }
-/* ---------------------- */
-
 .tv-player-container { width: 100%; max-width: 1000px; margin: 20px auto; background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8); display: none; aspect-ratio: 16/9; position: relative; }
 #tv-player { width: 100%; height: 100%; background: black; object-fit: contain; }
 #tv-player:focus { outline: none !important; }
@@ -132,8 +123,6 @@ html.tv-mode .channel-item { height: 160px; }
 html.tv-mode .ch-logo { height: 60px; max-width: 100px; }
 html.tv-mode .ch-name { font-size: 16px; }
 html.tv-mode input, html.tv-mode select { padding: 10px 15px; font-size: 14px; }
-html.tv-mode .huhu-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
-html.tv-mode .huhu-card { height: 160px; }
 
 *:focus { outline: none !important; }
 button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; }
@@ -272,17 +261,10 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
      <p style="color:#888; font-size:20px; margin-bottom:40px;">Sélectionnez une source de streaming</p>
      
      <div class="source-grid">
-        <button class="source-btn btn-primary" onclick="loadHuhuCatalog()">CATALOGUE HUHU</button>
+        <button class="source-btn btn-primary" onclick="loadSite('https://oha.to')">SOURCE 1</button>
         <button class="source-btn btn-secondary" onclick="loadSite('https://huhu.to')">SOURCE 2</button>
         <button class="source-btn btn-secondary" onclick="loadSite('https://vavoo.to')">SOURCE 3</button>
         <button class="source-btn btn-lock" onclick="promptAdultPin()">🔒 ADULTES</button>
-     </div>
-
-     <!-- CATALOGUE HUHU -->
-     <div id="huhu-catalog" class="hidden">
-        <button class="btn-secondary huhu-back-btn" onclick="hideHuhuCatalog()">↩ Retour aux sources</button>
-        <h3 style="color:white;">Catalogue HUHU.TO</h3>
-        <div id="huhu-grid" class="huhu-grid"></div>
      </div>
 
      <div style="margin-top: 60px; border-top: 1px solid #222; padding-top: 40px; width: 100%; max-width: 1200px; box-sizing: border-box;">
@@ -350,6 +332,7 @@ let channelButtons = [];
 let siteBtnTimeout;
 let currentAdminPass = ''; 
 let allUsersCache = {}; 
+
 let adultPin = '';
 let adultUrl = '';
 
@@ -359,80 +342,6 @@ function updateClock() {
     const m = String(now.getMinutes()).padStart(2, '0');
     const clockEl = document.getElementById('clock');
     if (clockEl) clockEl.innerText = `${h}:${m}`;
-}
-
-// --- FONCTION MODIFIÉE : CATALOGUE HUHU.JSON ---
-async function loadHuhuCatalog() {
-    document.querySelector('.source-grid').style.display = 'none';
-    const huhuCat = document.getElementById('huhu-catalog');
-    const grid = document.getElementById('huhu-grid');
-    huhuCat.classList.remove('hidden');
-    grid.innerHTML = '<p style="color:#888; grid-column: 1/-1;">Chargement du catalogue HUHU...</p>';
-
-    try {
-        const res = await fetch('/api/proxy-bundle?action=catalog&type=movie&id=tmdb.movie');
-        const data = await res.json();
-        
-        grid.innerHTML = '';
-        const items = data.items || [];
-        
-        if (items.length === 0) {
-            grid.innerHTML = '<p style="color:#ff4d4d; grid-column: 1/-1;">Aucun élément trouvé dans le catalogue.</p>';
-            return;
-        }
-
-        items.forEach(item => {
-            const card = document.createElement('button');
-            card.className = 'huhu-card';
-            card.setAttribute('tabindex', '0');
-            
-            const name = item.name || 'Sans titre';
-            const id = item.id || '';
-            const url = item.url || '';
-            
-            card.innerHTML = `<span>${name}</span>`;
-            
-            card.onclick = async () => {
-                if (id) {
-                    try {
-                        // On demande le vrai lien vidéo au proxy en utilisant l'ID
-                        const srcRes = await fetch(`/api/proxy-bundle?action=source&type=${item.type || 'iptv'}&id=${encodeURIComponent(id)}`);
-                        const srcData = await srcRes.json();
-                        
-                        if (srcData.sources && srcData.sources.length > 0) {
-                            playChannel(srcData.sources[0].url, name);
-                        } else if (srcData.url) {
-                            playChannel(srcData.url, name);
-                        } else if (url) {
-                            playChannel(url, name); // Fallback
-                        } else {
-                            alert("Lien vidéo introuvable pour cet élément.");
-                        }
-                    } catch (e) {
-                        if (url) playChannel(url, name); // Fallback
-                        else alert("Erreur lors de la récupération du lien vidéo.");
-                    }
-                } else if (url) {
-                    playChannel(url, name);
-                } else {
-                    alert("Aucun lien vidéo disponible pour cet élément.");
-                }
-            };
-            
-            grid.appendChild(card);
-        });
-        
-        if (grid.children.length > 0) {
-            setTimeout(() => grid.children[0].focus(), 100);
-        }
-    } catch (e) {
-        grid.innerHTML = '<p style="color:#ff4d4d; grid-column: 1/-1;">Erreur de chargement du catalogue.</p>';
-    }
-}
-
-function hideHuhuCatalog() {
-    document.getElementById('huhu-catalog').classList.add('hidden');
-    document.querySelector('.source-grid').style.display = 'flex';
 }
 
 function isFavorite(url) { return favorites.some(f => f.url === url); }
@@ -1084,15 +993,20 @@ function backToMain() {
     document.getElementById('player-section').classList.add('hidden'); 
     const video = document.getElementById('tv-player'); video.pause(); video.src = ''; 
     if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; } 
-    
-    // Masquer le catalogue Huhu si on revient
-    document.getElementById('huhu-catalog').classList.add('hidden');
-    document.querySelector('.source-grid').style.display = 'flex';
-    
     document.getElementById('main-content').classList.remove('hidden'); 
     document.getElementById('back-main-btn').classList.add('hidden'); 
 }
 </script>
 
+<!-- DÉSINSTALLATION FORCÉE DU SERVICE WORKER -->
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function(registrations) {
+      for(let registration of registrations) {
+        registration.unregister();
+      }
+    });
+  }
+</script>
 </body>
 </html>
