@@ -102,7 +102,8 @@ button:active { transform: scale(0.96); }
 #movie-modal h2 { color: #00E5FF; margin-top: 0; font-size: 24px; }
 #movie-modal .movie-meta { color: #aaa; font-size: 14px; margin-bottom: 15px; }
 #movie-modal .movie-overview { font-size: 15px; line-height: 1.5; margin-bottom: 25px; color: #ddd; }
-#movie-modal .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+#movie-modal .modal-actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+#movie-modal .modal-actions button { width: auto; padding: 12px 20px !important; font-size: 14px !important; margin: 0 !important; }
 /* ---------------------- */
 
 .tv-player-container { width: 100%; max-width: 1000px; margin: 20px auto; background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8); display: none; aspect-ratio: 16/9; position: relative; }
@@ -353,7 +354,8 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
     <p id="movie-overview"></p>
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeMovieModal()">Fermer</button>
-      <button class="btn-primary" onclick="watchMovieSource()">Visionner sur Source 1</button>
+      <button class="btn-primary" onclick="watchMovieOnSite('https://www.oha.to/?s=')">Source 1 (OHA)</button>
+      <button class="btn-primary" onclick="watchMovieOnSite('https://www.huhu.to/?s=')">Source 2 (HUHU)</button>
     </div>
   </div>
 </div>
@@ -487,10 +489,10 @@ function closeMovieModal() {
     document.getElementById('movie-modal').classList.add('hidden');
 }
 
-function watchMovieSource() {
+function watchMovieOnSite(baseUrl) {
+    // Ouvre le navigateur externe avec la recherche du film
+    window.open(baseUrl + encodeURIComponent(currentMovieTitle), '_blank');
     closeMovieModal();
-    hideTMDBCatalog(); // Masquer le catalogue TMDB
-    loadSite('https://oha.to'); // Ouvrir la source
 }
 
 function hideTMDBCatalog() {
