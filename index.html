@@ -80,6 +80,31 @@ button:active { transform: scale(0.96); }
 .source-btn { padding: 24px 36px; font-size: 20px; font-weight: bold; border-radius: 8px; min-width: 160px; letter-spacing: 1px; position: relative; overflow: hidden; width: auto; }
 .source-btn::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, rgba(255,255,255,0.1), transparent); pointer-events: none; }
 
+/* --- CATALOGUE TMDB --- */
+#tmdb-catalog { width: 100%; max-width: 1200px; margin-top: 40px; text-align: center; }
+.tmdb-back-btn { margin-bottom: 20px; width: auto; padding: 10px 20px !important; border-radius: 50px !important; font-size: 14px !important; }
+.genre-bar { display: flex; gap: 10px; overflow-x: auto; padding: 10px 0; margin-bottom: 20px; justify-content: flex-start; }
+.genre-bar::-webkit-scrollbar { height: 4px; }
+.genre-bar::-webkit-scrollbar-thumb { background: #00E5FF; border-radius: 2px; }
+.genre-btn { white-space: nowrap; border-radius: 50px !important; padding: 8px 16px !important; font-size: 14px !important; background: #222 !important; border: 1px solid #333 !important; color: white !important; width: auto !important; margin: 0 !important; }
+.genre-btn:focus { background: #00E5FF !important; color: black !important; border-color: #00E5FF !important; transform: scale(1.05); }
+.genre-btn.active { background: #00E5FF !important; color: black !important; border-color: #00E5FF !important; }
+
+.tmdb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 20px; }
+.tmdb-card { background: #1a1a1a; border-radius: 12px; overflow: hidden; cursor: pointer; transition: all 0.2s ease; display: flex; flex-direction: column; border: none; padding: 0; margin: 0; text-align: left; color: white; }
+.tmdb-card:focus-within { outline: 4px solid #00E5FF; transform: scale(1.05); z-index: 10; box-shadow: 0 0 20px rgba(0,229,255,0.4); }
+.tmdb-card img { width: 100%; height: 225px; object-fit: cover; background: #000; }
+.tmdb-card-info { padding: 10px; }
+.tmdb-card-info span { color: white; font-size: 14px; font-weight: 600; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tmdb-card-info small { color: #888; font-size: 12px; }
+
+#movie-modal .modal-box { max-width: 500px; text-align: left; padding: 30px; }
+#movie-modal h2 { color: #00E5FF; margin-top: 0; font-size: 24px; }
+#movie-modal .movie-meta { color: #aaa; font-size: 14px; margin-bottom: 15px; }
+#movie-modal .movie-overview { font-size: 15px; line-height: 1.5; margin-bottom: 25px; color: #ddd; }
+#movie-modal .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+/* ---------------------- */
+
 .tv-player-container { width: 100%; max-width: 1000px; margin: 20px auto; background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8); display: none; aspect-ratio: 16/9; position: relative; }
 #tv-player { width: 100%; height: 100%; background: black; object-fit: contain; }
 #tv-player:focus { outline: none !important; }
@@ -123,6 +148,8 @@ html.tv-mode .channel-item { height: 160px; }
 html.tv-mode .ch-logo { height: 60px; max-width: 100px; }
 html.tv-mode .ch-name { font-size: 16px; }
 html.tv-mode input, html.tv-mode select { padding: 10px 15px; font-size: 14px; }
+html.tv-mode .tmdb-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+html.tv-mode .tmdb-card img { height: 300px; }
 
 *:focus { outline: none !important; }
 button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; }
@@ -261,10 +288,19 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
      <p style="color:#888; font-size:20px; margin-bottom:40px;">Sélectionnez une source de streaming</p>
      
      <div class="source-grid">
-        <button class="source-btn btn-primary" onclick="loadSite('https://oha.to')">SOURCE 1</button>
+        <button class="source-btn btn-primary" onclick="loadTMDBCatalog()">CATALOGUE FILMS</button>
+        <button class="source-btn btn-secondary" onclick="loadSite('https://oha.to')">SOURCE 1</button>
         <button class="source-btn btn-secondary" onclick="loadSite('https://huhu.to')">SOURCE 2</button>
         <button class="source-btn btn-secondary" onclick="loadSite('https://vavoo.to')">SOURCE 3</button>
         <button class="source-btn btn-lock" onclick="promptAdultPin()">🔒 ADULTES</button>
+     </div>
+
+     <!-- CATALOGUE TMDB -->
+     <div id="tmdb-catalog" class="hidden">
+        <button class="btn-secondary tmdb-back-btn" onclick="hideTMDBCatalog()">↩ Retour aux sources</button>
+        <h3 style="color:white;">Catalogue Films (TMDB)</h3>
+        <div id="tmdb-genres" class="genre-bar"></div>
+        <div id="tmdb-grid" class="tmdb-grid"></div>
      </div>
 
      <div style="margin-top: 60px; border-top: 1px solid #222; padding-top: 40px; width: 100%; max-width: 1200px; box-sizing: border-box;">
@@ -309,6 +345,19 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
   <iframe id="site-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-popups"></iframe>
 </div>
 
+<!-- MODALE FILM TMDB -->
+<div id="movie-modal" class="modal-bg hidden">
+  <div class="modal-box" style="background:#111;">
+    <h2 id="movie-title"></h2>
+    <div id="movie-meta" class="movie-meta"></div>
+    <p id="movie-overview"></p>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeMovieModal()">Fermer</button>
+      <button class="btn-primary" onclick="watchMovieSource()">Visionner sur Source 1</button>
+    </div>
+  </div>
+</div>
+
 <script>
 let currentLoggedUser = '';
 let hlsInstance = null;
@@ -332,9 +381,11 @@ let channelButtons = [];
 let siteBtnTimeout;
 let currentAdminPass = ''; 
 let allUsersCache = {}; 
-
 let adultPin = '';
 let adultUrl = '';
+let currentMovieTitle = '';
+
+const TMDB_API_KEY = '8265bd1679663a7ea12ac168da84d2e8'; // Clé publique TMDB
 
 function updateClock() {
     const now = new Date();
@@ -343,6 +394,110 @@ function updateClock() {
     const clockEl = document.getElementById('clock');
     if (clockEl) clockEl.innerText = `${h}:${m}`;
 }
+
+// --- NOUVELLE FONCTION : CATALOGUE TMDB ---
+async function loadTMDBCatalog() {
+    document.querySelector('.source-grid').style.display = 'none';
+    document.getElementById('tmdb-catalog').classList.remove('hidden');
+    
+    const grid = document.getElementById('tmdb-grid');
+    grid.innerHTML = '<p style="color:#888; grid-column: 1/-1;">Chargement des films...</p>';
+    
+    try {
+        // Charger les genres
+        const genreRes = await fetch(`https://api.themoviedb.org/3/genre/movie/list?api_key=${TMDB_API_KEY}&language=fr-FR`);
+        const genreData = await genreRes.json();
+        const genreBar = document.getElementById('tmdb-genres');
+        genreBar.innerHTML = '';
+        
+        const allBtn = document.createElement('button');
+        allBtn.className = 'genre-btn active';
+        allBtn.innerText = 'Tous';
+        allBtn.onclick = () => fetchTMDBMovies();
+        genreBar.appendChild(allBtn);
+        
+        genreData.genres.forEach(genre => {
+            const btn = document.createElement('button');
+            btn.className = 'genre-btn';
+            btn.innerText = genre.name;
+            btn.onclick = () => {
+                document.querySelectorAll('.genre-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                fetchTMDBMovies(genre.id);
+            };
+            genreBar.appendChild(btn);
+        });
+
+        // Charger les films populaires par défaut
+        fetchTMDBMovies();
+
+    } catch (e) {
+        grid.innerHTML = '<p style="color:#ff4d4d;">Erreur de chargement TMDB.</p>';
+    }
+}
+
+async function fetchTMDBMovies(genreId) {
+    const grid = document.getElementById('tmdb-grid');
+    grid.innerHTML = '<p style="color:#888; grid-column: 1/-1;">Chargement...</p>';
+    
+    let url = `https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_API_KEY}&language=fr-FR&sort_by=popularity.desc&page=1`;
+    if (genreId) url += `&with_genres=${genreId}`;
+    
+    try {
+        const res = await fetch(url);
+        const data = await res.json();
+        grid.innerHTML = '';
+        
+        data.results.forEach(movie => {
+            const card = document.createElement('button');
+            card.className = 'tmdb-card';
+            card.setAttribute('tabindex', '0');
+            
+            const poster = movie.poster_path ? `https://image.tmdb.org/t/p/w300${movie.poster_path}` : '';
+            const year = movie.release_date ? movie.release_date.substring(0, 4) : 'N/A';
+            
+            card.innerHTML = `
+                <img src="${poster}" onerror="this.style.display='none'">
+                <div class="tmdb-card-info">
+                    <span>${movie.title}</span>
+                    <small>${year}</small>
+                </div>
+            `;
+            
+            card.onclick = () => openMovieModal(movie);
+            grid.appendChild(card);
+        });
+        
+        if (grid.children.length > 0) setTimeout(() => grid.children[0].focus(), 100);
+        
+    } catch (e) {
+        grid.innerHTML = '<p style="color:#ff4d4d;">Erreur.</p>';
+    }
+}
+
+function openMovieModal(movie) {
+    currentMovieTitle = movie.title;
+    document.getElementById('movie-title').innerText = movie.title;
+    document.getElementById('movie-meta').innerText = `Année: ${movie.release_date ? movie.release_date.substring(0,4) : 'N/A'} | Note: ${movie.vote_average}/10`;
+    document.getElementById('movie-overview').innerText = movie.overview || 'Aucun synopsis disponible.';
+    document.getElementById('movie-modal').classList.remove('hidden');
+}
+
+function closeMovieModal() {
+    document.getElementById('movie-modal').classList.add('hidden');
+}
+
+function watchMovieSource() {
+    closeMovieModal();
+    hideTMDBCatalog(); // Masquer le catalogue TMDB
+    loadSite('https://oha.to'); // Ouvrir la source
+}
+
+function hideTMDBCatalog() {
+    document.getElementById('tmdb-catalog').classList.add('hidden');
+    document.querySelector('.source-grid').style.display = 'flex';
+}
+// -------------------------------------------
 
 function isFavorite(url) { return favorites.some(f => f.url === url); }
 
@@ -811,6 +966,7 @@ function showApp() {
 function loadSite(url) { 
     document.getElementById('main-content').classList.add('hidden'); 
     document.getElementById('player-section').classList.add('hidden'); 
+    document.getElementById('tmdb-catalog').classList.add('hidden'); // Cacher TMDB si on lance un site
     const siteIframe = document.getElementById('site-iframe');
     siteIframe.style.display = 'block'; 
     siteIframe.src = url; 
@@ -993,20 +1149,15 @@ function backToMain() {
     document.getElementById('player-section').classList.add('hidden'); 
     const video = document.getElementById('tv-player'); video.pause(); video.src = ''; 
     if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; } 
+    
+    // Masquer le catalogue TMDB si on revient
+    document.getElementById('tmdb-catalog').classList.add('hidden');
+    document.querySelector('.source-grid').style.display = 'flex';
+    
     document.getElementById('main-content').classList.remove('hidden'); 
     document.getElementById('back-main-btn').classList.add('hidden'); 
 }
 </script>
 
-<!-- DÉSINSTALLATION FORCÉE DU SERVICE WORKER -->
-<script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations().then(function(registrations) {
-      for(let registration of registrations) {
-        registration.unregister();
-      }
-    });
-  }
-</script>
 </body>
 </html>
