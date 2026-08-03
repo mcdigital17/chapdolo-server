@@ -961,18 +961,23 @@ function playChannel(url, name, isReload = false) {
     clearTimeout(videoLoadTimeout);
     videoLoadTimeout = setTimeout(() => { if (video.readyState < 3) { showVideoError(); if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; } video.pause(); } }, 15000);
     showPlayerControls();
+        // ON ENCODE L'URL POUR LA FAIRE PASSER PAR NOTRE PROXY
+    const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(url)}`;
+
     if (Hls.isSupported()) { 
         if (hlsInstance) hlsInstance.destroy(); 
-        hlsInstance = new Hls(); hlsInstance.loadSource(url); hlsInstance.attachMedia(video); 
+        hlsInstance = new Hls(); 
+        hlsInstance.loadSource(proxiedUrl); // <-- ICI ON UTILISE proxiedUrl
+        hlsInstance.attachMedia(video); 
         hlsInstance.on(Hls.Events.MANIFEST_PARSED, function() { clearTimeout(videoLoadTimeout); video.play().catch(e => console.error("Erreur lecture auto:", e)); });
         hlsInstance.on(Hls.Events.ERROR, function(event, data) {
             if (data.fatal) { showVideoError(); clearTimeout(videoLoadTimeout); if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; } video.pause(); }
         });
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) { 
-        video.src = url; 
+        video.src = proxiedUrl; // <-- ICI AUSSI
         video.addEventListener('loadedmetadata', function() { clearTimeout(videoLoadTimeout); video.play(); }); 
         video.addEventListener('error', function() { showVideoError(); clearTimeout(videoLoadTimeout); });
-    } 
+    }  
 }
 
 function backToMain() { 
