@@ -1,4 +1,4 @@
-export default async function handler(req, res) {
+module.exports = (req, res) => {
   const { url } = req.query;
   if (!url) return res.status(400).send('URL manquante');
   
