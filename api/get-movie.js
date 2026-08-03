@@ -39,7 +39,12 @@ module.exports = async (req, res) => {
         const tokenMatch = doodHtml.match(/token["']?\s*[:=]\s*["']([^"']+)["']/);
         
         if (!passMatch || !tokenMatch) {
-            return res.status(500).json({ error: 'Extraction Doodstream échouée' });
+            // On renvoie le code HTML reçu pour voir ce que Doodstream répond à Vercel
+            return res.status(500).json({ 
+                error: 'Extraction échouée', 
+                doodUrl: doodUrl, 
+                htmlRecu: doodHtml.substring(0, 500) // On affiche les 500 premiers caractères
+            });
         }
 
         const passRes = await fetch(doodDomain + passMatch[0], { 
