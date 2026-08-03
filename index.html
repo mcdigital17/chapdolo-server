@@ -1003,7 +1003,9 @@ function backToMain() {
     document.getElementById('main-content').classList.remove('hidden'); 
     document.getElementById('back-main-btn').classList.add('hidden'); 
 }
-  async function testMoviePlayer() {
+  // ... (tout le code que tu as déjà au-dessus)
+
+async function testMoviePlayer() {
     // On cache le menu principal
     document.getElementById('main-content').classList.add('hidden');
     document.getElementById('player-section').classList.add('hidden');
@@ -1034,6 +1036,10 @@ function backToMain() {
         siteIframe.srcdoc = '<div style="color:red; background:#000; height:100%; display:flex; align-items:center; justify-content:center; font-family:sans-serif; font-size:24px;">Erreur réseau.</div>';
     }
 }
+
+</script>
+</body>
+</html>
   
 </script>
 </body>
