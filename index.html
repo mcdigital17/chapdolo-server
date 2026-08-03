@@ -1023,7 +1023,8 @@ function backToMain() {
 
         if (data.success && data.sources.length > 0) {
             // 2. On prend le serveur Doodstream (index 1)
-            const movieUrl = data.sources[1].url; 
+                        // On fait passer le lecteur Doodstream dans notre proxy pour contourner le blocage X-Frame-Options
+            const movieUrl = '/api/proxy-web?url=' + encodeURIComponent(data.sources[1].url); 
             
             // 3. TRÈS IMPORTANT : On efface le message de chargement avant de mettre la vidéo
             siteIframe.srcdoc = ''; 
