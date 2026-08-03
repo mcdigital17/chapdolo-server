@@ -579,7 +579,8 @@ function destroySiteIframe() {
     if (oldIframe) {
         const newIframe = document.createElement('iframe');
         newIframe.id = 'site-iframe';
-        newIframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-presentation allow-popups');
+        // On retire "allow-popups" et "allow-top-navigation" pour bloquer 100% des pubs et redirections
+        newIframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-presentation');
         newIframe.style.display = 'none';
         oldIframe.parentNode.replaceChild(newIframe, oldIframe);
     }
