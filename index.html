@@ -813,8 +813,8 @@ function loadSite(url) {
     document.getElementById('player-section').classList.add('hidden'); 
     const siteIframe = document.getElementById('site-iframe');
     siteIframe.style.display = 'block'; 
-    // On fait passer l'URL du site dans notre proxy anti-pubs
-    siteIframe.src = `/api/proxy-web?url=${encodeURIComponent(url)}`; 
+    // On charge le site normalement, le blocage des pubs se fera via le sandbox
+    siteIframe.src = url;  
     
     const siteBtn = document.getElementById('exit-site-btn');
     siteBtn.classList.remove('hidden');
