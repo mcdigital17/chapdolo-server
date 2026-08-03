@@ -1,4 +1,4 @@
-export default function handler(req, res) {
+export default async function handler(req, res) {
   const chapdoloConfig = {
     app_version: "1.0.0",
     force_update: false,
