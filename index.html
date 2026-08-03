@@ -1003,9 +1003,7 @@ function backToMain() {
     document.getElementById('main-content').classList.remove('hidden'); 
     document.getElementById('back-main-btn').classList.add('hidden'); 
 }
-  // ... (tout le code que tu as déjà au-dessus)
-
-async function testMoviePlayer() {
+ async function testMoviePlayer() {
     // On cache le menu principal
     document.getElementById('main-content').classList.add('hidden');
     document.getElementById('player-section').classList.add('hidden');
@@ -1013,24 +1011,25 @@ async function testMoviePlayer() {
     const siteIframe = document.getElementById('site-iframe');
     siteIframe.style.display = 'block';
     
-    // On affiche un message de chargement dans l'iframe
+    // On affiche un message de chargement
     siteIframe.srcdoc = '<div style="color:white; background:#000; height:100%; display:flex; align-items:center; justify-content:center; font-family:sans-serif; font-size:24px;">Chargement du film...</div>';
     
     document.body.classList.add('site-active');
 
     try {
-        // 1. On demande les liens propres à notre serveur Vercel (ID du film Soulm8te)
+        // 1. On demande les liens propres à notre serveur Vercel
         const response = await fetch('/api/get-movie?tmdb_id=1307118');
         const data = await response.json();
 
         if (data.success && data.sources.length > 0) {
-            // 2. On choisit le 2ème serveur (Doodstream B2, souvent le plus stable)
+            // 2. On prend le serveur Doodstream (index 1)
             const movieUrl = data.sources[1].url; 
             
-            // 3. On affiche le lecteur dans l'iframe de Chapdolo
+            // 3. TRÈS IMPORTANT : On efface le message de chargement avant de mettre la vidéo
+            siteIframe.srcdoc = ''; 
             siteIframe.src = movieUrl;
         } else {
-            siteIframe.srcdoc = '<div style="color:red; background:#000; height:100%; display:flex; align-items:center; justify-content:center; font-family:sans-serif; font-size:24px;">Erreur: Aucun serveur disponible.</div>';
+            siteIframe.srcdoc = '<div style="color:red; background:#000; height:100%; display:flex; align-items:center; justify-content:center; font-family:sans-serif; font-size:24px;">Erreur: ' + (data.error || 'Aucun serveur') + '</div>';
         }
     } catch (e) {
         siteIframe.srcdoc = '<div style="color:red; background:#000; height:100%; display:flex; align-items:center; justify-content:center; font-family:sans-serif; font-size:24px;">Erreur réseau.</div>';
