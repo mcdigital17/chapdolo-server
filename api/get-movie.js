@@ -3,7 +3,7 @@ module.exports = async (req, res) => {
     if (!tmdb_id) return res.status(400).json({ error: 'TMDB ID manquant' });
 
     try {
-        // 1. Demander les liens à huhu.to (en français)
+        // 1. Demander les liens à huhu.to
         const huhuResponse = await fetch('https://huhu.to/mediaurl-source.json', {
             method: 'POST',
             headers: { 
@@ -20,48 +20,29 @@ module.exports = async (req, res) => {
         });
         const sources = await huhuResponse.json();
 
-        // 2. Chercher un lien Doodstream
-        let doodUrl = sources.find(s => s.url && s.url.includes('dood'))?.url;
-
-        if (!doodUrl) {
-            return res.status(404).json({ error: 'Aucun serveur compatible trouvé' });
-        }
-
-        // 3. Scrapper Doodstream pour obtenir le vrai .mp4
-        const doodDomain = new URL(doodUrl).origin;
-        
-        const doodPageRes = await fetch(doodUrl, { 
-            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
-        });
-        const doodHtml = await doodPageRes.text();
-
-        const passMatch = doodHtml.match(/(\/pass_md5\/[^"']+)/);
-        const tokenMatch = doodHtml.match(/token["']?\s*[:=]\s*["']([^"']+)["']/);
-        
-        if (!passMatch || !tokenMatch) {
-            // On renvoie le code HTML reçu pour voir ce que Doodstream répond à Vercel
-            return res.status(500).json({ 
-                error: 'Extraction échouée', 
-                doodUrl: doodUrl, 
-                htmlRecu: doodHtml.substring(0, 500) // On affiche les 500 premiers caractères
-            });
-        }
-
-        const passRes = await fetch(doodDomain + passMatch[0], { 
-            headers: { 
-                'Referer': doodUrl, 
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' 
+        // 2. Transformer les URLs /w/ ou /f/ en URLs d'Embed /e/ (Lecteur sans pubs)
+        const embedSources = sources.map(s => {
+            if (!s.url) return null;
+            let embedUrl = s.url;
+            
+            // Pour Doodstream : on change /w/ par /e/
+            if (embedUrl.includes('dood.')) {
+                embedUrl = embedUrl.replace('/w/', '/e/');
+            } 
+            // Pour Mixdrop : on change /f/ par /e/
+            else if (embedUrl.includes('mixdrop.')) {
+                embedUrl = embedUrl.replace('/f/', '/e/');
             }
-        });
-        const passText = await passRes.text();
+            
+            return { name: s.name, url: embedUrl };
+        }).filter(s => s !== null); // On supprime les vide
 
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        let randomStr = '';
-        for(let i=0; i<10; i++) randomStr += chars.charAt(Math.floor(Math.random() * chars.length));
+        if (embedSources.length === 0) {
+            return res.status(404).json({ error: 'Aucun lecteur compatible trouvé' });
+        }
 
-        const finalMp4 = passText + randomStr + '?token=' + tokenMatch[1] + '&expiry=';
-        
-        res.json({ success: true, url: finalMp4 });
+        // 3. Renvoyer les lecteurs propres à l'application
+        res.json({ success: true, sources: embedSources });
 
     } catch (e) {
         console.error(e);
