@@ -1,4 +1,4 @@
-export default function handler(req, res) {
+module.exports = (req, res) => {
   // On dit à Vercel qu'on renvoie du code Javascript (et non du HTML ou du JSON)
   res.setHeader('Content-Type', 'application/javascript');
   
