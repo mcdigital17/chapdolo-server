@@ -580,7 +580,7 @@ function destroySiteIframe() {
         const newIframe = document.createElement('iframe');
         newIframe.id = 'site-iframe';
         // On retire "allow-popups" et "allow-top-navigation" pour bloquer 100% des pubs et redirections
-        newIframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-presentation');
+        newIframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-presentation allow-popups');
         newIframe.style.display = 'none';
         oldIframe.parentNode.replaceChild(newIframe, oldIframe);
     }
@@ -814,8 +814,7 @@ function loadSite(url) {
     document.getElementById('player-section').classList.add('hidden'); 
     const siteIframe = document.getElementById('site-iframe');
     siteIframe.style.display = 'block'; 
-    // On fait passer l'URL du site dans notre proxy intelligent
-    siteIframe.src = `/api/proxy-web?url=${encodeURIComponent(url)}`; 
+    siteIframe.src = url; 
     
     const siteBtn = document.getElementById('exit-site-btn');
     siteBtn.classList.remove('hidden');
