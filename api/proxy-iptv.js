@@ -1,4 +1,4 @@
-module.exports = (req, res) => {
+module.exports = async (req, res) => {
   const { url } = req.query;
   if (!url) return res.status(400).send('URL manquante');
   
