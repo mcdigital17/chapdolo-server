@@ -264,6 +264,7 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
         <button class="source-btn btn-primary" onclick="loadSite('https://oha.to')">SOURCE 1</button>
         <button class="source-btn btn-secondary" onclick="loadSite('https://huhu.to')">SOURCE 2</button>
         <button class="source-btn btn-secondary" onclick="loadSite('https://vavoo.to')">SOURCE 3</button>
+        <button class="source-btn btn-success" onclick="testMoviePlayer()">🎬 TEST FILM</button>
         <button class="source-btn btn-lock" onclick="promptAdultPin()">🔒 ADULTES</button>
      </div>
 
@@ -1002,7 +1003,38 @@ function backToMain() {
     document.getElementById('main-content').classList.remove('hidden'); 
     document.getElementById('back-main-btn').classList.add('hidden'); 
 }
-</script>
+  async function testMoviePlayer() {
+    // On cache le menu principal
+    document.getElementById('main-content').classList.add('hidden');
+    document.getElementById('player-section').classList.add('hidden');
+    
+    const siteIframe = document.getElementById('site-iframe');
+    siteIframe.style.display = 'block';
+    
+    // On affiche un message de chargement dans l'iframe
+    siteIframe.srcdoc = '<div style="color:white; background:#000; height:100%; display:flex; align-items:center; justify-content:center; font-family:sans-serif; font-size:24px;">Chargement du film...</div>';
+    
+    document.body.classList.add('site-active');
 
+    try {
+        // 1. On demande les liens propres à notre serveur Vercel (ID du film Soulm8te)
+        const response = await fetch('/api/get-movie?tmdb_id=1307118');
+        const data = await response.json();
+
+        if (data.success && data.sources.length > 0) {
+            // 2. On choisit le 2ème serveur (Doodstream B2, souvent le plus stable)
+            const movieUrl = data.sources[1].url; 
+            
+            // 3. On affiche le lecteur dans l'iframe de Chapdolo
+            siteIframe.src = movieUrl;
+        } else {
+            siteIframe.srcdoc = '<div style="color:red; background:#000; height:100%; display:flex; align-items:center; justify-content:center; font-family:sans-serif; font-size:24px;">Erreur: Aucun serveur disponible.</div>';
+        }
+    } catch (e) {
+        siteIframe.srcdoc = '<div style="color:red; background:#000; height:100%; display:flex; align-items:center; justify-content:center; font-family:sans-serif; font-size:24px;">Erreur réseau.</div>';
+    }
+}
+  
+</script>
 </body>
 </html>
