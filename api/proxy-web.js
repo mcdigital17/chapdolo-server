@@ -19,40 +19,53 @@ module.exports = async (req, res) => {
         if (contentType.includes('text/html')) {
             let html = await response.text();
             
+            // 1. Corriger les chemins relatifs (CSS, JS, Images)
             const baseTag = `<base href="${targetUrl.origin}/">`;
-            if (html.includes('<head>')) {
-                html = html.replace('<head>', `<head>${baseTag}`);
-            } else {
-                html = baseTag + html;
-            }
-
+            
+            // 2. Le script intelligent qui intercepte les "Bundles"
             const adBlockScript = `
             <script>
-                const originalDomain = "${targetUrl.origin}";
-                window.open = function() { console.log('Pop-up bloqué !'); return null; };
+                // A. Intercepter window.open (utilisé pour ouvrir pubs ET lecteurs)
+                window.open = function(u) {
+                    if (!u) return null;
+                    let finalUrl = u;
+                    // Si c'est un chemin relatif, on le convertit en absolu
+                    if (u.startsWith('/')) finalUrl = '${targetUrl.origin}' + u;
+                    
+                    // Si le lien appartient au site (lecteur vidéo), on force l'ouverture DANS l'iframe
+                    if (finalUrl.includes('${targetUrl.hostname}')) {
+                        window.location.href = '/api/proxy-web?url=' + encodeURIComponent(finalUrl);
+                    }
+                    // Sinon c'est une pub, on bloque
+                    return null;
+                };
+
+                // B. Intercepter les clics sur les liens (boutons serveurs)
                 document.addEventListener('click', function(e) {
                     let el = e.target;
                     while (el && el.tagName !== 'A') el = el.parentElement;
                     if (el && el.href) {
-                        if (el.href.startsWith(originalDomain)) {
-                            e.preventDefault();
-                            window.location.href = '/api/proxy-web?url=' + encodeURIComponent(el.href);
-                        } else if (!el.href.startsWith('/api/proxy-web') && !el.href.startsWith('javascript:')) {
-                            e.preventDefault();
-                            console.log('Lien externe bloqué: ' + el.href);
+                        e.preventDefault(); // On annule l'action normale
+                        let finalUrl = el.href;
+                        if (el.getAttribute('href') && el.getAttribute('href').startsWith('/')) finalUrl = '${targetUrl.origin}' + el.getAttribute('href');
+                        
+                        // Si c'est un lien du site, on l'ouvre dans l'iframe via le proxy
+                        if (finalUrl.includes('${targetUrl.hostname}')) {
+                            window.location.href = '/api/proxy-web?url=' + encodeURIComponent(finalUrl);
                         }
                     }
                 }, true);
             </script>`;
             
-            if (html.includes('</head>')) {
-                html = html.replace('</head>', `${adBlockScript}</head>`);
+            if (html.includes('<head>')) {
+                html = html.replace('<head>', `<head>${baseTag}${adBlockScript}`);
             } else {
-                html += adBlockScript;
+                html = baseTag + adBlockScript + html;
             }
 
             res.send(html);
         } else {
+            // Pour les autres fichiers (CSS, JS, Images), on les renvoie normalement
             const buffer = Buffer.from(await response.arrayBuffer());
             res.send(buffer);
         }
