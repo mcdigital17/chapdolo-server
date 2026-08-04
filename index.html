@@ -1044,7 +1044,7 @@ async function searchMovies() {
                         <img src="https://image.tmdb.org/t/p/w500${item.poster_path}" style="width: 100%; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); transition: transform 0.2s;" alt="${item.title || item.name}">
                         <p style="color: #ccc; font-size: 14px; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.title || item.name}</p>
                     `;
-                    div.onclick = () => playMovieFromTMDB(item.id, item.title || item.name);
+                    div.onclick = () => playMovieFromTMDB(item.id, item.media_type, item.title || item.name);
                     div.onmouseover = () => div.querySelector('img').style.transform = 'scale(1.05)';
                     div.onmouseout = () => div.querySelector('img').style.transform = 'scale(1)';
                     grid.appendChild(div);
@@ -1058,8 +1058,7 @@ async function searchMovies() {
     }, 500);
 }
 
-async function playMovieFromTMDB(tmdbId, title) {
-    // On cache le menu principal
+async function playMovieFromTMDB(tmdbId, mediaType, title) {
     document.getElementById('main-content').classList.add('hidden');
     document.getElementById('player-section').classList.add('hidden');
     
@@ -1069,17 +1068,17 @@ async function playMovieFromTMDB(tmdbId, title) {
     document.body.classList.add('site-active');
 
     try {
-        // On demande les liens propres à notre serveur Vercel
-        const response = await fetch(`/api/get-movie?tmdb_id=${tmdbId}`);
+        // On demande les liens propres à notre serveur Vercel en envoyant le type (movie ou tv)
+        const response = await fetch(`/api/get-movie?tmdb_id=${tmdbId}&type=${mediaType}`);
         const data = await response.json();
 
         if (data.success && data.sources.length > 0) {
-            // On prend le serveur Mixdrop (index 0) via le proxy
+            // On prend le premier serveur disponible (Mixdrop ou Doodstream) via le proxy
             const movieUrl = '/api/proxy-web?url=' + encodeURIComponent(data.sources[0].url); 
             siteIframe.removeAttribute('srcdoc');
             siteIframe.src = movieUrl;
         } else {
-            siteIframe.srcdoc = '<div style="color:#ff4d4d; background:#000; height:100%; display:flex; align-items:center; justify-content:center; font-family:sans-serif; font-size:24px;">Film non disponible sur huhu.to pour le moment.</div>';
+            siteIframe.srcdoc = '<div style="color:#ff4d4d; background:#000; height:100%; display:flex; align-items:center; justify-content:center; font-family:sans-serif; font-size:24px;">Film/Série non disponible sur huhu.to.</div>';
         }
     } catch (e) {
         siteIframe.srcdoc = '<div style="color:#ff4d4d; background:#000; height:100%; display:flex; align-items:center; justify-content:center; font-family:sans-serif; font-size:24px;">Erreur réseau.</div>';
