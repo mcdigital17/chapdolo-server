@@ -34,6 +34,8 @@ module.exports = async (req, res) => {
         // 2. Transformer les URLs en URLs d'Embed (/e/) et filtrer celles qui sont vides
         const embedSources = sources.map(s => {
             if (!s.url || s.url === '') return null;
+            // On ignore Streamtape car il bloque les serveurs Vercel
+            if (s.url.includes('streamtape')) return null;
             
             let embedUrl = s.url;
             if (embedUrl.includes('dood.')) embedUrl = embedUrl.replace('/w/', '/e/');
