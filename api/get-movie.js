@@ -35,7 +35,7 @@ module.exports = async (req, res) => {
         const embedSources = sources.map(s => {
             if (!s.url || s.url === '') return null;
             // On ignore Streamtape car il bloque les serveurs Vercel
-            if (s.url.includes('streamtape')) return null;
+            if (s.url.includes('tape') || s.url.includes('stp')) return null; // Bloque Streamtape et ses variantes
             
             let embedUrl = s.url;
             if (embedUrl.includes('dood.')) embedUrl = embedUrl.replace('/w/', '/e/');
