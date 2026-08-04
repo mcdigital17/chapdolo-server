@@ -591,7 +591,9 @@ function destroySiteIframe() {
         const newIframe = document.createElement('iframe');
         newIframe.id = 'site-iframe';
         // On retire "allow-popups" et "allow-top-navigation" pour bloquer 100% des pubs et redirections
-        newIframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-presentation allow-popups');
+        // On retire le sandbox car Mixdrop le bloque. 
+        // Notre proxy (proxy-web.js) s'occupe déjà de bloquer les pubs !
+        newIframe.removeAttribute('sandbox');
         newIframe.style.display = 'none';
         oldIframe.parentNode.replaceChild(newIframe, oldIframe);
     }
