@@ -318,6 +318,11 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
   </div>
 
   <iframe id="site-iframe"></iframe>
+  <!-- Menu de choix des serveurs (par-dessus la vidéo) -->
+  <div id="movie-server-overlay" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 90; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+     <h2 id="movie-server-title" style="color: white; margin-bottom: 30px; font-size: 32px; text-align: center; padding: 0 20px;"></h2>
+     <div id="movie-server-buttons" style="display: flex; flex-wrap: wrap; gap: 15px; justify-content: center;"></div>
+  </div>
 </div>
 
 <script>
@@ -996,6 +1001,9 @@ function playChannel(url, name, isReload = false) {
 }
 
 function backToMain() { 
+    document.getElementById('movie-server-overlay').classList.add('hidden'); // AJOUTE ÇA
+    clearTimeout(videoLoadTimeout); clearTimeout(playerControlTimeout); hidePlayerControls();
+    // ... (le reste du code) 
     clearTimeout(videoLoadTimeout); clearTimeout(playerControlTimeout); hidePlayerControls();
     document.getElementById('video-error-overlay').style.display = 'none';
     document.body.classList.remove('app-fullscreen', 'site-active'); 
@@ -1067,7 +1075,7 @@ async function playMovieFromTMDB(tmdbId, mediaType, title) {
     
     const siteIframe = document.getElementById('site-iframe');
     siteIframe.style.display = 'block';
-    siteIframe.srcdoc = `<div style="color:white; background:#000; height:100%; display:flex; align-items:center; justify-content:center; font-family:sans-serif; font-size:24px;">Chargement de : ${title}...</div>`;
+    siteIframe.src = 'about:blank'; // On met l'iframe en attendant
     document.body.classList.add('site-active');
 
     try {
@@ -1075,23 +1083,23 @@ async function playMovieFromTMDB(tmdbId, mediaType, title) {
         const data = await response.json();
 
         if (data.success && data.sources.length > 0) {
-            // On prépare l'affichage du choix des serveurs en bas de l'écran
-            let serverButtons = data.sources.map((src, index) => 
-                `<button onclick="changeMovieServer(${index})" style="background:#00E5FF; color:black; border:none; padding:10px 20px; border-radius:5px; cursor:pointer; margin:5px;">${src.name}</button>`
-            ).join('');
-            
-            // On crée une couche par-dessus la vidéo pour choisir le serveur
-            siteIframe.srcdoc = `
-                <div style="background:#000; color:white; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:sans-serif;">
-                    <h2 style="margin-bottom:20px;">${title}</h2>
-                    <p style="margin-bottom:10px; color:#aaa;">Choisissez un serveur de lecture :</p>
-                    <div>${serverButtons}</div>
-                    <div id="loading-msg" style="margin-top:20px; display:none; color:#00E5FF;">Chargement du lecteur...</div>
-                </div>
-            `;
-            
-            // On stocke les serveurs temporairement pour les réutiliser
             window.currentMovieServers = data.sources;
+            document.getElementById('movie-server-title').innerText = title;
+            const btnsContainer = document.getElementById('movie-server-buttons');
+            btnsContainer.innerHTML = '';
+            
+            // On crée les boutons dans l'application principale (plus dans l'iframe)
+            data.sources.forEach((src, index) => {
+                const btn = document.createElement('button');
+                btn.innerText = src.name;
+                btn.className = 'btn-primary'; // Utilise le style bleu de Chapdolo
+                btn.style.margin = '5px';
+                btn.onclick = () => changeMovieServer(index);
+                btnsContainer.appendChild(btn);
+            });
+            
+            // On affiche le menu par-dessus l'iframe
+            document.getElementById('movie-server-overlay').classList.remove('hidden');
         } else {
             siteIframe.srcdoc = '<div style="color:#ff4d4d; background:#000; height:100%; display:flex; align-items:center; justify-content:center; font-family:sans-serif; font-size:24px;">Film/Série non disponible sur huhu.to.</div>';
         }
@@ -1104,8 +1112,10 @@ function changeMovieServer(index) {
     const server = window.currentMovieServers[index];
     if (!server) return;
     
+    // On cache le menu des serveurs
+    document.getElementById('movie-server-overlay').classList.add('hidden');
+    
     const siteIframe = document.getElementById('site-iframe');
-    // On affiche "Chargement..." puis on charge le serveur choisi via le proxy
     siteIframe.srcdoc = '<div style="color:white; background:#000; height:100%; display:flex; align-items:center; justify-content:center; font-family:sans-serif; font-size:24px;">Chargement du serveur ' + server.name + '...</div>';
     
     setTimeout(() => {
