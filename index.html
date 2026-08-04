@@ -260,12 +260,22 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
      <h2 style="color:white; font-size:44px; margin-bottom:10px;">Bienvenue sur Chapdolo</h2>
      <p style="color:#888; font-size:20px; margin-bottom:40px;">Sélectionnez une source de streaming</p>
      
-     <div class="source-grid">
-        <button class="source-btn btn-primary" onclick="loadSite('https://oha.to')">SOURCE 1</button>
-        <button class="source-btn btn-secondary" onclick="loadSite('https://huhu.to')">SOURCE 2</button>
-        <button class="source-btn btn-secondary" onclick="loadSite('https://vavoo.to')">SOURCE 3</button> 
-        <button class="source-btn btn-lock" onclick="promptAdultPin()">🔒 ADULTES</button>
-        <button class="source-btn btn-success" onclick="testMoviePlayer()">🎬 TEST FILM</button>
+        <div class="source-grid">   
+           <button class="source-btn btn-primary" onclick="loadSite('https://oha.to')">SOURCE 1</button>
+           <button class="source-btn btn-secondary" onclick="loadSite('https://huhu.to')">SOURCE 2</button>
+           <button class="source-btn btn-secondary" onclick="loadSite('https://vavoo.to')">SOURCE 3</button>
+           <button class="source-btn btn-lock" onclick="promptAdultPin()">🔒 ADULTES</button>
+        </div>
+
+     <!-- NOUVELLE SECTION FILMS & SERIES -->
+     <div style="margin-top: 60px; border-top: 1px solid #222; padding-top: 40px; width: 100%; max-width: 1200px; box-sizing: border-box;">
+        <h3 style="color:white; text-align:center;">🎬 Films & Séries (Sans Pub)</h3>
+        <div class="search-bar" style="margin-bottom: 30px;">
+           <input type="text" id="movie-search" placeholder="🔍 Rechercher un film ou une série..." style="width: 100%; max-width: 500px; margin: 0; padding: 12px 20px; border-radius: 50px;" oninput="searchMovies()">
+        </div>
+        <div id="movie-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 20px; max-height: 600px; overflow-y: auto; padding: 10px;">
+           <!-- Les films s'afficheront ici -->
+        </div>
      </div>
 
      <div style="margin-top: 60px; border-top: 1px solid #222; padding-top: 40px; width: 100%; max-width: 1200px; box-sizing: border-box;">
@@ -1003,36 +1013,76 @@ function backToMain() {
     document.getElementById('main-content').classList.remove('hidden'); 
     document.getElementById('back-main-btn').classList.add('hidden'); 
 }
- async function testMoviePlayer() {
+ // REMPLACE CECI PAR TA VRAIE CLÉ API TMDB
+const TMDB_API_KEY = 'c36548e7fd5e79ae5a8ca67ac0717bc2'; 
+let searchMovieTimeout;
+
+async function searchMovies() {
+    clearTimeout(searchMovieTimeout);
+    const query = document.getElementById('movie-search').value;
+    const grid = document.getElementById('movie-grid');
+    
+    if (query.length < 2) { grid.innerHTML = ''; return; }
+    
+    searchMovieTimeout = setTimeout(async () => {
+        grid.innerHTML = '<p style="color:#888; grid-column: 1 / -1; text-align:center;">Recherche en cours...</p>';
+        try {
+            // On cherche sur TMDB (en français)
+            const res = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&language=fr-FR`);
+            const data = await res.json();
+            
+            if (data.results && data.results.length > 0) {
+                grid.innerHTML = '';
+                // On filtre seulement les films et séries qui ont une affiche
+                const validItems = data.results.filter(item => (item.media_type === 'movie' || item.media_type === 'tv') && item.poster_path);
+                
+                validItems.slice(0, 18).forEach(item => {
+                    const div = document.createElement('div');
+                    div.style.cursor = 'pointer';
+                    div.style.textAlign = 'center';
+                    div.innerHTML = `
+                        <img src="https://image.tmdb.org/t/p/w500${item.poster_path}" style="width: 100%; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); transition: transform 0.2s;" alt="${item.title || item.name}">
+                        <p style="color: #ccc; font-size: 14px; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.title || item.name}</p>
+                    `;
+                    div.onclick = () => playMovieFromTMDB(item.id, item.title || item.name);
+                    div.onmouseover = () => div.querySelector('img').style.transform = 'scale(1.05)';
+                    div.onmouseout = () => div.querySelector('img').style.transform = 'scale(1)';
+                    grid.appendChild(div);
+                });
+            } else {
+                grid.innerHTML = '<p style="color:#888; grid-column: 1 / -1; text-align:center;">Aucun résultat trouvé.</p>';
+            }
+        } catch (e) {
+            grid.innerHTML = '<p style="color:#ff4d4d; grid-column: 1 / -1; text-align:center;">Erreur de recherche.</p>';
+        }
+    }, 500);
+}
+
+async function playMovieFromTMDB(tmdbId, title) {
     // On cache le menu principal
     document.getElementById('main-content').classList.add('hidden');
     document.getElementById('player-section').classList.add('hidden');
     
     const siteIframe = document.getElementById('site-iframe');
     siteIframe.style.display = 'block';
-    
-    // On affiche un message de chargement
-    siteIframe.srcdoc = '<div style="color:white; background:#000; height:100%; display:flex; align-items:center; justify-content:center; font-family:sans-serif; font-size:24px;">Chargement du film...</div>';
-    
+    siteIframe.srcdoc = `<div style="color:white; background:#000; height:100%; display:flex; align-items:center; justify-content:center; font-family:sans-serif; font-size:24px;">Chargement de : ${title}...</div>`;
     document.body.classList.add('site-active');
 
     try {
-        // 1. On demande les liens propres à notre serveur Vercel
-        const response = await fetch('/api/get-movie?tmdb_id=1307118');
+        // On demande les liens propres à notre serveur Vercel
+        const response = await fetch(`/api/get-movie?tmdb_id=${tmdbId}`);
         const data = await response.json();
 
         if (data.success && data.sources.length > 0) {
-            // 2. On prend le serveur Mixdrop (index 0) via le proxy
+            // On prend le serveur Mixdrop (index 0) via le proxy
             const movieUrl = '/api/proxy-web?url=' + encodeURIComponent(data.sources[0].url); 
-            
-            // 3. On supprime l'attribut srcdoc complètement pour forcer le navigateur à charger la vidéo
             siteIframe.removeAttribute('srcdoc');
             siteIframe.src = movieUrl;
         } else {
-            siteIframe.srcdoc = '<div style="color:red; background:#000; height:100%; display:flex; align-items:center; justify-content:center; font-family:sans-serif; font-size:24px;">Erreur: ' + (data.error || 'Aucun serveur') + '</div>';
+            siteIframe.srcdoc = '<div style="color:#ff4d4d; background:#000; height:100%; display:flex; align-items:center; justify-content:center; font-family:sans-serif; font-size:24px;">Film non disponible sur huhu.to pour le moment.</div>';
         }
     } catch (e) {
-        siteIframe.srcdoc = '<div style="color:red; background:#000; height:100%; display:flex; align-items:center; justify-content:center; font-family:sans-serif; font-size:24px;">Erreur réseau.</div>';
+        siteIframe.srcdoc = '<div style="color:#ff4d4d; background:#000; height:100%; display:flex; align-items:center; justify-content:center; font-family:sans-serif; font-size:24px;">Erreur réseau.</div>';
     }
 }
   
