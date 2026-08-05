@@ -23,7 +23,7 @@ module.exports = async (req, res) => {
             const baseTag = `<base href="${targetUrl.origin}/">`;
             
             // 2. Le script intelligent qui intercepte les "Bundles"
-                        const adBlockScript = `
+            const adBlockScript = `
             <script>
                 // A. Bloquer totalement l'ouverture de nouvelles fenêtres (Pop-ups de pubs)
                 window.open = function() { console.log('Pop-up bloqué !'); return null; };
