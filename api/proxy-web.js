@@ -23,24 +23,15 @@ module.exports = async (req, res) => {
             const baseTag = `<base href="${targetUrl.origin}/">`;
             
             // 2. Le script intelligent qui intercepte les "Bundles"
-            const adBlockScript = `
+                        const adBlockScript = `
             <script>
-                // A. Intercepter window.open (utilisé pour ouvrir pubs ET lecteurs)
-                window.open = function(u) {
-                    if (!u) return null;
-                    let finalUrl = u;
-                    // Si c'est un chemin relatif, on le convertit en absolu
-                    if (u.startsWith('/')) finalUrl = '${targetUrl.origin}' + u;
-                    
-                    // Si le lien appartient au site (lecteur vidéo), on force l'ouverture DANS l'iframe
-                    if (finalUrl.includes('${targetUrl.hostname}')) {
-                        window.location.href = '/api/proxy-web?url=' + encodeURIComponent(finalUrl);
-                    }
-                    // Sinon c'est une pub, on bloque
-                    return null;
-                };
+                // A. Bloquer totalement l'ouverture de nouvelles fenêtres (Pop-ups de pubs)
+                window.open = function() { console.log('Pop-up bloqué !'); return null; };
+                
+                // B. Bloquer les redirections invisibles (souvent utilisées par les pubs)
+                window.onbeforeunload = function() { return null; };
 
-                // B. Intercepter les clics sur les liens (boutons serveurs)
+                // C. Intercepter les clics sur les liens et boutons
                 document.addEventListener('click', function(e) {
                     let el = e.target;
                     while (el && el.tagName !== 'A') el = el.parentElement;
@@ -49,12 +40,23 @@ module.exports = async (req, res) => {
                         let finalUrl = el.href;
                         if (el.getAttribute('href') && el.getAttribute('href').startsWith('/')) finalUrl = '${targetUrl.origin}' + el.getAttribute('href');
                         
-                        // Si c'est un lien du site, on l'ouvre dans l'iframe via le proxy
+                        // Si c'est un lien du site (lecteur vidéo), on l'ouvre dans l'iframe via le proxy
                         if (finalUrl.includes('${targetUrl.hostname}')) {
                             window.location.href = '/api/proxy-web?url=' + encodeURIComponent(finalUrl);
                         }
+                        // Sinon c'est une pub, on ne fait rien (bloqué)
                     }
                 }, true);
+
+                // D. Cibler spécifiquement les iframes de pubs (Mixdrop en utilise parfois)
+                const observer = new MutationObserver(function(mutations) {
+                    document.querySelectorAll('iframe').forEach(frame => {
+                        if (!frame.src.includes('mixdrop') && !frame.src.includes('dood') && !frame.src.includes('/api/proxy-web')) {
+                            frame.remove(); // On détruit les iframes de pubs
+                        }
+                    });
+                });
+                observer.observe(document.body, { childList: true, subtree: true });
             </script>`;
             
             if (html.includes('<head>')) {
