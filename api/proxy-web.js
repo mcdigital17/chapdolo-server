@@ -23,7 +23,7 @@ module.exports = async (req, res) => {
             const baseTag = `<base href="${targetUrl.origin}/">`;
             
             // 2. Le script intelligent qui intercepte les "Bundles"
-                       const adBlockScript = `
+            const adBlockScript = `
             <script>
                 // A. Bloquer totalement l'ouverture de nouvelles fenêtres (Pop-ups de pubs)
                 window.open = function() { console.log('Pop-up bloqué !'); return null; };
@@ -47,3 +47,21 @@ module.exports = async (req, res) => {
                     }
                 }, true);
             </script>`;
+            
+            if (html.includes('<head>')) {
+                html = html.replace('<head>', `<head>${baseTag}${adBlockScript}`);
+            } else {
+                html = baseTag + adBlockScript + html;
+            }
+
+            res.send(html);
+        } else {
+            // Pour les autres fichiers (CSS, JS, Vidéos), on les fait passer en "Stream" pour ne pas faire crasher Vercel
+            res.setHeader('Cache-Control', 'public, max-age=31536000');
+            response.body.pipe(res);
+        }
+    } catch (error) {
+        console.error('Proxy Web Error:', error);
+        res.status(500).send('Erreur serveur proxy web');
+    }
+}
