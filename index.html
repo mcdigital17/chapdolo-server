@@ -271,7 +271,7 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
      <div style="margin-top: 60px; border-top: 1px solid #222; padding-top: 40px; width: 100%; max-width: 1200px; box-sizing: border-box;">
         <h3 style="color:white; text-align:center;">🎬 Films & Séries (Sans Pub)</h3>
         <div class="search-bar" style="margin-bottom: 30px;">
-           <input type="text" id="movie-search" placeholder="🔍 Rechercher un film ou une série..." style="width: 100%; max-width: 500px; margin: 0; padding: 12px 20px; border-radius: 50px;" oninput="searchMovies()">
+           <input type="text" id="movie-search" tabindex="0" placeholder="🔍 Rechercher un film ou une série..." style="width: 100%; max-width: 500px; margin: 0; padding: 12px 20px; border-radius: 50px;" oninput="searchMovies()">
         </div>
         <div id="movie-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 20px; max-height: 600px; overflow-y: auto; padding: 10px;">
            <!-- Les films s'afficheront ici -->
@@ -355,6 +355,7 @@ let adultUrl = '';
 
 const TMDB_API_KEY = 'c36548e7fd5e79ae5a8ca67ac0717bc2'; 
 let searchMovieTimeout;
+let movieButtons = [];
 
 function updateClock() {
     const now = new Date();
@@ -492,6 +493,47 @@ function setupSpatialNavigation() {
     });
 }
 
+function setupMovieNavigation() {
+    const movieGrid = document.getElementById('movie-grid');
+    const movieSearchInput = document.getElementById('movie-search');
+    
+    if(movieSearchInput) {
+        movieSearchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowDown') { e.preventDefault(); if (movieButtons.length > 0) movieButtons[0].focus(); }
+        });
+    }
+
+    if(movieGrid) {
+        movieGrid.addEventListener('keydown', function(e) {
+            const arrows = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
+            if (!arrows.includes(e.key)) return;
+            const buttons = movieButtons;
+            if (buttons.length === 0) return;
+            const current = document.activeElement;
+            let index = buttons.indexOf(current);
+            if (index === -1) { e.preventDefault(); buttons[0].focus(); return; }
+            e.preventDefault(); 
+            const currentRect = current.getBoundingClientRect();
+            let bestIdx = -1;
+            let bestScore = Infinity;
+            for (let i = 0; i < buttons.length; i++) {
+                if (i === index) continue;
+                const rect = buttons[i].getBoundingClientRect();
+                let isCandidate = false; let primaryDiff = 0; let secondaryDiff = 0;
+                if (e.key === 'ArrowDown' && rect.top > currentRect.top + 2) { isCandidate = true; primaryDiff = rect.top - currentRect.top; secondaryDiff = Math.abs(rect.left - currentRect.left); } 
+                else if (e.key === 'ArrowUp' && rect.bottom < currentRect.bottom - 2) { isCandidate = true; primaryDiff = currentRect.top - rect.top; secondaryDiff = Math.abs(rect.left - currentRect.left); } 
+                else if (e.key === 'ArrowRight' && rect.left > currentRect.left + 2) { isCandidate = true; primaryDiff = rect.left - currentRect.left; secondaryDiff = Math.abs(rect.top - currentRect.top); } 
+                else if (e.key === 'ArrowLeft' && rect.right < currentRect.right - 2) { isCandidate = true; primaryDiff = currentRect.left - rect.left; secondaryDiff = Math.abs(rect.top - currentRect.top); }
+                if (isCandidate) {
+                    const score = (secondaryDiff * 10) + primaryDiff;
+                    if (score < bestScore) { bestScore = score; bestIdx = i; }
+                }
+            }
+            if (bestIdx !== -1) buttons[bestIdx].focus();
+        });
+    }
+}
+
 function showPlayerControls() {
     const controls = document.getElementById('custom-player-controls');
     const wasActive = controls.classList.contains('active');
@@ -600,7 +642,6 @@ function destroySiteIframe() {
         const newIframe = document.createElement('iframe');
         newIframe.id = 'site-iframe';
         // On retire le sandbox car Mixdrop le bloque. Notre proxy s'occupe des pubs.
-        // newIframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-presentation allow-popups');
         newIframe.style.display = 'none';
         oldIframe.parentNode.replaceChild(newIframe, oldIframe);
     }
@@ -649,6 +690,7 @@ function verifyAdultPin() {
 }
 
 document.addEventListener('DOMContentLoaded', setupSpatialNavigation);
+document.addEventListener('DOMContentLoaded', setupMovieNavigation);
 
 window.addEventListener('popstate', function(event) {
     if (document.activeElement === document.getElementById('iptv-search')) {
@@ -983,8 +1025,17 @@ function playChannel(url, name, isReload = false) {
     videoLoadTimeout = setTimeout(() => { if (video.readyState < 3) { showVideoError(); if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; } video.pause(); } }, 15000);
     showPlayerControls();
     
-    // ON ENCODE L'URL POUR LA FAIRE PASSER PAR NOTRE PROXY STREAM
     const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(url)}`;
+
+    // SI C'EST UN FILM MP4, ON LE LIT DIRECTEMENT SANS HLS.JS
+    if (url.includes('.mp4')) {
+        if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
+        video.src = proxiedUrl;
+        video.play().catch(e => console.error("Erreur lecture MP4:", e));
+        video.addEventListener('loadedmetadata', function() { clearTimeout(videoLoadTimeout); video.play(); }); 
+        video.addEventListener('error', function() { showVideoError(); clearTimeout(videoLoadTimeout); });
+        return; 
+    }
 
     if (Hls.isSupported()) { 
         if (hlsInstance) hlsInstance.destroy(); 
@@ -1034,10 +1085,11 @@ async function searchMovies() {
     const query = document.getElementById('movie-search').value;
     const grid = document.getElementById('movie-grid');
     
-    if (query.length < 2) { grid.innerHTML = ''; return; }
+    if (query.length < 2) { grid.innerHTML = ''; movieButtons = []; return; }
     
     searchMovieTimeout = setTimeout(async () => {
         grid.innerHTML = '<p style="color:#888; grid-column: 1 / -1; text-align:center;">Recherche en cours...</p>';
+        movieButtons = [];
         try {
             const res = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&language=fr-FR`);
             const data = await res.json();
@@ -1048,6 +1100,7 @@ async function searchMovies() {
                 
                 validItems.slice(0, 18).forEach(item => {
                     const div = document.createElement('div');
+                    div.setAttribute('tabindex', '0');
                     div.style.cursor = 'pointer';
                     div.style.textAlign = 'center';
                     div.innerHTML = `
@@ -1058,6 +1111,7 @@ async function searchMovies() {
                     div.onmouseover = () => div.querySelector('img').style.transform = 'scale(1.05)';
                     div.onmouseout = () => div.querySelector('img').style.transform = 'scale(1)';
                     grid.appendChild(div);
+                    movieButtons.push(div);
                 });
             } else {
                 grid.innerHTML = '<p style="color:#888; grid-column: 1 / -1; text-align:center;">Aucun résultat trouvé.</p>';
