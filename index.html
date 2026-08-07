@@ -273,9 +273,12 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
         <button class="source-btn btn-success" onclick="showVodSection()" tabindex="0">🎬 FILMS & SÉRIES</button>
      </div>
 
-     <div style="margin-top: 60px; border-top: 1px solid #222; padding-top: 40px; width: 100%; max-width: 1200px; box-sizing: border-box;">
-        <h3 id="iptv-title" style="color:white; cursor:pointer;" onclick="loadSavedIPTVForUser()">📺 TV Live (Sans Pub)</h3>
-        <div id="iptv-container" class="iptv-container hidden">
+     <!-- NOUVEAU BOUTON TV LIVE -->
+     <div style="margin-top: 60px; text-align: center;">
+        <button class="source-btn btn-primary" onclick="showLiveTvSection()" tabindex="0">📺 TV EN DIRECT</button>
+     </div>
+
+     <div id="iptv-container" class="iptv-container hidden">
            <div class="search-bar">
               <button class="btn-secondary" tabindex="0" onclick="document.getElementById('iptv-search').focus()">🔍 Lancer la recherche</button>
               <input type="text" id="iptv-search" tabindex="-1" placeholder="🔍 Rechercher une chaîne..." style="width: 300px; margin: 0; padding: 10px 20px; border-radius: 50px;" oninput="filterChannels()">
@@ -1291,6 +1294,18 @@ function searchVod() {
         } catch (e) {
             grid.innerHTML = '<p style="color:#ff4d4d; grid-column: 1 / -1; text-align:center;">Erreur de recherche.</p>';
         }
+    }, 500);
+}
+function showLiveTvSection() {
+    // On affiche la grille TV
+    document.getElementById('iptv-container').classList.remove('hidden');
+    // On lance le chargement des chaînes (soit celles de l'admin, soit celles par défaut)
+    loadSavedIPTVForUser();
+    
+    // On fait défiler la page vers la grille pour que la télécommande soit bien placée
+    setTimeout(() => {
+        document.getElementById('iptv-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (channelButtons.length > 0) channelButtons[0].focus();
     }, 500);
 }
 </script>
