@@ -269,14 +269,8 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
      </div>
 
      <!-- NOUVELLE SECTION FILMS & SERIES -->
-     <div style="margin-top: 60px; border-top: 1px solid #222; padding-top: 40px; width: 100%; max-width: 1200px; box-sizing: border-box;">
-        <h3 style="color:white; text-align:center;">🎬 Films & Séries (Sans Pub)</h3>
-        <div class="search-bar" style="margin-bottom: 30px;">
-           <input type="text" id="movie-search" tabindex="0" placeholder="🔍 Rechercher un film ou une série..." style="width: 100%; max-width: 500px; margin: 0; padding: 12px 20px; border-radius: 50px;" oninput="searchMovies()">
-        </div>
-        <div id="movie-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 20px; max-height: 600px; overflow-y: auto; padding: 10px;">
-           <!-- Les films s'afficheront ici -->
-        </div>
+     <div style="margin-top: 60px; text-align: center;">
+        <button class="source-btn btn-success" onclick="showVodSection()" tabindex="0">🎬 FILMS & SÉRIES</button>
      </div>
 
      <div style="margin-top: 60px; border-top: 1px solid #222; padding-top: 40px; width: 100%; max-width: 1200px; box-sizing: border-box;">
@@ -319,7 +313,14 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
   </div>
 
   <iframe id="site-iframe"></iframe>
-  
+  <!-- Écran du catalogue Films & Séries -->
+  <div id="vod-section" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0a0a0a; z-index: 80; overflow-y: auto; padding: 80px 20px 20px 20px; box-sizing: border-box;">
+     <button class="btn-secondary" onclick="backToMain()" style="position: absolute; top: 20px; left: 20px; width: auto; margin: 0; padding: 10px 20px;">↩ Retour</button>
+     <h2 style="color: white; text-align: center; margin-bottom: 40px;">🎬 Films & Séries Populaires</h2>
+     <div id="vod-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 25px; max-width: 1200px; margin: 0 auto;">
+        <!-- Les films s'afficheront ici automatiquement -->
+     </div>
+  </div>
   <!-- Menu de choix des serveurs (par-dessus la vidéo) -->
   <div id="movie-server-overlay" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 90; display: flex; flex-direction: column; align-items: center; justify-content: center;">
      <h2 id="movie-server-title" style="color: white; margin-bottom: 30px; font-size: 32px; text-align: center; padding: 0 20px;"></h2>
@@ -1055,6 +1056,9 @@ function playChannel(url, name, isReload = false) {
 }
 
 function backToMain() { 
+    document.getElementById('vod-section').classList.add('hidden'); // AJOUTE ÇA
+    document.getElementById('movie-server-overlay').classList.add('hidden');
+    // ... (le reste du code) 
     document.getElementById('movie-server-overlay').classList.add('hidden');
     clearTimeout(videoLoadTimeout); clearTimeout(playerControlTimeout); hidePlayerControls();
     document.getElementById('video-error-overlay').style.display = 'none';
@@ -1191,6 +1195,53 @@ function changeMovieServer(index) {
         siteIframe.removeAttribute('srcdoc');
         siteIframe.src = movieUrl;
     }, 500);
+}
+async function showVodSection() {
+    document.getElementById('main-content').classList.add('hidden');
+    document.getElementById('vod-section').classList.remove('hidden');
+    
+    const grid = document.getElementById('vod-grid');
+    grid.innerHTML = '<p style="color:#888; grid-column: 1 / -1; text-align:center;">Chargement du catalogue...</p>';
+    movieButtons = [];
+    
+    try {
+        // On récupère les films et séries populaires du moment en français
+        const resMovies = await fetch(`https://api.themoviedb.org/3/trending/movie/week?api_key=${TMDB_API_KEY}&language=fr-FR`);
+        const dataMovies = await resMovies.json();
+        
+        const resTV = await fetch(`https://api.themoviedb.org/3/trending/tv/week?api_key=${TMDB_API_KEY}&language=fr-FR`);
+        const dataTV = await resTV.json();
+        
+        grid.innerHTML = '';
+        
+        // On mélange les films et les séries
+        const allItems = [...dataMovies.results, ...dataTV.results].slice(0, 40);
+        
+        allItems.forEach(item => {
+            if (!item.poster_path) return; // On ignore ceux sans affiche
+            
+            const div = document.createElement('div');
+            div.setAttribute('tabindex', '0');
+            div.style.cursor = 'pointer';
+            div.style.textAlign = 'center';
+            div.innerHTML = `
+                <img src="https://image.tmdb.org/t/p/w500${item.poster_path}" style="width: 100%; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); transition: transform 0.2s;" alt="${item.title || item.name}">
+                <p style="color: #ccc; font-size: 14px; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.title || item.name}</p>
+            `;
+            div.onclick = () => playMovieFromTMDB(item.id, item.media_type, item.title || item.name);
+            div.onfocus = () => { div.style.outline = '3px solid #00E5FF'; div.style.transform = 'scale(1.08)'; };
+            div.onblur = () => { div.style.outline = 'none'; div.style.transform = 'scale(1)'; };
+            
+            grid.appendChild(div);
+            movieButtons.push(div);
+        });
+        
+        // Focus automatique sur le premier film pour la télécommande
+        if(movieButtons.length > 0) movieButtons[0].focus();
+        
+    } catch (e) {
+        grid.innerHTML = '<p style="color:#ff4d4d; grid-column: 1 / -1; text-align:center;">Erreur de chargement du catalogue.</p>';
+    }
 }
 </script>
 
