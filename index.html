@@ -126,7 +126,8 @@ html.tv-mode input, html.tv-mode select { padding: 10px 15px; font-size: 14px; }
 
 *:focus { outline: none !important; }
 button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; }
-
+/* On ajoute une règle spéciale pour les films pour garder le contour bleu */
+#movie-grid > div:focus { outline: 3px solid #00E5FF !important; box-shadow: 0 0 15px rgba(0, 229, 255, 0.5); }
 .app-fullscreen #app-screen nav.nav-bar { display: none !important; }
 .app-fullscreen #player-section { position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; width: 100% !important; height: 100% !important; padding: 0 !important; margin: 0 !important; z-index: 9999 !important; background: black !important; animation: none !important; }
 .app-fullscreen .tv-player-container { position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; max-width: 100% !important; max-height: 100% !important; border-radius: 0 !important; box-shadow: none !important; display: block !important; aspect-ratio: auto !important; margin: 0 !important; }
@@ -1027,10 +1028,10 @@ function playChannel(url, name, isReload = false) {
     
     const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(url)}`;
 
-    // SI C'EST UN FILM MP4, ON LE LIT DIRECTEMENT SANS HLS.JS
+    // SI C'EST UN FILM MP4, ON LE LIT DIRECTEMENT SANS PROXY ET SANS HLS.JS
     if (url.includes('.mp4')) {
         if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
-        video.src = proxiedUrl;
+        video.src = url; // <-- ICI ON UTILISE LE LIEN DIRECT
         video.play().catch(e => console.error("Erreur lecture MP4:", e));
         video.addEventListener('loadedmetadata', function() { clearTimeout(videoLoadTimeout); video.play(); }); 
         video.addEventListener('error', function() { showVideoError(); clearTimeout(videoLoadTimeout); });
@@ -1110,6 +1111,11 @@ async function searchMovies() {
                     div.onclick = () => playMovieFromTMDB(item.id, item.media_type, item.title || item.name);
                     div.onmouseover = () => div.querySelector('img').style.transform = 'scale(1.05)';
                     div.onmouseout = () => div.querySelector('img').style.transform = 'scale(1)';
+                    
+                    // CADRE LUMINEUX LORS DE LA SÉLECTION À LA TÉLÉCOMMANDE
+                    div.onfocus = () => { div.style.outline = '3px solid #00E5FF'; div.style.transform = 'scale(1.08)'; };
+                    div.onblur = () => { div.style.outline = 'none'; div.style.transform = 'scale(1)'; };
+                    
                     grid.appendChild(div);
                     movieButtons.push(div);
                 });
