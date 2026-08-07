@@ -38,8 +38,9 @@ module.exports = async (req, res) => {
             });
             res.send(rewrittenLines.join('\n'));
         } else {
-            const buffer = Buffer.from(await response.arrayBuffer());
-            res.send(buffer);
+            // Pour les fichiers vidéo (.mp4, .ts), on les fait passer en "Stream" pour ne pas faire crasher Vercel
+            res.setHeader('Cache-Control', 'public, max-age=31536000');
+            response.body.pipe(res);
         }
     } catch (error) {
         console.error('Proxy Stream Error:', error);
