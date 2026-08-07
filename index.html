@@ -316,7 +316,13 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
   <!-- Écran du catalogue Films & Séries -->
   <div id="vod-section" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0a0a0a; z-index: 80; overflow-y: auto; padding: 80px 20px 20px 20px; box-sizing: border-box;">
      <button class="btn-secondary" onclick="backToMain()" style="position: absolute; top: 20px; left: 20px; width: auto; margin: 0; padding: 10px 20px;">↩ Retour</button>
-     <h2 style="color: white; text-align: center; margin-bottom: 40px;">🎬 Films & Séries Populaires</h2>
+     <h2 style="color: white; text-align: center; margin-bottom: 20px;">🎬 Films & Séries Populaires</h2>
+     
+     <!-- NOUVELLE BARRE DE RECHERCHE -->
+     <div style="text-align: center; margin-bottom: 40px;">
+        <input type="text" id="vod-search" tabindex="0" placeholder="🔍 Rechercher un film ou une série..." style="width: 100%; max-width: 500px; margin: 0 auto; padding: 12px 20px; border-radius: 50px; font-size: 16px; box-sizing: border-box; display: block;" oninput="searchVod()">
+     </div>
+
      <div id="vod-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 25px; max-width: 1200px; margin: 0 auto;">
         <!-- Les films s'afficheront ici automatiquement -->
      </div>
@@ -1196,52 +1202,96 @@ function changeMovieServer(index) {
         siteIframe.src = movieUrl;
     }, 500);
 }
+let searchVodTimeout;
+
+// Fonction pour afficher les films dans la grille (utilisée pour le catalogue ET la recherche)
+function renderVodItems(items) {
+    const grid = document.getElementById('vod-grid');
+    grid.innerHTML = '';
+    movieButtons = [];
+    
+    if (items.length === 0) {
+        grid.innerHTML = '<p style="color:#888; grid-column: 1 / -1; text-align:center;">Aucun résultat trouvé.</p>';
+        return;
+    }
+
+    items.forEach(item => {
+        if (!item.poster_path) return; // On ignore ceux sans affiche
+        
+        const div = document.createElement('div');
+        div.setAttribute('tabindex', '0');
+        div.style.cursor = 'pointer';
+        div.style.textAlign = 'center';
+        div.innerHTML = `
+            <img src="https://image.tmdb.org/t/p/w500${item.poster_path}" style="width: 100%; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); transition: transform 0.2s;" alt="${item.title || item.name}">
+            <p style="color: #ccc; font-size: 14px; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.title || item.name}</p>
+        `;
+        div.onclick = () => playMovieFromTMDB(item.id, item.media_type, item.title || item.name);
+        div.onfocus = () => { div.style.outline = '3px solid #00E5FF'; div.style.transform = 'scale(1.08)'; };
+        div.onblur = () => { div.style.outline = 'none'; div.style.transform = 'scale(1)'; };
+        
+        grid.appendChild(div);
+        movieButtons.push(div);
+    });
+}
+
+// Fonction appelée quand on clique sur le bouton "FILMS & SÉRIES"
 async function showVodSection() {
     document.getElementById('main-content').classList.add('hidden');
     document.getElementById('vod-section').classList.remove('hidden');
+    document.getElementById('vod-search').value = ''; // On vide la barre de recherche à chaque ouverture
     
     const grid = document.getElementById('vod-grid');
     grid.innerHTML = '<p style="color:#888; grid-column: 1 / -1; text-align:center;">Chargement du catalogue...</p>';
-    movieButtons = [];
     
     try {
-        // On récupère les films et séries populaires du moment en français
         const resMovies = await fetch(`https://api.themoviedb.org/3/trending/movie/week?api_key=${TMDB_API_KEY}&language=fr-FR`);
         const dataMovies = await resMovies.json();
         
         const resTV = await fetch(`https://api.themoviedb.org/3/trending/tv/week?api_key=${TMDB_API_KEY}&language=fr-FR`);
         const dataTV = await resTV.json();
         
-        grid.innerHTML = '';
-        
         // On mélange les films et les séries
         const allItems = [...dataMovies.results, ...dataTV.results].slice(0, 40);
         
-        allItems.forEach(item => {
-            if (!item.poster_path) return; // On ignore ceux sans affiche
-            
-            const div = document.createElement('div');
-            div.setAttribute('tabindex', '0');
-            div.style.cursor = 'pointer';
-            div.style.textAlign = 'center';
-            div.innerHTML = `
-                <img src="https://image.tmdb.org/t/p/w500${item.poster_path}" style="width: 100%; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); transition: transform 0.2s;" alt="${item.title || item.name}">
-                <p style="color: #ccc; font-size: 14px; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.title || item.name}</p>
-            `;
-            div.onclick = () => playMovieFromTMDB(item.id, item.media_type, item.title || item.name);
-            div.onfocus = () => { div.style.outline = '3px solid #00E5FF'; div.style.transform = 'scale(1.08)'; };
-            div.onblur = () => { div.style.outline = 'none'; div.style.transform = 'scale(1)'; };
-            
-            grid.appendChild(div);
-            movieButtons.push(div);
-        });
+        renderVodItems(allItems);
         
-        // Focus automatique sur le premier film pour la télécommande
-        if(movieButtons.length > 0) movieButtons[0].focus();
+        // Focus automatique sur la barre de recherche pour la télécommande
+        document.getElementById('vod-search').focus();
         
     } catch (e) {
         grid.innerHTML = '<p style="color:#ff4d4d; grid-column: 1 / -1; text-align:center;">Erreur de chargement du catalogue.</p>';
     }
+}
+
+// Fonction appelée quand on tape dans la barre de recherche
+function searchVod() {
+    clearTimeout(searchVodTimeout);
+    const query = document.getElementById('vod-search').value;
+    const grid = document.getElementById('vod-grid');
+    
+    // Si la recherche fait moins de 2 lettres, on réaffiche le catalogue populaire
+    if (query.length < 2) { 
+        if (query.length === 0) showVodSection(); 
+        return; 
+    }
+    
+    searchVodTimeout = setTimeout(async () => {
+        grid.innerHTML = '<p style="color:#888; grid-column: 1 / -1; text-align:center;">Recherche en cours...</p>';
+        try {
+            const res = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&language=fr-FR`);
+            const data = await res.json();
+            
+            if (data.results && data.results.length > 0) {
+                const validItems = data.results.filter(item => (item.media_type === 'movie' || item.media_type === 'tv') && item.poster_path);
+                renderVodItems(validItems.slice(0, 18));
+            } else {
+                grid.innerHTML = '<p style="color:#888; grid-column: 1 / -1; text-align:center;">Aucun résultat trouvé.</p>';
+            }
+        } catch (e) {
+            grid.innerHTML = '<p style="color:#ff4d4d; grid-column: 1 / -1; text-align:center;">Erreur de recherche.</p>';
+        }
+    }, 500);
 }
 </script>
 
