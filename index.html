@@ -260,12 +260,12 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
      <h2 style="color:white; font-size:44px; margin-bottom:10px;">Bienvenue sur Chapdolo</h2>
      <p style="color:#888; font-size:20px; margin-bottom:40px;">Sélectionnez une source de streaming</p>
      
-        <div class="source-grid">   
-           <button class="source-btn btn-primary" onclick="loadSite('https://oha.to')">SOURCE 1</button>
-           <button class="source-btn btn-secondary" onclick="loadSite('https://huhu.to')">SOURCE 2</button>
-           <button class="source-btn btn-secondary" onclick="loadSite('https://vavoo.to')">SOURCE 3</button>
-           <button class="source-btn btn-lock" onclick="promptAdultPin()">🔒 ADULTES</button>
-        </div>
+     <div class="source-grid">
+        <button class="source-btn btn-primary" onclick="loadSite('https://oha.to')">SOURCE 1</button>
+        <button class="source-btn btn-secondary" onclick="loadSite('https://huhu.to')">SOURCE 2</button>
+        <button class="source-btn btn-secondary" onclick="loadSite('https://vavoo.to')">SOURCE 3</button>
+        <button class="source-btn btn-lock" onclick="promptAdultPin()">🔒 ADULTES</button>
+     </div>
 
      <!-- NOUVELLE SECTION FILMS & SERIES -->
      <div style="margin-top: 60px; border-top: 1px solid #222; padding-top: 40px; width: 100%; max-width: 1200px; box-sizing: border-box;">
@@ -318,6 +318,7 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
   </div>
 
   <iframe id="site-iframe"></iframe>
+  
   <!-- Menu de choix des serveurs (par-dessus la vidéo) -->
   <div id="movie-server-overlay" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 90; display: flex; flex-direction: column; align-items: center; justify-content: center;">
      <h2 id="movie-server-title" style="color: white; margin-bottom: 30px; font-size: 32px; text-align: center; padding: 0 20px;"></h2>
@@ -351,6 +352,9 @@ let allUsersCache = {};
 
 let adultPin = '';
 let adultUrl = '';
+
+const TMDB_API_KEY = 'c36548e7fd5e79ae5a8ca67ac0717bc2'; 
+let searchMovieTimeout;
 
 function updateClock() {
     const now = new Date();
@@ -595,13 +599,10 @@ function destroySiteIframe() {
     if (oldIframe) {
         const newIframe = document.createElement('iframe');
         newIframe.id = 'site-iframe';
-        // On retire "allow-popups" et "allow-top-navigation" pour bloquer 100% des pubs et redirections
-        // On retire le sandbox car Mixdrop le bloque. 
-        // Notre proxy (proxy-web.js) s'occupe déjà de bloquer les pubs !
-        newIframe.removeAttribute('sandbox');
+        // On retire le sandbox car Mixdrop le bloque. Notre proxy s'occupe des pubs.
+        // newIframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-presentation allow-popups');
         newIframe.style.display = 'none';
         oldIframe.parentNode.replaceChild(newIframe, oldIframe);
-        newIframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-presentation allow-popups');
     }
 }
 
@@ -981,29 +982,28 @@ function playChannel(url, name, isReload = false) {
     clearTimeout(videoLoadTimeout);
     videoLoadTimeout = setTimeout(() => { if (video.readyState < 3) { showVideoError(); if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; } video.pause(); } }, 15000);
     showPlayerControls();
-        // ON ENCODE L'URL POUR LA FAIRE PASSER PAR NOTRE PROXY
+    
+    // ON ENCODE L'URL POUR LA FAIRE PASSER PAR NOTRE PROXY STREAM
     const proxiedUrl = `/api/proxy-stream?url=${encodeURIComponent(url)}`;
 
     if (Hls.isSupported()) { 
         if (hlsInstance) hlsInstance.destroy(); 
         hlsInstance = new Hls(); 
-        hlsInstance.loadSource(proxiedUrl); // <-- ICI ON UTILISE proxiedUrl
+        hlsInstance.loadSource(proxiedUrl); 
         hlsInstance.attachMedia(video); 
         hlsInstance.on(Hls.Events.MANIFEST_PARSED, function() { clearTimeout(videoLoadTimeout); video.play().catch(e => console.error("Erreur lecture auto:", e)); });
         hlsInstance.on(Hls.Events.ERROR, function(event, data) {
             if (data.fatal) { showVideoError(); clearTimeout(videoLoadTimeout); if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; } video.pause(); }
         });
     } else if (video.canPlayType('application/vnd.apple.mpegurl')) { 
-        video.src = proxiedUrl; // <-- ICI AUSSI
+        video.src = proxiedUrl; 
         video.addEventListener('loadedmetadata', function() { clearTimeout(videoLoadTimeout); video.play(); }); 
         video.addEventListener('error', function() { showVideoError(); clearTimeout(videoLoadTimeout); });
-    }  
+    } 
 }
 
 function backToMain() { 
-    document.getElementById('movie-server-overlay').classList.add('hidden'); // AJOUTE ÇA
-    clearTimeout(videoLoadTimeout); clearTimeout(playerControlTimeout); hidePlayerControls();
-    // ... (le reste du code) 
+    document.getElementById('movie-server-overlay').classList.add('hidden');
     clearTimeout(videoLoadTimeout); clearTimeout(playerControlTimeout); hidePlayerControls();
     document.getElementById('video-error-overlay').style.display = 'none';
     document.body.classList.remove('app-fullscreen', 'site-active'); 
@@ -1024,9 +1024,10 @@ function backToMain() {
     document.getElementById('main-content').classList.remove('hidden'); 
     document.getElementById('back-main-btn').classList.add('hidden'); 
 }
- // REMPLACE CECI PAR TA VRAIE CLÉ API TMDB
-const TMDB_API_KEY = 'c36548e7fd5e79ae5a8ca67ac0717bc2'; 
-let searchMovieTimeout;
+
+// ==========================================
+// SECTION FILMS & SÉRIES (TMDB + HUHU.TO)
+// ==========================================
 
 async function searchMovies() {
     clearTimeout(searchMovieTimeout);
@@ -1038,13 +1039,11 @@ async function searchMovies() {
     searchMovieTimeout = setTimeout(async () => {
         grid.innerHTML = '<p style="color:#888; grid-column: 1 / -1; text-align:center;">Recherche en cours...</p>';
         try {
-            // On cherche sur TMDB (en français)
             const res = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&language=fr-FR`);
             const data = await res.json();
             
             if (data.results && data.results.length > 0) {
                 grid.innerHTML = '';
-                // On filtre seulement les films et séries qui ont une affiche
                 const validItems = data.results.filter(item => (item.media_type === 'movie' || item.media_type === 'tv') && item.poster_path);
                 
                 validItems.slice(0, 18).forEach(item => {
@@ -1072,39 +1071,49 @@ async function searchMovies() {
 async function playMovieFromTMDB(tmdbId, mediaType, title) {
     document.getElementById('main-content').classList.add('hidden');
     document.getElementById('player-section').classList.add('hidden');
+    document.body.classList.remove('site-active');
     
     const siteIframe = document.getElementById('site-iframe');
-    siteIframe.style.display = 'block';
-    siteIframe.src = 'about:blank'; // On met l'iframe en attendant
-    document.body.classList.add('site-active');
+    siteIframe.style.display = 'none'; // On cache l'iframe
 
     try {
         const response = await fetch(`/api/get-movie?tmdb_id=${tmdbId}&type=${mediaType}`);
         const data = await response.json();
 
-        if (data.success && data.sources.length > 0) {
-            window.currentMovieServers = data.sources;
-            document.getElementById('movie-server-title').innerText = title;
-            const btnsContainer = document.getElementById('movie-server-buttons');
-            btnsContainer.innerHTML = '';
-            
-            // On crée les boutons dans l'application principale (plus dans l'iframe)
-            data.sources.forEach((src, index) => {
-                const btn = document.createElement('button');
-                btn.innerText = src.name;
-                btn.className = 'btn-primary'; // Utilise le style bleu de Chapdolo
-                btn.style.margin = '5px';
-                btn.onclick = () => changeMovieServer(index);
-                btnsContainer.appendChild(btn);
-            });
-            
-            // On affiche le menu par-dessus l'iframe
-            document.getElementById('movie-server-overlay').classList.remove('hidden');
+        if (data.success) {
+            // SI ON A UN LIEN MP4 BRUT -> On utilise le lecteur Chapdolo !
+            if (data.type === 'mp4' && data.url) {
+                playChannel(data.url, title);
+            } 
+            // SINON -> On utilise les boutons de serveurs
+            else if (data.sources && data.sources.length > 0) {
+                document.body.classList.add('site-active');
+                siteIframe.style.display = 'block';
+                siteIframe.src = 'about:blank';
+                
+                window.currentMovieServers = data.sources;
+                document.getElementById('movie-server-title').innerText = title;
+                const btnsContainer = document.getElementById('movie-server-buttons');
+                btnsContainer.innerHTML = '';
+                
+                data.sources.forEach((src, index) => {
+                    const btn = document.createElement('button');
+                    btn.innerText = src.name;
+                    btn.className = 'btn-primary';
+                    btn.style.margin = '5px';
+                    btn.onclick = () => changeMovieServer(index);
+                    btnsContainer.appendChild(btn);
+                });
+                
+                document.getElementById('movie-server-overlay').classList.remove('hidden');
+            }
         } else {
-            siteIframe.srcdoc = '<div style="color:#ff4d4d; background:#000; height:100%; display:flex; align-items:center; justify-content:center; font-family:sans-serif; font-size:24px;">Film/Série non disponible sur huhu.to.</div>';
+            alert('Film/Série non disponible sur huhu.to.');
+            backToMain();
         }
     } catch (e) {
-        siteIframe.srcdoc = '<div style="color:#ff4d4d; background:#000; height:100%; display:flex; align-items:center; justify-content:center; font-family:sans-serif; font-size:24px;">Erreur réseau.</div>';
+        alert('Erreur réseau.');
+        backToMain();
     }
 }
 
@@ -1112,7 +1121,6 @@ function changeMovieServer(index) {
     const server = window.currentMovieServers[index];
     if (!server) return;
     
-    // On cache le menu des serveurs
     document.getElementById('movie-server-overlay').classList.add('hidden');
     
     const siteIframe = document.getElementById('site-iframe');
@@ -1124,7 +1132,7 @@ function changeMovieServer(index) {
         siteIframe.src = movieUrl;
     }, 500);
 }
-  
 </script>
+
 </body>
 </html>
