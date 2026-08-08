@@ -19,33 +19,44 @@ module.exports = async (req, res) => {
         if (contentType.includes('text/html')) {
             let html = await response.text();
             
-            // 1. Corriger les chemins relatifs (CSS, JS, Images)
+            // 1. Corriger les chemins relatifs
             const baseTag = `<base href="${targetUrl.origin}/">`;
             
-            // 2. Le script intelligent qui intercepte les "Bundles"
+            // 2. Le Bouclier Anti-Pubs Ultime
             const adBlockScript = `
             <script>
-                // A. Bloquer totalement l'ouverture de nouvelles fenêtres (Pop-ups de pubs)
-                window.open = function() { console.log('Pop-up bloqué !'); return null; };
+                // A. Bloquer les pop-ups
+                window.open = function() { return null; };
                 
-                // B. Bloquer les redirections invisibles (souvent utilisées par les pubs)
-                window.onbeforeunload = function() { return null; };
-
-                // C. Intercepter les clics sur les liens et boutons
+                // B. Intercepter les clics pour bloquer les redirections de pub
                 document.addEventListener('click', function(e) {
                     let el = e.target;
                     while (el && el.tagName !== 'A') el = el.parentElement;
                     if (el && el.href) {
-                        e.preventDefault(); // On annule l'action normale
+                        e.preventDefault(); 
                         let finalUrl = el.href;
                         if (el.getAttribute('href') && el.getAttribute('href').startsWith('/')) finalUrl = '${targetUrl.origin}' + el.getAttribute('href');
-                        
-                        // Si c'est un lien du site, on l'ouvre dans l'iframe via le proxy
                         if (finalUrl.includes('${targetUrl.hostname}')) {
                             window.location.href = '/api/proxy-web?url=' + encodeURIComponent(finalUrl);
                         }
                     }
                 }, true);
+
+                // C. LE TUEUR DE PUBS : Détruit les fausses notifications (Gmail, WhatsApp) et les boutons piégés
+                const observer = new MutationObserver(function() {
+                    document.querySelectorAll('div, iframe, img').forEach(el => {
+                        // Si l'élément a un z-index très élevé (par-dessus la vidéo) et qu'il n'est pas le lecteur vidéo lui-même
+                        let style = window.getComputedStyle(el);
+                        let zIndex = parseInt(style.zIndex);
+                        if (zIndex > 999 && !el.querySelector('video') && el.tagName !== 'VIDEO') {
+                            el.remove(); // On détruit la pub !
+                        }
+                    });
+                });
+                // On lance le détecteur dès que le body est prêt
+                document.addEventListener('DOMContentLoaded', function() {
+                    observer.observe(document.body, { childList: true, subtree: true });
+                });
             </script>`;
             
             if (html.includes('<head>')) {
@@ -56,7 +67,7 @@ module.exports = async (req, res) => {
 
             res.send(html);
         } else {
-            // Pour les autres fichiers (CSS, JS, Vidéos), on les fait passer en "Stream" pour ne pas faire crasher Vercel
+            // Pour les autres fichiers (CSS, JS, Vidéos), on les fait passer en "Stream"
             res.setHeader('Cache-Control', 'public, max-age=31536000');
             response.body.pipe(res);
         }
