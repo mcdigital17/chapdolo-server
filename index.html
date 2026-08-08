@@ -658,6 +658,8 @@ function destroySiteIframe() {
     if (oldIframe) {
         const newIframe = document.createElement('iframe');
         newIframe.id = 'site-iframe';
+        // ON REMET LE SANDBOX STRICT : autorise les scripts et la vidéo, mais BLOQUE les pubs et pop-ups
+        newIframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-presentation');
         newIframe.style.display = 'none';
         oldIframe.parentNode.replaceChild(newIframe, oldIframe);
     }
