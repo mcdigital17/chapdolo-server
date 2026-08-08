@@ -1102,7 +1102,12 @@ function backToMain() {
     document.getElementById('vod-section').classList.add('hidden');
     document.getElementById('live-tv-section').classList.add('hidden');
     document.getElementById('movie-server-overlay').classList.add('hidden');
-    
+    // Si on était sur les films, on revient au catalogue des films
+    if (!document.getElementById('vod-section').classList.contains('hidden')) {
+        // On est déjà sur le catalogue, on ne fait rien
+    } else {
+        document.getElementById('vod-section').classList.add('hidden');
+    }
     document.getElementById('main-content').classList.remove('hidden'); 
     document.getElementById('back-main-btn').classList.add('hidden'); 
 }
@@ -1196,9 +1201,10 @@ function searchVod() {
 }
 
 async function playMovieFromTMDB(tmdbId, mediaType, title) {
+    // On cache le catalogue des films pour laisser place au lecteur
+    document.getElementById('vod-section').classList.add('hidden');
     document.getElementById('main-content').classList.add('hidden');
     document.getElementById('player-section').classList.add('hidden');
-    document.body.classList.remove('site-active');
     
     const siteIframe = document.getElementById('site-iframe');
     siteIframe.style.display = 'none'; 
@@ -1208,11 +1214,12 @@ async function playMovieFromTMDB(tmdbId, mediaType, title) {
         const data = await response.json();
 
         if (data.success) {
+            // SI ON A UN LIEN MP4 BRUT -> On utilise le lecteur Chapdolo !
             if (data.type === 'mp4' && data.url) {
                 playChannel(data.url, title);
             } 
+            // SINON -> On utilise l'iframe avec les boutons de serveurs
             else if (data.sources && data.sources.length > 0) {
-                document.body.classList.add('site-active');
                 siteIframe.style.display = 'block';
                 siteIframe.src = 'about:blank';
                 
@@ -1233,7 +1240,7 @@ async function playMovieFromTMDB(tmdbId, mediaType, title) {
                 document.getElementById('movie-server-overlay').classList.remove('hidden');
             }
         } else {
-            alert('Film/Série non disponible sur huhu.to.');
+            alert('Film/Série non disponible sur huhu.to. Essayez un autre film.');
             backToMain();
         }
     } catch (e) {
@@ -1246,6 +1253,7 @@ function changeMovieServer(index) {
     const server = window.currentMovieServers[index];
     if (!server) return;
     
+    // On cache le menu des serveurs pour lancer la vidéo
     document.getElementById('movie-server-overlay').classList.add('hidden');
     
     const siteIframe = document.getElementById('site-iframe');
