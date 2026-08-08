@@ -83,7 +83,6 @@ button:active { transform: scale(0.96); }
 .tv-player-container { width: 100%; max-width: 1000px; margin: 20px auto; background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8); display: none; aspect-ratio: 16/9; position: relative; }
 #tv-player { width: 100%; height: 100%; background: black; object-fit: contain; }
 #tv-player:focus { outline: none !important; }
-#iptv-msg { color: #00E5FF; margin-top: 10px; font-weight: bold; }
 
 .iptv-container { margin-top: 30px; background: #111; border-radius: 12px; padding: 20px; border: 1px solid #222; transition: border-color 0.3s; width: 100%; max-width: 1200px; box-sizing: border-box; }
 .iptv-container.adult-mode { border-color: #ff4d4d; box-shadow: 0 0 15px rgba(255, 77, 77, 0.2); }
@@ -126,8 +125,8 @@ html.tv-mode input, html.tv-mode select { padding: 10px 15px; font-size: 14px; }
 
 *:focus { outline: none !important; }
 button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; }
-/* On ajoute une règle spéciale pour les films pour garder le contour bleu */
-#movie-grid > div:focus { outline: 3px solid #00E5FF !important; box-shadow: 0 0 15px rgba(0, 229, 255, 0.5); }
+#movie-grid > div:focus, #vod-grid > div:focus { outline: 3px solid #00E5FF !important; box-shadow: 0 0 15px rgba(0, 229, 255, 0.5); }
+
 .app-fullscreen #app-screen nav.nav-bar { display: none !important; }
 .app-fullscreen #player-section { position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; width: 100% !important; height: 100% !important; padding: 0 !important; margin: 0 !important; z-index: 9999 !important; background: black !important; animation: none !important; }
 .app-fullscreen .tv-player-container { position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; max-width: 100% !important; max-height: 100% !important; border-radius: 0 !important; box-shadow: none !important; display: block !important; aspect-ratio: auto !important; margin: 0 !important; }
@@ -277,23 +276,42 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
      <div style="margin-top: 60px; text-align: center;">
         <button class="source-btn btn-primary" onclick="showLiveTvSection()" tabindex="0">📺 TV EN DIRECT</button>
      </div>
+  </div>
 
-     <div id="iptv-container" class="iptv-container hidden">
-           <div class="search-bar">
-              <button class="btn-secondary" tabindex="0" onclick="document.getElementById('iptv-search').focus()">🔍 Lancer la recherche</button>
-              <input type="text" id="iptv-search" tabindex="-1" placeholder="🔍 Rechercher une chaîne..." style="width: 300px; margin: 0; padding: 10px 20px; border-radius: 50px;" oninput="filterChannels()">
-              <button id="fav-toggle-btn" class="btn-auto" tabindex="0" onclick="toggleShowFavorites()">❤️ Voir les favoris</button>
-              <button id="recent-toggle-btn" class="btn-auto" tabindex="0" onclick="toggleShowRecents()">⏱ Vues récemment</button>
-              <button id="sort-az-btn" class="btn-auto" tabindex="0" onclick="sortChannelsAZ()">🔤 Trier A-Z</button>
-           </div>
-           <div style="margin-bottom: 15px;">
-              <select id="iptv-category-filter" onchange="filterChannels()" style="padding: 10px 20px; border-radius: 50px; border: 1px solid #333; background: #1a1a1a; color: white; font-size: 14px; width: 100%; max-width: 300px; cursor: pointer;">
-                 <option value="all">Toutes les catégories</option>
-              </select>
-           </div>
-           <div id="iptv-channels" class="iptv-channels"></div>
+  <!-- Écran du catalogue Films & Séries -->
+  <div id="vod-section" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0a0a0a; z-index: 80; overflow-y: auto; padding: 80px 20px 20px 20px; box-sizing: border-box;">
+     <button class="btn-secondary" onclick="backToMain()" style="position: absolute; top: 20px; left: 20px; width: auto; margin: 0; padding: 10px 20px;">↩ Retour</button>
+     <h2 style="color: white; text-align: center; margin-bottom: 20px;">🎬 Films & Séries Populaires</h2>
+     
+     <div style="text-align: center; margin-bottom: 40px;">
+        <input type="text" id="vod-search" tabindex="0" placeholder="🔍 Rechercher un film ou une série..." style="width: 100%; max-width: 500px; margin: 0 auto; padding: 12px 20px; border-radius: 50px; font-size: 16px; box-sizing: border-box; display: block;" oninput="searchVod()">
+     </div>
+
+     <div id="vod-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 25px; max-width: 1200px; margin: 0 auto;">
+        <!-- Les films s'afficheront ici automatiquement -->
+     </div>
+  </div>
+
+  <!-- Écran TV Live -->
+  <div id="live-tv-section" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0a0a0a; z-index: 80; overflow-y: auto; padding: 80px 20px 20px 20px; box-sizing: border-box;">
+     <button class="btn-secondary" onclick="backToMain()" style="position: absolute; top: 20px; left: 20px; width: auto; margin: 0; padding: 10px 20px;">↩ Retour</button>
+     <h2 style="color: white; text-align: center; margin-bottom: 20px;">📺 TV en Direct</h2>
+     <p id="iptv-status-msg" style="color:#888; display:none; text-align: center;">Chargement des chaînes TV en cours...</p>
+     
+     <div id="iptv-container" class="iptv-container hidden" style="max-width: 1200px; margin: 0 auto;">
+        <div class="search-bar">
+           <button class="btn-secondary" tabindex="0" onclick="document.getElementById('iptv-search').focus()">🔍 Lancer la recherche</button>
+           <input type="text" id="iptv-search" tabindex="-1" placeholder="🔍 Rechercher une chaîne..." style="width: 300px; margin: 0; padding: 10px 20px; border-radius: 50px;" oninput="filterChannels()">
+           <button id="fav-toggle-btn" class="btn-auto" tabindex="0" onclick="toggleShowFavorites()">❤️ Voir les favoris</button>
+           <button id="recent-toggle-btn" class="btn-auto" tabindex="0" onclick="toggleShowRecents()">⏱ Vues récemment</button>
+           <button id="sort-az-btn" class="btn-auto" tabindex="0" onclick="sortChannelsAZ()">🔤 Trier A-Z</button>
         </div>
-        <p id="iptv-status-msg" style="color:#888; display:none;">Chargement des chaînes TV en cours...</p>
+        <div style="margin-bottom: 15px; text-align: center;">
+           <select id="iptv-category-filter" onchange="filterChannels()" style="padding: 10px 20px; border-radius: 50px; border: 1px solid #333; background: #1a1a1a; color: white; font-size: 14px; width: 100%; max-width: 300px; cursor: pointer;">
+              <option value="all">Toutes les catégories</option>
+           </select>
+        </div>
+        <div id="iptv-channels" class="iptv-channels"></div>
      </div>
   </div>
 
@@ -316,20 +334,7 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
   </div>
 
   <iframe id="site-iframe"></iframe>
-  <!-- Écran du catalogue Films & Séries -->
-  <div id="vod-section" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0a0a0a; z-index: 80; overflow-y: auto; padding: 80px 20px 20px 20px; box-sizing: border-box;">
-     <button class="btn-secondary" onclick="backToMain()" style="position: absolute; top: 20px; left: 20px; width: auto; margin: 0; padding: 10px 20px;">↩ Retour</button>
-     <h2 style="color: white; text-align: center; margin-bottom: 20px;">🎬 Films & Séries Populaires</h2>
-     
-     <!-- NOUVELLE BARRE DE RECHERCHE -->
-     <div style="text-align: center; margin-bottom: 40px;">
-        <input type="text" id="vod-search" tabindex="0" placeholder="🔍 Rechercher un film ou une série..." style="width: 100%; max-width: 500px; margin: 0 auto; padding: 12px 20px; border-radius: 50px; font-size: 16px; box-sizing: border-box; display: block;" oninput="searchVod()">
-     </div>
-
-     <div id="vod-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 25px; max-width: 1200px; margin: 0 auto;">
-        <!-- Les films s'afficheront ici automatiquement -->
-     </div>
-  </div>
+  
   <!-- Menu de choix des serveurs (par-dessus la vidéo) -->
   <div id="movie-server-overlay" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 90; display: flex; flex-direction: column; align-items: center; justify-content: center;">
      <h2 id="movie-server-title" style="color: white; margin-bottom: 30px; font-size: 32px; text-align: center; padding: 0 20px;"></h2>
@@ -367,6 +372,7 @@ let adultUrl = '';
 const TMDB_API_KEY = 'c36548e7fd5e79ae5a8ca67ac0717bc2'; 
 let searchMovieTimeout;
 let movieButtons = [];
+let searchVodTimeout;
 
 function updateClock() {
     const now = new Date();
@@ -505,8 +511,8 @@ function setupSpatialNavigation() {
 }
 
 function setupMovieNavigation() {
-    const movieGrid = document.getElementById('movie-grid');
-    const movieSearchInput = document.getElementById('movie-search');
+    const movieGrid = document.getElementById('vod-grid');
+    const movieSearchInput = document.getElementById('vod-search');
     
     if(movieSearchInput) {
         movieSearchInput.addEventListener('keydown', function(e) {
@@ -652,7 +658,6 @@ function destroySiteIframe() {
     if (oldIframe) {
         const newIframe = document.createElement('iframe');
         newIframe.id = 'site-iframe';
-        // On retire le sandbox car Mixdrop le bloque. Notre proxy s'occupe des pubs.
         newIframe.style.display = 'none';
         oldIframe.parentNode.replaceChild(newIframe, oldIframe);
     }
@@ -693,9 +698,8 @@ function verifyAdultPin() {
     if (enteredPin === adultPin) {
         closePinModal();
         isAdultMode = true;
-        document.getElementById('iptv-title').innerText = "🔒 TV Adulte";
         document.getElementById('iptv-container').classList.add('adult-mode');
-        document.getElementById('iptv-status-msg').style.display = 'block';
+        showLiveTvSection();
         loadIPTVList(adultUrl);
     } else { document.getElementById('pin-error').innerText = "Code PIN incorrect."; }
 }
@@ -880,18 +884,6 @@ function showApp() {
     document.getElementById('admin-screen').classList.add('hidden'); 
     document.getElementById('app-screen').classList.remove('hidden'); 
     backToMain(); 
-  async function loadSavedIPTVForUser() { 
-    isAdultMode = false;
-    document.getElementById('iptv-container').classList.remove('adult-mode');
-    try { 
-        const res = await fetch('/api/iptv-config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action: 'get'}) }); 
-        const data = await res.json(); 
-        if(data.success) {
-            if(data.url) { document.getElementById('iptv-status-msg').style.display = 'block'; loadIPTVList(data.url); }
-            if(data.adultPin) adultPin = data.adultPin;
-            if(data.adultUrl) adultUrl = data.adultUrl;
-        }
-    } catch(e) {} 
 }
 
 function loadSite(url) { 
@@ -938,7 +930,6 @@ async function saveAndLoadIPTV() {
 
 async function loadSavedIPTVForUser() { 
     isAdultMode = false;
-    document.getElementById('iptv-title').innerText = "📺 TV Live (Sans Pub)";
     document.getElementById('iptv-container').classList.remove('adult-mode');
     try { 
         const res = await fetch('/api/iptv-config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action: 'get'}) }); 
@@ -1053,7 +1044,7 @@ function playChannel(url, name, isReload = false) {
     // SI C'EST UN FILM MP4, ON LE LIT DIRECTEMENT SANS PROXY ET SANS HLS.JS
     if (url.includes('.mp4')) {
         if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
-        video.src = url; // <-- ICI ON UTILISE LE LIEN DIRECT
+        video.src = url; 
         video.play().catch(e => console.error("Erreur lecture MP4:", e));
         video.addEventListener('loadedmetadata', function() { clearTimeout(videoLoadTimeout); video.play(); }); 
         video.addEventListener('error', function() { showVideoError(); clearTimeout(videoLoadTimeout); });
@@ -1077,9 +1068,8 @@ function playChannel(url, name, isReload = false) {
 }
 
 function backToMain() { 
-    document.getElementById('vod-section').classList.add('hidden'); // AJOUTE ÇA
-    document.getElementById('movie-server-overlay').classList.add('hidden');
-    // ... (le reste du code) 
+    document.getElementById('vod-section').classList.add('hidden');
+    document.getElementById('live-tv-section').classList.add('hidden');
     document.getElementById('movie-server-overlay').classList.add('hidden');
     clearTimeout(videoLoadTimeout); clearTimeout(playerControlTimeout); hidePlayerControls();
     document.getElementById('video-error-overlay').style.display = 'none';
@@ -1106,44 +1096,81 @@ function backToMain() {
 // SECTION FILMS & SÉRIES (TMDB + HUHU.TO)
 // ==========================================
 
-async function searchMovies() {
-    clearTimeout(searchMovieTimeout);
-    const query = document.getElementById('movie-search').value;
-    const grid = document.getElementById('movie-grid');
+function renderVodItems(items) {
+    const grid = document.getElementById('vod-grid');
+    grid.innerHTML = '';
+    movieButtons = [];
     
-    if (query.length < 2) { grid.innerHTML = ''; movieButtons = []; return; }
+    if (items.length === 0) {
+        grid.innerHTML = '<p style="color:#888; grid-column: 1 / -1; text-align:center;">Aucun résultat trouvé.</p>';
+        return;
+    }
+
+    items.forEach(item => {
+        if (!item.poster_path) return; 
+        
+        const div = document.createElement('div');
+        div.setAttribute('tabindex', '0');
+        div.style.cursor = 'pointer';
+        div.style.textAlign = 'center';
+        div.innerHTML = `
+            <img src="https://image.tmdb.org/t/p/w500${item.poster_path}" style="width: 100%; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); transition: transform 0.2s;" alt="${item.title || item.name}">
+            <p style="color: #ccc; font-size: 14px; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.title || item.name}</p>
+        `;
+        div.onclick = () => playMovieFromTMDB(item.id, item.media_type, item.title || item.name);
+        div.onfocus = () => { div.style.outline = '3px solid #00E5FF'; div.style.transform = 'scale(1.08)'; };
+        div.onblur = () => { div.style.outline = 'none'; div.style.transform = 'scale(1)'; };
+        
+        grid.appendChild(div);
+        movieButtons.push(div);
+    });
+}
+
+async function showVodSection() {
+    document.getElementById('main-content').classList.add('hidden');
+    document.getElementById('vod-section').classList.remove('hidden');
+    document.getElementById('vod-search').value = ''; 
     
-    searchMovieTimeout = setTimeout(async () => {
+    const grid = document.getElementById('vod-grid');
+    grid.innerHTML = '<p style="color:#888; grid-column: 1 / -1; text-align:center;">Chargement du catalogue...</p>';
+    
+    try {
+        const resMovies = await fetch(`https://api.themoviedb.org/3/trending/movie/week?api_key=${TMDB_API_KEY}&language=fr-FR`);
+        const dataMovies = await resMovies.json();
+        
+        const resTV = await fetch(`https://api.themoviedb.org/3/trending/tv/week?api_key=${TMDB_API_KEY}&language=fr-FR`);
+        const dataTV = await resTV.json();
+        
+        const allItems = [...dataMovies.results, ...dataTV.results].slice(0, 40);
+        
+        renderVodItems(allItems);
+        
+        document.getElementById('vod-search').focus();
+        
+    } catch (e) {
+        grid.innerHTML = '<p style="color:#ff4d4d; grid-column: 1 / -1; text-align:center;">Erreur de chargement du catalogue.</p>';
+    }
+}
+
+function searchVod() {
+    clearTimeout(searchVodTimeout);
+    const query = document.getElementById('vod-search').value;
+    const grid = document.getElementById('vod-grid');
+    
+    if (query.length < 2) { 
+        if (query.length === 0) showVodSection(); 
+        return; 
+    }
+    
+    searchVodTimeout = setTimeout(async () => {
         grid.innerHTML = '<p style="color:#888; grid-column: 1 / -1; text-align:center;">Recherche en cours...</p>';
-        movieButtons = [];
         try {
             const res = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&language=fr-FR`);
             const data = await res.json();
             
             if (data.results && data.results.length > 0) {
-                grid.innerHTML = '';
                 const validItems = data.results.filter(item => (item.media_type === 'movie' || item.media_type === 'tv') && item.poster_path);
-                
-                validItems.slice(0, 18).forEach(item => {
-                    const div = document.createElement('div');
-                    div.setAttribute('tabindex', '0');
-                    div.style.cursor = 'pointer';
-                    div.style.textAlign = 'center';
-                    div.innerHTML = `
-                        <img src="https://image.tmdb.org/t/p/w500${item.poster_path}" style="width: 100%; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); transition: transform 0.2s;" alt="${item.title || item.name}">
-                        <p style="color: #ccc; font-size: 14px; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.title || item.name}</p>
-                    `;
-                    div.onclick = () => playMovieFromTMDB(item.id, item.media_type, item.title || item.name);
-                    div.onmouseover = () => div.querySelector('img').style.transform = 'scale(1.05)';
-                    div.onmouseout = () => div.querySelector('img').style.transform = 'scale(1)';
-                    
-                    // CADRE LUMINEUX LORS DE LA SÉLECTION À LA TÉLÉCOMMANDE
-                    div.onfocus = () => { div.style.outline = '3px solid #00E5FF'; div.style.transform = 'scale(1.08)'; };
-                    div.onblur = () => { div.style.outline = 'none'; div.style.transform = 'scale(1)'; };
-                    
-                    grid.appendChild(div);
-                    movieButtons.push(div);
-                });
+                renderVodItems(validItems.slice(0, 18));
             } else {
                 grid.innerHTML = '<p style="color:#888; grid-column: 1 / -1; text-align:center;">Aucun résultat trouvé.</p>';
             }
@@ -1159,18 +1186,16 @@ async function playMovieFromTMDB(tmdbId, mediaType, title) {
     document.body.classList.remove('site-active');
     
     const siteIframe = document.getElementById('site-iframe');
-    siteIframe.style.display = 'none'; // On cache l'iframe
+    siteIframe.style.display = 'none'; 
 
     try {
         const response = await fetch(`/api/get-movie?tmdb_id=${tmdbId}&type=${mediaType}`);
         const data = await response.json();
 
         if (data.success) {
-            // SI ON A UN LIEN MP4 BRUT -> On utilise le lecteur Chapdolo !
             if (data.type === 'mp4' && data.url) {
                 playChannel(data.url, title);
             } 
-            // SINON -> On utilise les boutons de serveurs
             else if (data.sources && data.sources.length > 0) {
                 document.body.classList.add('site-active');
                 siteIframe.style.display = 'block';
@@ -1217,106 +1242,17 @@ function changeMovieServer(index) {
         siteIframe.src = movieUrl;
     }, 500);
 }
-let searchVodTimeout;
 
-// Fonction pour afficher les films dans la grille (utilisée pour le catalogue ET la recherche)
-function renderVodItems(items) {
-    const grid = document.getElementById('vod-grid');
-    grid.innerHTML = '';
-    movieButtons = [];
-    
-    if (items.length === 0) {
-        grid.innerHTML = '<p style="color:#888; grid-column: 1 / -1; text-align:center;">Aucun résultat trouvé.</p>';
-        return;
-    }
+// ==========================================
+// SECTION TV LIVE
+// ==========================================
 
-    items.forEach(item => {
-        if (!item.poster_path) return; // On ignore ceux sans affiche
-        
-        const div = document.createElement('div');
-        div.setAttribute('tabindex', '0');
-        div.style.cursor = 'pointer';
-        div.style.textAlign = 'center';
-        div.innerHTML = `
-            <img src="https://image.tmdb.org/t/p/w500${item.poster_path}" style="width: 100%; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); transition: transform 0.2s;" alt="${item.title || item.name}">
-            <p style="color: #ccc; font-size: 14px; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.title || item.name}</p>
-        `;
-        div.onclick = () => playMovieFromTMDB(item.id, item.media_type, item.title || item.name);
-        div.onfocus = () => { div.style.outline = '3px solid #00E5FF'; div.style.transform = 'scale(1.08)'; };
-        div.onblur = () => { div.style.outline = 'none'; div.style.transform = 'scale(1)'; };
-        
-        grid.appendChild(div);
-        movieButtons.push(div);
-    });
-}
-
-// Fonction appelée quand on clique sur le bouton "FILMS & SÉRIES"
-async function showVodSection() {
-    document.getElementById('main-content').classList.add('hidden');
-    document.getElementById('vod-section').classList.remove('hidden');
-    document.getElementById('vod-search').value = ''; // On vide la barre de recherche à chaque ouverture
-    
-    const grid = document.getElementById('vod-grid');
-    grid.innerHTML = '<p style="color:#888; grid-column: 1 / -1; text-align:center;">Chargement du catalogue...</p>';
-    
-    try {
-        const resMovies = await fetch(`https://api.themoviedb.org/3/trending/movie/week?api_key=${TMDB_API_KEY}&language=fr-FR`);
-        const dataMovies = await resMovies.json();
-        
-        const resTV = await fetch(`https://api.themoviedb.org/3/trending/tv/week?api_key=${TMDB_API_KEY}&language=fr-FR`);
-        const dataTV = await resTV.json();
-        
-        // On mélange les films et les séries
-        const allItems = [...dataMovies.results, ...dataTV.results].slice(0, 40);
-        
-        renderVodItems(allItems);
-        
-        // Focus automatique sur la barre de recherche pour la télécommande
-        document.getElementById('vod-search').focus();
-        
-    } catch (e) {
-        grid.innerHTML = '<p style="color:#ff4d4d; grid-column: 1 / -1; text-align:center;">Erreur de chargement du catalogue.</p>';
-    }
-}
-
-// Fonction appelée quand on tape dans la barre de recherche
-function searchVod() {
-    clearTimeout(searchVodTimeout);
-    const query = document.getElementById('vod-search').value;
-    const grid = document.getElementById('vod-grid');
-    
-    // Si la recherche fait moins de 2 lettres, on réaffiche le catalogue populaire
-    if (query.length < 2) { 
-        if (query.length === 0) showVodSection(); 
-        return; 
-    }
-    
-    searchVodTimeout = setTimeout(async () => {
-        grid.innerHTML = '<p style="color:#888; grid-column: 1 / -1; text-align:center;">Recherche en cours...</p>';
-        try {
-            const res = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&language=fr-FR`);
-            const data = await res.json();
-            
-            if (data.results && data.results.length > 0) {
-                const validItems = data.results.filter(item => (item.media_type === 'movie' || item.media_type === 'tv') && item.poster_path);
-                renderVodItems(validItems.slice(0, 18));
-            } else {
-                grid.innerHTML = '<p style="color:#888; grid-column: 1 / -1; text-align:center;">Aucun résultat trouvé.</p>';
-            }
-        } catch (e) {
-            grid.innerHTML = '<p style="color:#ff4d4d; grid-column: 1 / -1; text-align:center;">Erreur de recherche.</p>';
-        }
-    }, 500);
-}
 function showLiveTvSection() {
-    // On cache le menu principal
     document.getElementById('main-content').classList.add('hidden');
-    // On affiche l'écran plein noir de la TV
     document.getElementById('live-tv-section').classList.remove('hidden');
-    
-    // On lance le chargement des chaînes
     loadSavedIPTVForUser();
 }
+
 </script>
 
 </body>
