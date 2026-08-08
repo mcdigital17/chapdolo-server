@@ -44,7 +44,13 @@ module.exports = async (req, res) => {
              return { name: s.name, url: embedUrl };
         }).filter(s => s !== null);
 
-        if (embedSources.length > 0) {
+         if (embedSources.length > 0) {
+            // On met le serveur R2 (souvent le plus stable et sans pub) en premier choix
+            embedSources.sort((a, b) => {
+                if (a.name.includes('R2')) return -1;
+                if (b.name.includes('R2')) return 1;
+                return 0;
+            });
             return res.json({ success: true, type: 'embed', sources: embedSources });
         }
 
