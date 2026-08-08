@@ -23,6 +23,7 @@ module.exports = async (req, res) => {
         const contentType = response.headers.get('content-type') || '';
         res.setHeader('Content-Type', contentType);
 
+        // 1. Si c'est un flux TV (m3u8), on le réécrit pour passer par le proxy
         if (contentType.includes('mpegurl') || url.includes('.m3u8')) {
             let text = await response.text();
             const lines = text.split('\n');
@@ -37,10 +38,16 @@ module.exports = async (req, res) => {
                 return `/api/proxy-stream?url=${encodeURIComponent(absoluteUrl)}`;
             });
             res.send(rewrittenLines.join('\n'));
-        } else {
-            // Pour les fichiers vidéo (.mp4, .ts), on les fait passer en "Stream" pour ne pas faire crasher Vercel
+        } 
+        // 2. Si c'est un film MP4, on utilise le Stream pour ne pas faire crasher Vercel
+        else if (url.includes('.mp4') || contentType.includes('mp4')) {
             res.setHeader('Cache-Control', 'public, max-age=31536000');
             response.body.pipe(res);
+        } 
+        // 3. SINON (pour les petits segments .ts de la TV), on utilise le buffer classique (très stable)
+        else {
+            const buffer = Buffer.from(await response.arrayBuffer());
+            res.send(buffer);
         }
     } catch (error) {
         console.error('Proxy Stream Error:', error);
