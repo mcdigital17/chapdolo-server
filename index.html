@@ -643,6 +643,9 @@ document.addEventListener('keydown', function(e) {
 });
 
 function showSiteBtnTemporarily() {
+    // Si on regarde un film (site-active), on bloque la disparition du bouton
+    if (document.body.classList.contains('site-active')) return; 
+    
     const btn = document.getElementById('exit-site-btn');
     if (!btn || btn.classList.contains('hidden')) return;
     
@@ -1260,12 +1263,10 @@ function changeMovieServer(index) {
     const siteIframe = document.getElementById('site-iframe');
     siteIframe.srcdoc = '<div style="color:white; background:#000; height:100%; display:flex; align-items:center; justify-content:center; font-family:sans-serif; font-size:24px;">Chargement du serveur ' + server.name + '...</div>';
     
-    // ON AFFICHE LE BOUTON FLOTTANT POUR QUITTER LE FILM
+    // ON AFFICHE LE BOUTON FLOTTANT POUR QUITTER LE FILM ET ON LE LAISSE TOUJOURS VISIBLE
     const siteBtn = document.getElementById('exit-site-btn');
     siteBtn.classList.remove('hidden');
-    showSiteBtnTemporarily(); 
-    document.addEventListener('mousemove', showSiteBtnTemporarily);
-    document.addEventListener('touchstart', showSiteBtnTemporarily); 
+    siteBtn.classList.add('visible'); // Forcer la visibilité
     document.body.classList.add('site-active');
     
     setTimeout(() => {
