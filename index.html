@@ -1297,16 +1297,13 @@ function searchVod() {
     }, 500);
 }
 function showLiveTvSection() {
-    // On affiche la grille TV
-    document.getElementById('iptv-container').classList.remove('hidden');
-    // On lance le chargement des chaînes (soit celles de l'admin, soit celles par défaut)
-    loadSavedIPTVForUser();
+    // On cache le menu principal
+    document.getElementById('main-content').classList.add('hidden');
+    // On affiche l'écran plein noir de la TV
+    document.getElementById('live-tv-section').classList.remove('hidden');
     
-    // On fait défiler la page vers la grille pour que la télécommande soit bien placée
-    setTimeout(() => {
-        document.getElementById('iptv-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
-        if (channelButtons.length > 0) channelButtons[0].focus();
-    }, 500);
+    // On lance le chargement des chaînes
+    loadSavedIPTVForUser();
 }
 </script>
 
