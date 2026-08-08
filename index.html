@@ -699,7 +699,9 @@ function verifyAdultPin() {
         closePinModal();
         isAdultMode = true;
         document.getElementById('iptv-container').classList.add('adult-mode');
-        showLiveTvSection();
+        document.getElementById('main-content').classList.add('hidden');
+        document.getElementById('live-tv-section').classList.remove('hidden');
+        // On charge DIRECTEMENT la liste adulte, sans passer par la liste normale
         loadIPTVList(adultUrl);
     } else { document.getElementById('pin-error').innerText = "Code PIN incorrect."; }
 }
@@ -1022,7 +1024,14 @@ function playChannel(url, name, isReload = false) {
     errorOverlay.style.display = 'none'; 
     document.getElementById('main-content').classList.add('hidden'); 
     
+    // AJOUTE CES 3 LIGNES POUR CACHER LES MENUS ET METTRE LE LECTEUR AU-DESSUS
+    document.getElementById('vod-section').classList.add('hidden');
+    document.getElementById('live-tv-section').classList.add('hidden');
+    document.getElementById('movie-server-overlay').classList.add('hidden');
+    
     destroySiteIframe(); 
+    
+    // ... (le reste du code de playChannel reste identique) 
     
     document.getElementById('player-section').classList.remove('hidden'); 
     document.getElementById('back-main-btn').classList.remove('hidden'); 
