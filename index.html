@@ -879,7 +879,19 @@ function showApp() {
     document.getElementById('login-screen').classList.add('hidden'); 
     document.getElementById('admin-screen').classList.add('hidden'); 
     document.getElementById('app-screen').classList.remove('hidden'); 
-    backToMain(); loadSavedIPTVForUser(); 
+    backToMain(); 
+  async function loadSavedIPTVForUser() { 
+    isAdultMode = false;
+    document.getElementById('iptv-container').classList.remove('adult-mode');
+    try { 
+        const res = await fetch('/api/iptv-config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({action: 'get'}) }); 
+        const data = await res.json(); 
+        if(data.success) {
+            if(data.url) { document.getElementById('iptv-status-msg').style.display = 'block'; loadIPTVList(data.url); }
+            if(data.adultPin) adultPin = data.adultPin;
+            if(data.adultUrl) adultUrl = data.adultUrl;
+        }
+    } catch(e) {} 
 }
 
 function loadSite(url) { 
