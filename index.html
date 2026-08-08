@@ -1024,11 +1024,6 @@ function playChannel(url, name, isReload = false) {
     errorOverlay.style.display = 'none'; 
     document.getElementById('main-content').classList.add('hidden'); 
     
-    // AJOUTE CES 3 LIGNES POUR CACHER LES MENUS ET METTRE LE LECTEUR AU-DESSUS
-    document.getElementById('vod-section').classList.add('hidden');
-    document.getElementById('live-tv-section').classList.add('hidden');
-    document.getElementById('movie-server-overlay').classList.add('hidden');
-    
     destroySiteIframe(); 
     
     // ... (le reste du code de playChannel reste identique) 
@@ -1077,14 +1072,24 @@ function playChannel(url, name, isReload = false) {
 }
 
 function backToMain() { 
-    document.getElementById('vod-section').classList.add('hidden');
-    document.getElementById('live-tv-section').classList.add('hidden');
-    document.getElementById('movie-server-overlay').classList.add('hidden');
-    clearTimeout(videoLoadTimeout); clearTimeout(playerControlTimeout); hidePlayerControls();
-    document.getElementById('video-error-overlay').style.display = 'none';
-    document.body.classList.remove('app-fullscreen', 'site-active'); 
-    document.getElementById('exit-fullscreen-btn').classList.add('hidden');
+    const player = document.getElementById('player-section');
+    const isPlayerVisible = !player.classList.contains('hidden');
     
+    // 1. Si on est dans le lecteur vidéo, on le ferme juste et on s'arrête là.
+    // La liste des chaînes ou des films restera ouverte en dessous !
+    if (isPlayerVisible) {
+        clearTimeout(videoLoadTimeout); clearTimeout(playerControlTimeout); hidePlayerControls();
+        document.getElementById('video-error-overlay').style.display = 'none';
+        document.body.classList.remove('app-fullscreen'); 
+        document.getElementById('exit-fullscreen-btn').classList.add('hidden');
+        player.classList.add('hidden'); 
+        const video = document.getElementById('tv-player'); video.pause(); video.src = ''; 
+        if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; } 
+        return; // On reste sur la page (TV ou Films) en dessous !
+    }
+
+    // 2. Sinon (si on quitte un site web ou la section TV/Films), on revient à l'accueil
+    document.body.classList.remove('site-active'); 
     destroySiteIframe(); 
 
     const siteBtn = document.getElementById('exit-site-btn');
@@ -1094,9 +1099,10 @@ function backToMain() {
     document.removeEventListener('touchstart', showSiteBtnTemporarily);
     clearTimeout(siteBtnTimeout);
 
-    document.getElementById('player-section').classList.add('hidden'); 
-    const video = document.getElementById('tv-player'); video.pause(); video.src = ''; 
-    if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; } 
+    document.getElementById('vod-section').classList.add('hidden');
+    document.getElementById('live-tv-section').classList.add('hidden');
+    document.getElementById('movie-server-overlay').classList.add('hidden');
+    
     document.getElementById('main-content').classList.remove('hidden'); 
     document.getElementById('back-main-btn').classList.add('hidden'); 
 }
