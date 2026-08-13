@@ -30,35 +30,30 @@ module.exports = async (req, res) => {
     }
 
     // ==========================================
-    // PARTIE 1.5 : FLUX TV LIVE (Lire une chaîne)
+    // PARTIE 1.5 : FLUX TV LIVE (Si on demande de lire une chaîne Huhu)
     // ==========================================
     if (action === 'get_live_stream') {
         const { channel_url } = req.query;
         try {
-            const response = await fetch('http://178.239.115.119/mediaurl-source.json', {
+            const response = await fetch('https://huhu.to/mediaurl-source.json', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                    'Referer': 'https://huhu.to/',
+                    'Origin': 'https://huhu.to'
+                },
                 body: JSON.stringify({ 
                     language: "fr", 
                     region: "FR", 
-                    url: channel_url // LE SECRET EST LÀ : ON ENVOIE L'URL !
+                    url: channel_url
                 })
             });
             const sources = await response.json();
             
-            let streamUrl = null;
-            if (Array.isArray(sources)) {
-                streamUrl = sources.find(s => s.url && (s.url.includes('.m3u8') || s.url.includes('hls')))?.url;
-                if (!streamUrl) streamUrl = sources[0]?.url; 
-            } else if (sources.url) {
-                streamUrl = sources.url;
-            }
+            // ON AFFICHE LA RÉPONSE BRUTE POUR VOIR SI ON A LE LIEN
+            return res.json({ success: true, raw_response: sources });
 
-            if (streamUrl) {
-                return res.json({ success: true, url: streamUrl });
-            } else {
-                return res.status(404).json({ error: 'Flux TV non trouvé' });
-            }
         } catch (error) {
             return res.status(500).json({ error: 'Erreur serveur TV stream' });
         }
