@@ -267,16 +267,20 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
         <button class="source-btn btn-lock" onclick="promptAdultPin()">🔒 ADULTES</button>
      </div>
 
-     <!-- NOUVELLE SECTION FILMS & SERIES -->
-     <div style="margin-top: 60px; text-align: center;">
+     <!-- BOUTON FILMS & SERIES -->
+     <div style="margin-top: 40px; text-align: center;">
         <button class="source-btn btn-success" onclick="showVodSection()" tabindex="0">🎬 FILMS & SÉRIES</button>
      </div>
 
-     <!-- NOUVEAU BOUTON TV LIVE -->
-     <div style="margin-top: 60px; text-align: center;">
-        <button class="source-btn btn-primary" onclick="showLiveTvSection()" tabindex="0">📺 TV EN DIRECT</button>
+     <!-- BOUTON SOURCE IPTV (Ton ancien lien M3U) -->
+     <div style="margin-top: 40px; text-align: center;">
+        <button class="source-btn btn-secondary" onclick="showLiveTvSection()" tabindex="0">📺 SOURCE IPTV</button>
      </div>
-  </div>
+
+     <!-- BOUTON TV HUHU.TO (Extraction en direct) -->
+     <div style="margin-top: 40px; text-align: center;">
+        <button class="source-btn btn-primary" onclick="showHuhuTvSection()" tabindex="0">📺 TV EN DIRECT</button>
+     </div>
 
   <!-- Écran du catalogue Films & Séries -->
   <div id="vod-section" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0a0a0a; z-index: 80; overflow-y: auto; padding: 80px 20px 20px 20px; box-sizing: border-box;">
@@ -1280,10 +1284,66 @@ function changeMovieServer(index) {
 // SECTION TV LIVE
 // ==========================================
 
+// 1. L'ancienne fonction restaurée (pour ton lien M3U)
 function showLiveTvSection() {
     document.getElementById('main-content').classList.add('hidden');
     document.getElementById('live-tv-section').classList.remove('hidden');
     loadSavedIPTVForUser();
+}
+
+// 2. La nouvelle fonction (pour aspirer Huhu.to)
+async function showHuhuTvSection() {
+    document.getElementById('main-content').classList.add('hidden');
+    document.getElementById('live-tv-section').classList.remove('hidden');
+    
+    const msg = document.getElementById('iptv-status-msg');
+    const iptvContainer = document.getElementById('iptv-container');
+    const channelList = document.getElementById('iptv-channels');
+    
+    msg.style.display = 'block'; msg.style.color = '#e6b800'; msg.innerText = 'Chargement des chaînes Huhu.to...';
+    channelList.innerHTML = ''; 
+    document.getElementById('iptv-search').value = '';
+    iptvContainer.classList.add('hidden');
+
+    try {
+        // ON DEMANDE AU SERVEUR VERCEL D'ASPIRER LE CATALOGUE TV DE HUHU.TO
+        const response = await fetch('/api/get-movie?action=get_live_tv');
+        const data = await response.json();
+        
+        if (data.items && data.items.length > 0) {
+            let channels = data.items.map(item => ({
+                name: item.name,
+                url: item.url,
+                group: item.group,
+                logo: item.logo
+            }));
+            
+            globalChannels = channels;
+            
+            // On met à jour le menu déroulant des catégories (France, Sport, etc.)
+            const catSelect = document.getElementById('iptv-category-filter');
+            catSelect.innerHTML = '<option value="all">Toutes les catégories</option>';
+            if (data.features && data.features.filter) {
+                let groups = data.features.filter.find(f => f.id === 'group');
+                if (groups && groups.values) {
+                    groups.values.forEach(g => {
+                        const opt = document.createElement('option');
+                        opt.value = g;
+                        opt.innerText = g;
+                        catSelect.appendChild(opt);
+                    });
+                }
+            }
+            
+            msg.style.display = 'none';
+            iptvContainer.classList.remove('hidden');
+            renderChannels(globalChannels);
+        } else {
+            msg.style.color = '#ff4d4d'; msg.innerText = 'Aucune chaîne trouvée.';
+        }
+    } catch (e) {
+        msg.style.color = '#ff4d4d'; msg.innerText = 'Erreur de chargement des chaînes.';
+    }
 }
 
 </script>
