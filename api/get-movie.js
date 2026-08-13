@@ -48,15 +48,15 @@ module.exports = async (req, res) => {
                     'Origin': domain
                 },
                 body: JSON.stringify({ 
-                    language: "fr", 
-                    region: "FR", 
-                    type: "iptv",
+                    language: "de", // EXACTEMENT COMME DANS TA CAPTURE
+                    region: "DE", 
                     url: channel_url
+                    // PAS DE "type" : "iptv"
                 })
             });
             const sources = await response.json();
             
-            // ON AFFICHE ENCORE LA RÉPONSE POUR VOIR
+            // ON AFFICHE LA RÉPONSE
             return res.json({ success: true, raw_response: sources });
 
         } catch (error) {
