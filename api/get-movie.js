@@ -35,23 +35,28 @@ module.exports = async (req, res) => {
     if (action === 'get_live_stream') {
         const { channel_url } = req.query;
         try {
-            const response = await fetch('https://huhu.to/mediaurl-source.json', {
+            // On détecte automatiquement si c'est huhu.to ou oha.to
+            const domainMatch = channel_url.match(/^(https?:\/\/[^\/]+)/);
+            const domain = domainMatch ? domainMatch[1] : 'https://huhu.to';
+            
+            const response = await fetch(domain + '/mediaurl-source.json', {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json', 
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                    'Referer': 'https://huhu.to/',
-                    'Origin': 'https://huhu.to'
+                    'Referer': domain + '/',
+                    'Origin': domain
                 },
                 body: JSON.stringify({ 
-                    language: "de", // ON MET DE ET DE COMME DANS TA CAPTURE
-                    region: "DE", 
+                    language: "fr", 
+                    region: "FR", 
+                    type: "iptv",
                     url: channel_url
                 })
             });
             const sources = await response.json();
             
-            // ON AFFICHE LA RÉPONSE BRUTE
+            // ON AFFICHE ENCORE LA RÉPONSE POUR VOIR
             return res.json({ success: true, raw_response: sources });
 
         } catch (error) {
