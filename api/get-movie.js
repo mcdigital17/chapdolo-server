@@ -44,14 +44,14 @@ module.exports = async (req, res) => {
                     'Origin': 'https://huhu.to'
                 },
                 body: JSON.stringify({ 
-                    language: "fr", 
-                    region: "FR", 
+                    language: "de", // ON MET DE ET DE COMME DANS TA CAPTURE
+                    region: "DE", 
                     url: channel_url
                 })
             });
             const sources = await response.json();
             
-            // ON AFFICHE LA RÉPONSE BRUTE POUR VOIR SI ON A LE LIEN
+            // ON AFFICHE LA RÉPONSE BRUTE
             return res.json({ success: true, raw_response: sources });
 
         } catch (error) {
