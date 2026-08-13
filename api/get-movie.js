@@ -2,10 +2,35 @@ module.exports = async (req, res) => {
     const { tmdb_id, type, action } = req.query;
 
     // ==========================================
-    // PARTIE 1 : TV LIVE (Si on demande le catalogue TV)
+    // PARTIE 1 : CATALOGUE TV LIVE (Liste des chaînes)
     // ==========================================
+    if (action === 'get_live_tv') {
+        try {
+            const response = await fetch('http://178.239.115.119/mediaurl-catalog.json', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+                body: JSON.stringify({
+                    adult: false,
+                    catalogId: "iptv",
+                    cursor: null,
+                    filter: {},
+                    id: "",
+                    language: "fr",
+                    region: "FR",
+                    search: "",
+                    sort: "trending-region"
+                })
+            });
+            const data = await response.json();
+            return res.json(data);
+        } catch (error) {
+            console.error('Erreur get-tv:', error);
+            return res.status(500).json({ error: 'Erreur serveur TV' });
+        }
+    }
+
     // ==========================================
-    // PARTIE 1.5 : FLUX TV LIVE (Si on demande de lire une chaîne Huhu)
+    // PARTIE 1.5 : FLUX TV LIVE (Lire une chaîne)
     // ==========================================
     if (action === 'get_live_stream') {
         const { channel_url } = req.query;
@@ -38,23 +63,9 @@ module.exports = async (req, res) => {
             return res.status(500).json({ error: 'Erreur serveur TV stream' });
         }
     }
-    if (action === 'get_live_tv') {
-        try {
-            const response = await fetch('http://178.239.115.119/mediaurl-catalog.json', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
-                body: JSON.stringify({ language: "fr", region: "FR", type: "tv" })
-            });
-            const data = await response.json();
-            return res.json(data);
-        } catch (error) {
-            console.error('Erreur get-tv:', error);
-            return res.status(500).json({ error: 'Erreur serveur TV' });
-        }
-    }
 
     // ==========================================
-    // PARTIE 2 : FILMS & SÉRIES (Le code qu'on avait déjà)
+    // PARTIE 2 : FILMS & SÉRIES
     // ==========================================
     if (!tmdb_id) return res.status(400).json({ error: 'TMDB ID manquant' });
 
@@ -111,6 +122,7 @@ module.exports = async (req, res) => {
     }
 }
 
+// Fonction secrète pour extraire le .mp4 de Mixdrop
 async function extractMixdropMp4(url) {
     try {
         const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }});
