@@ -2,9 +2,10 @@ module.exports = async (req, res) => {
     const { tmdb_id, type, action } = req.query;
 
     // ==========================================
-    // PARTIE 1 : CATALOGUE TV LIVE (Liste des chaînes)
+    // PARTIE 1 : CATALOGUE TV LIVE (Liste des chaînes avec pagination)
     // ==========================================
     if (action === 'get_live_tv') {
+        const { cursor } = req.query; // On récupère le curseur envoyé par l'application
         try {
             const response = await fetch('http://178.239.115.119/mediaurl-catalog.json', {
                 method: 'POST',
@@ -12,7 +13,7 @@ module.exports = async (req, res) => {
                 body: JSON.stringify({
                     adult: false,
                     catalogId: "iptv",
-                    cursor: null,
+                    cursor: cursor ? parseInt(cursor) : null, // On renvoie le curseur à huhu.to
                     filter: {},
                     id: "",
                     language: "fr",
