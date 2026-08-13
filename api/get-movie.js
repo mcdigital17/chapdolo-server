@@ -4,6 +4,40 @@ module.exports = async (req, res) => {
     // ==========================================
     // PARTIE 1 : TV LIVE (Si on demande le catalogue TV)
     // ==========================================
+    // ==========================================
+    // PARTIE 1.5 : FLUX TV LIVE (Si on demande de lire une chaîne Huhu)
+    // ==========================================
+    if (action === 'get_live_stream') {
+        const { channel_id } = req.query;
+        try {
+            const response = await fetch('https://huhu.to/mediaurl-source.json', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+                body: JSON.stringify({ 
+                    language: "fr", region: "FR", type: "tv", 
+                    ids: { id: channel_id } 
+                })
+            });
+            const sources = await response.json();
+            
+            // On cherche le vrai lien .m3u8 dans la réponse
+            let streamUrl = null;
+            if (Array.isArray(sources)) {
+                streamUrl = sources.find(s => s.url && (s.url.includes('.m3u8') || s.url.includes('hls')))?.url;
+                if (!streamUrl) streamUrl = sources[0]?.url; // Fallback sur le 1er
+            } else if (sources.url) {
+                streamUrl = sources.url;
+            }
+
+            if (streamUrl) {
+                return res.json({ success: true, url: streamUrl });
+            } else {
+                return res.status(404).json({ error: 'Flux TV non trouvé' });
+            }
+        } catch (error) {
+            return res.status(500).json({ error: 'Erreur serveur TV stream' });
+        }
+    }
     if (action === 'get_live_tv') {
         try {
             const response = await fetch('https://huhu.to/mediaurl-catalog.json', {
