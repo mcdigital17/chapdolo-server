@@ -35,11 +35,11 @@ module.exports = async (req, res) => {
     if (action === 'get_live_stream') {
         const { channel_url } = req.query;
         try {
-            // On détecte automatiquement si c'est huhu.to ou oha.to
             const domainMatch = channel_url.match(/^(https?:\/\/[^\/]+)/);
             const domain = domainMatch ? domainMatch[1] : 'https://huhu.to';
             
-            const response = await fetch(domain + '/mediaurl-source.json', {
+            // ON UTILISE LA BONNE URL : mediaurl-resolve.json
+            const response = await fetch(domain + '/mediaurl-resolve.json', {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json', 
@@ -48,17 +48,26 @@ module.exports = async (req, res) => {
                     'Origin': domain
                 },
                 body: JSON.stringify({ 
-                    language: "de", // EXACTEMENT COMME DANS TA CAPTURE
+                    language: "de", 
                     region: "DE", 
                     url: channel_url
-                    // PAS DE "type" : "iptv"
                 })
             });
             const sources = await response.json();
             
-            // ON AFFICHE LA RÉPONSE
-            return res.json({ success: true, raw_response: sources });
+            let streamUrl = null;
+            if (Array.isArray(sources)) {
+                streamUrl = sources.find(s => s.url && (s.url.includes('.m3u8') || s.url.includes('hls')))?.url;
+                if (!streamUrl) streamUrl = sources[0]?.url; 
+            } else if (sources.url) {
+                streamUrl = sources.url;
+            }
 
+            if (streamUrl) {
+                return res.json({ success: true, url: streamUrl });
+            } else {
+                return res.status(404).json({ error: 'Flux TV non trouvé' });
+            }
         } catch (error) {
             return res.status(500).json({ error: 'Erreur serveur TV stream' });
         }
