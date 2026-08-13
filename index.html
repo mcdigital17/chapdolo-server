@@ -1096,7 +1096,7 @@ function backToMain() {
         return; 
     }
 
-    // 2. Si on est sur un film en iframe (Site actif)
+    // 2. Si on est sur un film ou une chaîne en iframe (Site actif)
     if (isSiteActive) {
         document.body.classList.remove('site-active'); 
         destroySiteIframe(); 
@@ -1106,7 +1106,13 @@ function backToMain() {
         document.removeEventListener('mousemove', showSiteBtnTemporarily);
         document.removeEventListener('touchstart', showSiteBtnTemporarily);
         clearTimeout(siteBtnTimeout);
-        document.getElementById('vod-section').classList.remove('hidden'); // On revient au catalogue des films
+        
+        // On revient à la page d'où on vient (Films ou TV)
+        if (window.currentIframeContext === 'tv') {
+            document.getElementById('live-tv-section').classList.remove('hidden');
+        } else {
+            document.getElementById('vod-section').classList.remove('hidden');
+        }
         return;
     }
 
@@ -1256,6 +1262,8 @@ function changeMovieServer(index) {
     const server = window.currentMovieServers[index];
     if (!server) return;
     
+    window.currentIframeContext = 'vod'; // ON INDI QU'ON EST DANS LES FILMS
+    // On cache le menu des serveurs pour lancer la vidéo
     document.getElementById('movie-server-overlay').classList.add('hidden');
     
     const siteIframe = document.getElementById('site-iframe');
@@ -1283,6 +1291,8 @@ function showLiveTvSection() {
     loadSavedIPTVForUser();
 }
 async function playHuhuChannel(channelUrl, channelName) {
+    window.currentIframeContext = 'tv'; 
+    // ON INDI QU'ON EST DANS LA TV
     // On cache la liste des chaînes
     document.getElementById('main-content').classList.add('hidden');
     document.getElementById('live-tv-section').classList.add('hidden');
