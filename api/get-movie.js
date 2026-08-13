@@ -8,7 +8,7 @@ module.exports = async (req, res) => {
     // PARTIE 1.5 : FLUX TV LIVE (Si on demande de lire une chaîne Huhu)
     // ==========================================
     if (action === 'get_live_stream') {
-        const { channel_id } = req.query;
+        const { channel_url } = req.query;
         try {
             const response = await fetch('http://178.239.115.119/mediaurl-source.json', {
                 method: 'POST',
@@ -16,16 +16,24 @@ module.exports = async (req, res) => {
                 body: JSON.stringify({ 
                     language: "fr", 
                     region: "FR", 
-                    type: "iptv", 
-                    ids: { id: channel_id },
-                    name: "" // <-- ON AJOUTE LE CHAMP NAME QUI MANQUAIT
+                    url: channel_url // LE SECRET EST LÀ : ON ENVOIE L'URL !
                 })
             });
             const sources = await response.json();
             
-            // ON AFFICHE ENCORE LA RÉPONSE BRUTE POUR VOIR SI L'ERREUR EST TOUUBLE LÀ
-            return res.json({ success: true, raw_response: sources });
+            let streamUrl = null;
+            if (Array.isArray(sources)) {
+                streamUrl = sources.find(s => s.url && (s.url.includes('.m3u8') || s.url.includes('hls')))?.url;
+                if (!streamUrl) streamUrl = sources[0]?.url; 
+            } else if (sources.url) {
+                streamUrl = sources.url;
+            }
 
+            if (streamUrl) {
+                return res.json({ success: true, url: streamUrl });
+            } else {
+                return res.status(404).json({ error: 'Flux TV non trouvé' });
+            }
         } catch (error) {
             return res.status(500).json({ error: 'Erreur serveur TV stream' });
         }
