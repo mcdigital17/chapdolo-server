@@ -10,7 +10,7 @@ module.exports = async (req, res) => {
     if (action === 'get_live_stream') {
         const { channel_id } = req.query;
         try {
-            const response = await fetch('https://huhu.to/mediaurl-source.json', {
+            const response = await fetch('http://178.239.115.119/mediaurl-source.json', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
                 body: JSON.stringify({ 
@@ -32,7 +32,7 @@ module.exports = async (req, res) => {
     }
     if (action === 'get_live_tv') {
         try {
-            const response = await fetch('https://huhu.to/mediaurl-catalog.json', {
+            const response = await fetch('http://178.239.115.119/mediaurl-catalog.json', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
                 body: JSON.stringify({ language: "fr", region: "FR", type: "tv" })
@@ -59,7 +59,7 @@ module.exports = async (req, res) => {
             season: type === 'tv' ? 1 : undefined
         };
 
-        const huhuResponse = await fetch('https://huhu.to/mediaurl-source.json', {
+        const huhuResponse = await fetch('http://178.239.115.119/mediaurl-source.json', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
             body: JSON.stringify(requestBody)
