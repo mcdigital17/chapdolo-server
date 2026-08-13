@@ -1001,9 +1001,10 @@ function renderChannels(channelsToRender) {
     for (let i = 0; i < limit; i++) { 
         const ch = channelsToRender[i]; 
         const itemDiv = document.createElement('div'); itemDiv.className = 'channel-item';
-        const btn = document.createElement('button'); btn.className = 'iptv-btn'; btn.setAttribute('tabindex', '0');         btn.onclick = () => {
-            if (ch.huhu_id) {
-                playHuhuChannel(ch.huhu_id, ch.name);
+        const btn = document.createElement('button'); btn.className = 'iptv-btn'; btn.setAttribute('tabindex', '0');        
+        btn.onclick = () => {
+            if (ch.url && ch.url.includes('huhu.to')) {
+                playHuhuChannel(ch.url, ch.name);
             } else {
                 playChannel(ch.url, ch.name);
             }
@@ -1281,27 +1282,28 @@ function showLiveTvSection() {
     document.getElementById('live-tv-section').classList.remove('hidden');
     loadSavedIPTVForUser();
 }
-async function playHuhuChannel(channelId, channelName) {
-    const msg = document.getElementById('iptv-status-msg');
-    msg.style.display = 'block'; msg.style.color = '#e6b800'; msg.innerText = 'Connexion au flux Huhu.to...';
+async function playHuhuChannel(channelUrl, channelName) {
+    // On cache la liste des chaînes
+    document.getElementById('main-content').classList.add('hidden');
+    document.getElementById('live-tv-section').classList.add('hidden');
+    document.getElementById('player-section').classList.add('hidden');
     
-    try {
-        // On demande à notre serveur Vercel le vrai lien vidéo de cette chaîne
-        const response = await fetch(`/api/get-movie?action=get_live_stream&channel_id=${channelId}`);
-        const data = await response.json();
-        
-        if (data.success && data.url) {
-            msg.style.display = 'none';
-            // On lance la vidéo dans le lecteur Chapdolo avec le vrai lien !
-            playChannel(data.url, channelName);
-        } else {
-            msg.style.display = 'none';
-            alert('Flux TV indisponible pour cette chaîne sur Huhu.to.');
-        }
-    } catch (e) {
-        msg.style.display = 'none';
-        alert('Erreur réseau lors du chargement de la chaîne.');
-    }
+    const siteIframe = document.getElementById('site-iframe');
+    siteIframe.style.display = 'block';
+    siteIframe.srcdoc = `<div style="color:white; background:#000; height:100%; display:flex; align-items:center; justify-content:center; font-family:sans-serif; font-size:24px;">Chargement de ${channelName}...</div>`;
+    
+    // On affiche le bouton flottant pour quitter
+    const siteBtn = document.getElementById('exit-site-btn');
+    siteBtn.classList.remove('hidden');
+    siteBtn.classList.add('visible'); 
+    document.body.classList.add('site-active');
+    
+    // On charge la page de la chaîne via notre proxy anti-pubs
+    setTimeout(() => {
+        const movieUrl = '/api/proxy-web?url=' + encodeURIComponent(channelUrl); 
+        siteIframe.removeAttribute('srcdoc');
+        siteIframe.src = movieUrl;
+    }, 500);
 }
 async function showHuhuTvSection() {
     document.getElementById('main-content').classList.add('hidden');
