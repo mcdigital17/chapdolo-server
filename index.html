@@ -1001,7 +1001,13 @@ function renderChannels(channelsToRender) {
     for (let i = 0; i < limit; i++) { 
         const ch = channelsToRender[i]; 
         const itemDiv = document.createElement('div'); itemDiv.className = 'channel-item';
-        const btn = document.createElement('button'); btn.className = 'iptv-btn'; btn.setAttribute('tabindex', '0'); btn.onclick = () => playChannel(ch.url, ch.name); 
+        const btn = document.createElement('button'); btn.className = 'iptv-btn'; btn.setAttribute('tabindex', '0');         btn.onclick = () => {
+            if (ch.huhu_id) {
+                playHuhuChannel(ch.huhu_id, ch.name);
+            } else {
+                playChannel(ch.url, ch.name);
+            }
+        }; 
         
         const numSpan = document.createElement('span'); numSpan.className = 'ch-num'; numSpan.innerText = (i + 1); btn.appendChild(numSpan); 
         
@@ -1275,7 +1281,28 @@ function showLiveTvSection() {
     document.getElementById('live-tv-section').classList.remove('hidden');
     loadSavedIPTVForUser();
 }
-
+async function playHuhuChannel(channelId, channelName) {
+    const msg = document.getElementById('iptv-status-msg');
+    msg.style.display = 'block'; msg.style.color = '#e6b800'; msg.innerText = 'Connexion au flux Huhu.to...';
+    
+    try {
+        // On demande à notre serveur Vercel le vrai lien vidéo de cette chaîne
+        const response = await fetch(`/api/get-movie?action=get_live_stream&channel_id=${channelId}`);
+        const data = await response.json();
+        
+        if (data.success && data.url) {
+            msg.style.display = 'none';
+            // On lance la vidéo dans le lecteur Chapdolo avec le vrai lien !
+            playChannel(data.url, channelName);
+        } else {
+            msg.style.display = 'none';
+            alert('Flux TV indisponible pour cette chaîne sur Huhu.to.');
+        }
+    } catch (e) {
+        msg.style.display = 'none';
+        alert('Erreur réseau lors du chargement de la chaîne.');
+    }
+}
 async function showHuhuTvSection() {
     document.getElementById('main-content').classList.add('hidden');
     document.getElementById('live-tv-section').classList.remove('hidden');
@@ -1296,7 +1323,8 @@ async function showHuhuTvSection() {
         if (data.items && data.items.length > 0) {
             let channels = data.items.map(item => ({
                 name: item.name,
-                url: item.url,
+                huhu_id: item.ids.id, // ON RÉCUPÈRE L'ID POUR POUVOIR LIRE LA CHAÎNE
+                url: item.url, // On garde l'URL au cas où
                 group: item.group,
                 logo: item.logo
             }));
