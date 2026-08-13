@@ -368,7 +368,9 @@ let siteBtnTimeout;
 let currentAdminPass = ''; 
 let allUsersCache = {}; 
 let currentIframeContext = 'vod'; // 'vod' ou 'tv'
-
+let huhuNextCursor = null;
+let isLoadingHuhuTv = false;
+let visibleLimit = 100; // On charge par blocs de 100 pour ne pas faire planter la TV
 let adultPin = '';
 let adultUrl = '';
 
@@ -512,7 +514,23 @@ function setupSpatialNavigation() {
         }
     });
 }
-
+function setupInfiniteScroll() {
+    const container = document.getElementById('iptv-channels');
+    container.addEventListener('scroll', () => {
+        // Si on est à 800px du bas de la liste
+        if (container.scrollTop + container.clientHeight >= container.scrollHeight - 800) {
+            // Si la liste globale contient plus de chaînes que ce qu'on affiche, on en affiche plus !
+            if (visibleLimit < currentChannelList.length) {
+                visibleLimit += 100;
+                renderChannels(currentChannelList);
+            } 
+            // Sinon, s'il y a un curseur Huhu.to, on va chercher la suite sur le serveur !
+            else if (huhuNextCursor && !isLoadingHuhuTv) {
+                fetchHuhuTvBatch();
+            }
+        }
+    });
+}
 function setupMovieNavigation() {
     const movieGrid = document.getElementById('vod-grid');
     const movieSearchInput = document.getElementById('vod-search');
@@ -711,6 +729,7 @@ function verifyAdultPin() {
 }
 
 document.addEventListener('DOMContentLoaded', setupSpatialNavigation);
+document.addEventListener('DOMContentLoaded', setupInfiniteScroll);
 document.addEventListener('DOMContentLoaded', setupMovieNavigation);
 
 window.addEventListener('popstate', function(event) {
@@ -981,6 +1000,7 @@ async function loadIPTVList(url) {
 }
 
 function filterChannels() { 
+visibleLimit = 100; // On remet la limite à 100 à chaque recherche  
     clearTimeout(searchTimeout); searchTimeout = setTimeout(() => { 
         const searchTerm = document.getElementById('iptv-search').value.toLowerCase(); 
         const selectedCat = document.getElementById('iptv-category-filter').value; 
@@ -997,7 +1017,7 @@ function renderChannels(channelsToRender) {
     if (showFavsOnly && favorites.length === 0) { channelList.innerHTML = '<p style="color:#888;">Aucun favori pour le moment. Cliquez sur le cœur d\'une chaîne pour l\'ajouter !</p>'; return; }
     const currentRecents = isAdultMode ? adultRecents : recents;
     if (showRecentsOnly && currentRecents.length === 0) { channelList.innerHTML = '<p style="color:#888;">Aucun historique pour le moment. Lancez une chaîne pour la voir apparaître ici !</p>'; return; }
-    const limit = Math.min(channelsToRender.length, 50); 
+    const limit = Math.min(channelsToRender.length, visibleLimit);  
     for (let i = 0; i < limit; i++) { 
         const ch = channelsToRender[i]; 
         const itemDiv = document.createElement('div'); itemDiv.className = 'channel-item';
@@ -1024,10 +1044,11 @@ function renderChannels(channelsToRender) {
         channelButtons.push(btn); channelButtons.push(favBtn); 
         if (i === 0 && document.activeElement !== document.getElementById('iptv-search')) { setTimeout(() => btn.focus(), 100); }
     } 
-    if (channelsToRender.length > 50) { 
-        const info = document.createElement('p'); info.innerText = `Affichage des 50 premiers sur ${channelsToRender.length}. Affinez votre recherche.`; 
-        info.style.color = "#e6b800"; info.style.width = '100%'; info.style.marginTop = '15px'; info.style.gridColumn = "1 / -1"; channelList.appendChild(info); 
-    } 
+        if (channelsToRender.length > visibleLimit) { 
+        const info = document.createElement('p'); 
+        info.innerText = `Défilez vers le bas pour charger plus de chaînes... (Total: ${channelsToRender.length})`; 
+        info.style.color = "#00E5FF"; info.style.width = '100%'; info.style.marginTop = '15px'; info.style.marginBottom = '30px'; info.style.gridColumn = "1 / -1"; info.style.textAlign = 'center'; channelList.appendChild(info); 
+    }  
 }
 
 function showVideoError() { clearTimeout(videoLoadTimeout); hidePlayerControls(); document.getElementById('video-error-overlay').style.display = 'flex'; }
@@ -1304,44 +1325,60 @@ async function showHuhuTvSection() {
     channelList.innerHTML = ''; 
     document.getElementById('iptv-search').value = '';
     iptvContainer.classList.add('hidden');
+    
+    // On réinitialise tout
+    globalChannels = [];
+    huhuNextCursor = null;
+    visibleLimit = 100;
+    
+    await fetchHuhuTvBatch();
+}
 
+async function fetchHuhuTvBatch() {
+    if (isLoadingHuhuTv) return;
+    isLoadingHuhuTv = true;
+    
+    const msg = document.getElementById('iptv-status-msg');
+    const iptvContainer = document.getElementById('iptv-container');
+    
     try {
-        const response = await fetch('/api/get-movie?action=get_live_tv');
+        const response = await fetch(`/api/get-movie?action=get_live_tv&cursor=${huhuNextCursor}`);
         const data = await response.json();
         
         if (data.items && data.items.length > 0) {
             let channels = data.items.map(item => ({
-                name: item.name,
-                url: item.url, 
-                group: item.group,
-                logo: item.logo
+                name: item.name, url: item.url, group: item.group, logo: item.logo
             }));
             
-            globalChannels = channels;
+            globalChannels.push(...channels);
+            huhuNextCursor = data.nextCursor; // On sauvegarde le prochain curseur
             
+            // Mettre à jour les catégories (une seule fois suffit)
             const catSelect = document.getElementById('iptv-category-filter');
-            catSelect.innerHTML = '<option value="all">Toutes les catégories</option>';
-            if (data.features && data.features.filter) {
+            if (catSelect.options.length <= 1 && data.features && data.features.filter) {
                 let groups = data.features.filter.find(f => f.id === 'group');
                 if (groups && groups.values) {
                     groups.values.forEach(g => {
                         const opt = document.createElement('option');
-                        opt.value = g;
-                        opt.innerText = g;
-                        catSelect.appendChild(opt);
+                        opt.value = g; opt.innerText = g; catSelect.appendChild(opt);
                     });
                 }
             }
             
             msg.style.display = 'none';
             iptvContainer.classList.remove('hidden');
-            renderChannels(globalChannels);
-        } else {
+            
+            // On réaffiche la liste (soit les favoris, soit la liste globale)
+            if (showFavsOnly) renderChannels(favorites);
+            else if (showRecentsOnly) renderChannels(isAdultMode ? adultRecents : recents);
+            else filterChannels();
+        } else if (globalChannels.length === 0) {
             msg.style.color = '#ff4d4d'; msg.innerText = 'Aucune chaîne trouvée.';
         }
     } catch (e) {
         msg.style.color = '#ff4d4d'; msg.innerText = 'Erreur de chargement des chaînes.';
     }
+    isLoadingHuhuTv = false;
 }
 
 async function playHuhuChannel(channelUrl, channelName) {
