@@ -171,7 +171,7 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
   </div>
   <div class="channels-ticker">
     <div class="ticker-content">
-      TF1 • CANAL+ • BEIN SPORTS • NOVELAS • NOLLYWOOD • TRACE URBAN • TRACE AFRICA • NAT GEO • SYFY • 6TER • AB1 • ORTB • RTB • A+ • ANIMAUX • RTL9 • CFI • 13ème Rue • Télévision Nollywood • Cuisines • M6 • MTV • Z Magic • Mangas • Série Club • Télétoon+ • Piwi+ • TV5 Monde • Gulli Afrique • Nickelodeon • LudiKids • TiJi • Nickelodeon Junior • Gulli Max • Action • Automoto • Randonnée • CStar • Mezzo • Mélodie • Planète+ • Science et Vie TV • Télévision du musée • Toute l'Histoire • France 24 • CNEWS • RTI 1 • RTI 2 • A+ Ivoire • 2STV • TFM • ORTM • &nbsp;&nbsp;&nbsp;
+      TF1 • CANAL+ • BEIN SPORTS • NOVELAS • NOLLYWOOD • TRACE URBAN • TRACE AFRICA • NAT GEO • SYFY • 6TER • AB1 • ORTB • RTB • A+ • ANIMAUX • RTL9 • CFI • 13ème Rue • Télévision Nollywood • Cuisines • M6 • MTV • Z Magic • Mangas • Série Club • Télétoon+ • Piwi+ • TV5 Monde • Gulli Afrique • Nickelodeon • LudiKids • TiJi • Nickelodeon Junior • Gulli Max • Action • Automoto • Randonnée • CStar • Mezzo • Mélodie • Planète+ • Science et Vie TV • Télévision du musée • Toute l'Histoire • France 24 • CNEWS • RTI 1 • RTI 2 • A+ Ivoire • 2STv • TFM • ORTM • &nbsp;&nbsp;&nbsp;
     </div>
   </div>
 </div>
@@ -367,6 +367,7 @@ let channelButtons = [];
 let siteBtnTimeout;
 let currentAdminPass = ''; 
 let allUsersCache = {}; 
+let currentIframeContext = 'vod'; // 'vod' ou 'tv'
 
 let adultPin = '';
 let adultUrl = '';
@@ -649,7 +650,6 @@ function showSiteBtnTemporarily() {
     if (!btn || btn.classList.contains('hidden')) return;
     btn.classList.add('visible');
     clearTimeout(siteBtnTimeout);
-    // Si ce n'est pas un film (site-active), on fait disparaître le bouton. Sinon on le laisse.
     if (!document.body.classList.contains('site-active')) {
         siteBtnTimeout = setTimeout(() => {
             btn.classList.remove('visible');
@@ -1001,14 +1001,16 @@ function renderChannels(channelsToRender) {
     for (let i = 0; i < limit; i++) { 
         const ch = channelsToRender[i]; 
         const itemDiv = document.createElement('div'); itemDiv.className = 'channel-item';
-        const btn = document.createElement('button'); btn.className = 'iptv-btn'; btn.setAttribute('tabindex', '0');        
+        const btn = document.createElement('button'); btn.className = 'iptv-btn'; btn.setAttribute('tabindex', '0');
+        
+        // ON GÈRE LE CLIC EN FONCTION DU TYPE DE CHAÎNE
         btn.onclick = () => {
-            if (ch.url && ch.url.includes('huhu.to')) {
+            if (ch.url && (ch.url.includes('huhu.to') || ch.url.includes('oha.to'))) {
                 playHuhuChannel(ch.url, ch.name);
             } else {
                 playChannel(ch.url, ch.name);
             }
-        }; 
+        };
         
         const numSpan = document.createElement('span'); numSpan.className = 'ch-num'; numSpan.innerText = (i + 1); btn.appendChild(numSpan); 
         
@@ -1262,8 +1264,7 @@ function changeMovieServer(index) {
     const server = window.currentMovieServers[index];
     if (!server) return;
     
-    window.currentIframeContext = 'vod'; // ON INDI QU'ON EST DANS LES FILMS
-    // On cache le menu des serveurs pour lancer la vidéo
+    window.currentIframeContext = 'vod'; // ON INDIQUE QU'ON EST DANS LES FILMS
     document.getElementById('movie-server-overlay').classList.add('hidden');
     
     const siteIframe = document.getElementById('site-iframe');
@@ -1290,28 +1291,7 @@ function showLiveTvSection() {
     document.getElementById('live-tv-section').classList.remove('hidden');
     loadSavedIPTVForUser();
 }
-async function playHuhuChannel(channelUrl, channelName) {
-    const msg = document.getElementById('iptv-status-msg');
-    msg.style.display = 'block'; msg.style.color = '#e6b800'; msg.innerText = 'Connexion au flux Huhu.to...';
-    
-    try {
-        // On envoie l'URL de la chaîne à notre serveur Vercel
-        const response = await fetch(`/api/get-movie?action=get_live_stream&channel_url=${encodeURIComponent(channelUrl)}`);
-        const data = await response.json();
-        
-        if (data.success && data.url) {
-            msg.style.display = 'none';
-            // On lance la vidéo dans le lecteur Chapdolo avec le vrai lien .m3u8 !
-            playChannel(data.url, channelName);
-        } else {
-            msg.style.display = 'none';
-            alert('Flux TV indisponible pour cette chaîne.');
-        }
-    } catch (e) {
-        msg.style.display = 'none';
-        alert('Erreur réseau.');
-    }
-}
+
 async function showHuhuTvSection() {
     document.getElementById('main-content').classList.add('hidden');
     document.getElementById('live-tv-section').classList.remove('hidden');
@@ -1332,8 +1312,7 @@ async function showHuhuTvSection() {
         if (data.items && data.items.length > 0) {
             let channels = data.items.map(item => ({
                 name: item.name,
-                huhu_id: item.ids.id, // ON RÉCUPÈRE L'ID POUR POUVOIR LIRE LA CHAÎNE
-                url: item.url, // On garde l'URL au cas où
+                url: item.url, 
                 group: item.group,
                 logo: item.logo
             }));
@@ -1362,6 +1341,29 @@ async function showHuhuTvSection() {
         }
     } catch (e) {
         msg.style.color = '#ff4d4d'; msg.innerText = 'Erreur de chargement des chaînes.';
+    }
+}
+
+async function playHuhuChannel(channelUrl, channelName) {
+    const msg = document.getElementById('iptv-status-msg');
+    msg.style.display = 'block'; msg.style.color = '#e6b800'; msg.innerText = 'Connexion au flux Huhu.to...';
+    
+    try {
+        // On envoie l'URL de la chaîne à notre serveur Vercel
+        const response = await fetch(`/api/get-movie?action=get_live_stream&channel_url=${encodeURIComponent(channelUrl)}`);
+        const data = await response.json();
+        
+        if (data.success && data.url) {
+            msg.style.display = 'none';
+            // On lance la vidéo dans le lecteur Chapdolo avec le vrai lien .m3u8 !
+            playChannel(data.url, channelName);
+        } else {
+            msg.style.display = 'none';
+            alert('Flux TV indisponible pour cette chaîne.');
+        }
+    } catch (e) {
+        msg.style.display = 'none';
+        alert('Erreur réseau.');
     }
 }
 
