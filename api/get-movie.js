@@ -14,15 +14,18 @@ module.exports = async (req, res) => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
                 body: JSON.stringify({ 
-                    language: "fr", region: "FR", 
-                    type: "iptv", // <-- ON CORRIGE ICI : "iptv" AU LIEU DE "tv"
-                    ids: { id: channel_id } 
+                    language: "fr", 
+                    region: "FR", 
+                    type: "iptv", 
+                    ids: { id: channel_id },
+                    name: "" // <-- ON AJOUTE LE CHAMP NAME QUI MANQUAIT
                 })
             });
             const sources = await response.json();
             
-            // ON AFFICHE LA RÉPONSE BRUTE POUR VOIR CE QUE HUHU RENVOIE
+            // ON AFFICHE ENCORE LA RÉPONSE BRUTE POUR VOIR SI L'ERREUR EST TOUUBLE LÀ
             return res.json({ success: true, raw_response: sources });
+
         } catch (error) {
             return res.status(500).json({ error: 'Erreur serveur TV stream' });
         }
