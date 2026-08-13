@@ -14,7 +14,8 @@ module.exports = async (req, res) => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
                 body: JSON.stringify({ 
-                    language: "fr", region: "FR", type: "tv", 
+                    language: "fr", region: "FR", 
+                    type: "iptv", // <-- ON CORRIGE ICI : "iptv" AU LIEU DE "tv"
                     ids: { id: channel_id } 
                 })
             });
@@ -24,7 +25,7 @@ module.exports = async (req, res) => {
             let streamUrl = null;
             if (Array.isArray(sources)) {
                 streamUrl = sources.find(s => s.url && (s.url.includes('.m3u8') || s.url.includes('hls')))?.url;
-                if (!streamUrl) streamUrl = sources[0]?.url; // Fallback sur le 1er
+                if (!streamUrl) streamUrl = sources[0]?.url; 
             } else if (sources.url) {
                 streamUrl = sources.url;
             }
