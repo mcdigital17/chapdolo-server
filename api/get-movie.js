@@ -1,5 +1,27 @@
 module.exports = async (req, res) => {
-    const { tmdb_id, type } = req.query;
+    const { tmdb_id, type, action } = req.query;
+
+    // ==========================================
+    // PARTIE 1 : TV LIVE (Si on demande le catalogue TV)
+    // ==========================================
+    if (action === 'get_live_tv') {
+        try {
+            const response = await fetch('https://huhu.to/mediaurl-catalog.json', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+                body: JSON.stringify({ language: "fr", region: "FR", type: "tv" })
+            });
+            const data = await response.json();
+            return res.json(data);
+        } catch (error) {
+            console.error('Erreur get-tv:', error);
+            return res.status(500).json({ error: 'Erreur serveur TV' });
+        }
+    }
+
+    // ==========================================
+    // PARTIE 2 : FILMS & SÉRIES (Le code qu'on avait déjà)
+    // ==========================================
     if (!tmdb_id) return res.status(400).json({ error: 'TMDB ID manquant' });
 
     try {
@@ -11,7 +33,6 @@ module.exports = async (req, res) => {
             season: type === 'tv' ? 1 : undefined
         };
 
-        // 1. Demander les liens à huhu.to
         const huhuResponse = await fetch('https://huhu.to/mediaurl-source.json', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
@@ -19,22 +40,17 @@ module.exports = async (req, res) => {
         });
         const sources = await huhuResponse.json();
 
-        // 2. Chercher un serveur Mixdrop pour extraire le .mp4
         for (let s of sources) {
             if (!s.url || s.url === '') continue;
-            if (s.url.includes('tape') || s.url.includes('stp')) continue; // On ignore Streamtape
+            if (s.url.includes('tape') || s.url.includes('stp')) continue;
             
             if (s.url.includes('mixdrop.')) {
                 let embedUrl = s.url.replace('/f/', '/e/');
                 let mp4Url = await extractMixdropMp4(embedUrl);
-                if (mp4Url) {
-                    // SUCCÈS : On a le lien .mp4 brut ! On l'envoie à Chapdolo.
-                    return res.json({ success: true, type: 'mp4', url: mp4Url });
-                }
+                if (mp4Url) return res.json({ success: true, type: 'mp4', url: mp4Url });
             }
         }
 
-        // 3. Si Mixdrop échoue, on renvoie les autres serveurs en iframe (fallback)
         const embedSources = sources.map(s => {
              if (!s.url || s.url === '') return null;
              if (s.url.includes('tape') || s.url.includes('stp')) return null;
@@ -44,8 +60,7 @@ module.exports = async (req, res) => {
              return { name: s.name, url: embedUrl };
         }).filter(s => s !== null);
 
-         if (embedSources.length > 0) {
-            // On met le serveur R2 (souvent le plus stable et sans pub) en premier choix
+        if (embedSources.length > 0) {
             embedSources.sort((a, b) => {
                 if (a.name.includes('R2')) return -1;
                 if (b.name.includes('R2')) return 1;
@@ -62,24 +77,18 @@ module.exports = async (req, res) => {
     }
 }
 
-// Fonction secrète pour extraire le .mp4 de Mixdrop
 async function extractMixdropMp4(url) {
     try {
         const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }});
         const html = await res.text();
-        
-        // Cherche le code caché dans le script d'évaluation
         const match = html.match(/eval\(decodeURIComponent\('([^']+)'\)\)/);
         if (match) {
             let decoded = decodeURIComponent(match[1]);
             const urlMatch = decoded.match(/(https?:\/\/[^\s"']+\.mp4[^\s"']*)/);
             if (urlMatch) return urlMatch[1];
         }
-        
-        // Cherche une URL alternative dans hurl
         const hurlMatch = html.match(/hurl\s*=\s*["'](https?:\/\/[^"']+)["']/);
         if (hurlMatch) return hurlMatch[1];
-        
         return null;
     } catch(e) {
         return null;
