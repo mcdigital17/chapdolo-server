@@ -21,20 +21,8 @@ module.exports = async (req, res) => {
             });
             const sources = await response.json();
             
-            // On cherche le vrai lien .m3u8 dans la réponse
-            let streamUrl = null;
-            if (Array.isArray(sources)) {
-                streamUrl = sources.find(s => s.url && (s.url.includes('.m3u8') || s.url.includes('hls')))?.url;
-                if (!streamUrl) streamUrl = sources[0]?.url; 
-            } else if (sources.url) {
-                streamUrl = sources.url;
-            }
-
-            if (streamUrl) {
-                return res.json({ success: true, url: streamUrl });
-            } else {
-                return res.status(404).json({ error: 'Flux TV non trouvé' });
-            }
+            // ON AFFICHE LA RÉPONSE BRUTE POUR VOIR CE QUE HUHU RENVOIE
+            return res.json({ success: true, raw_response: sources });
         } catch (error) {
             return res.status(500).json({ error: 'Erreur serveur TV stream' });
         }
