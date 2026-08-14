@@ -93,16 +93,19 @@ button:active { transform: scale(0.96); }
 .iptv-channels::-webkit-scrollbar { width: 8px; }
 .iptv-channels::-webkit-scrollbar-track { background: #111; border-radius: 4px; }
 .iptv-channels::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
-.channel-item { position: relative; background: #1a1a1a; border: 2px solid #2a2a2a; border-radius: 12px; height: 130px; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.2s ease; overflow: visible; }
+.channel-item { position: relative; background: #1a1a1a; border: 2px solid #2a2a2a; border-radius: 12px; height: 150px; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.2s ease; overflow: visible; }
 .channel-item:focus-within { border-color: #00E5FF; box-shadow: 0 0 20px rgba(0, 229, 255, 0.4); transform: scale(1.05); z-index: 10; background: #222; }
-.iptv-btn { background: transparent !important; border: none !important; width: 100%; height: 100%; display: flex !important; flex-direction: column; align-items: center; justify-content: center; gap: 12px; border-radius: 12px; margin: 0 !important; padding: 15px !important; box-sizing: border-box; cursor: pointer; }
+.iptv-btn { background: transparent !important; border: none !important; width: 100%; height: 100%; display: flex !important; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border-radius: 12px; margin: 0 !important; padding: 15px !important; box-sizing: border-box; cursor: pointer; }
 .iptv-btn:focus { outline: none !important; box-shadow: none !important; transform: none !important; background: transparent !important; }
 .iptv-btn.fav-btn { position: absolute !important; top: 8px; right: 8px; width: 32px !important; height: 32px !important; background: rgba(0,0,0,0.6) !important; border-radius: 50% !important; padding: 0 !important; font-size: 14px !important; display: flex !important; align-items: center !important; justify-content: center !important; z-index: 2; }
 .iptv-btn.fav-btn:focus { background: #00E5FF !important; color: black !important; }
 .ch-num { display: none; }
 .ch-logo { height: 50px; width: auto; max-width: 90px; object-fit: contain; border-radius: 3px; }
 .ch-name { color: #ccc; font-size: 14px; font-weight: 500; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90%; }
-
+.ch-name { color: #ccc; font-size: 14px; font-weight: 500; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90%; }
+/* NOUVEAU STYLE POUR LE PROGRAMME ET L'HORAIRE */
+.ch-prog { color: #00E5FF; font-size: 11px; font-weight: 600; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 95%; margin-top: 2px; }
+.ch-dur { color: #888; font-size: 10px; text-align: center; }
 #site-iframe { width: 100%; height: 800px; border: none; margin-top: 20px; display: none; background: #000; }
 
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -1037,6 +1040,18 @@ function renderChannels(channelsToRender) {
         if (ch.logo) { const img = document.createElement('img'); img.className = 'ch-logo'; img.src = ch.logo; img.onerror = () => img.style.display = 'none'; btn.appendChild(img); }
         const nameSpan = document.createElement('span'); nameSpan.className = 'ch-name'; nameSpan.innerText = ch.name; btn.appendChild(nameSpan);
         
+        // AFFICHAGE DU PROGRAMME ET DE L'HORAIRE
+        if (ch.program) {
+            const progSpan = document.createElement('span');
+            progSpan.className = 'ch-prog';
+            progSpan.innerText = ch.program;
+            btn.appendChild(progSpan);
+            
+            const durSpan = document.createElement('span');
+            durSpan.className = 'ch-dur';
+            durSpan.innerText = ch.duration;
+            btn.appendChild(durSpan);
+        }
         const favBtn = document.createElement('button'); favBtn.className = 'iptv-btn fav-btn'; favBtn.innerHTML = isFavorite(ch.url) ? '❤️' : '🤍'; favBtn.setAttribute('tabindex', '0'); favBtn.style.background = isFavorite(ch.url) ? '#2a0a0a' : 'transparent';
         favBtn.onclick = (e) => { e.stopPropagation(); toggleFavorite(ch); favBtn.innerHTML = isFavorite(ch.url) ? '❤️' : '🤍'; favBtn.style.background = isFavorite(ch.url) ? '#2a0a0a' : 'transparent'; if (showFavsOnly) renderChannels(favorites); };
         
@@ -1345,9 +1360,31 @@ async function fetchHuhuTvBatch() {
         const data = await response.json();
         
         if (data.items && data.items.length > 0) {
-            let channels = data.items.map(item => ({
-                name: item.name, url: item.url, group: item.group, logo: item.logo
-            }));
+            let channels = data.items.map(item => {
+                let program = '';
+                let duration = '';
+                if (item.epg && item.epg.length > 0) {
+                    const now = Math.floor(Date.now() / 1000);
+                    let current = item.epg.find(p => p.start <= now && p.stop > now);
+                    if (!current) current = item.epg[0]; 
+                    
+                    if (current) {
+                        program = current.name;
+                        const startDate = new Date(current.start * 1000);
+                        const stopDate = new Date(current.stop * 1000);
+                        const opts = { hour: '2-digit', minute: '2-digit' };
+                        duration = `${startDate.toLocaleTimeString('fr-FR', opts)} - ${stopDate.toLocaleTimeString('fr-FR', opts)}`;
+                    }
+                }
+                return { 
+                    name: item.name, 
+                    url: item.url, 
+                    group: item.group, 
+                    logo: item.logo,
+                    program: program,
+                    duration: duration
+                };
+            });
             
             globalChannels.push(...channels);
             huhuNextCursor = data.nextCursor; 
