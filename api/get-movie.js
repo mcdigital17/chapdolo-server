@@ -82,11 +82,16 @@ module.exports = async (req, res) => {
              if (embedUrl.includes('dood.')) embedUrl = embedUrl.replace('/w/', '/e/');
              else if (embedUrl.includes('mixdrop.')) embedUrl = embedUrl.replace('/f/', '/e/');
              
-             // EXTRACTION DE LA LANGUE
-             let lang = s.lang || s.tag || '';
-             if(!lang) {
-                 if(s.name.toUpperCase().includes('VOSTFR')) lang = 'VOSTFR';
-                 else if(s.name.toUpperCase().includes('VF')) lang = 'VF';
+             // EXTRACTION AMÉLIORÉE DE LA LANGUE
+             let lang = s.lang || s.language || s.audio || '';
+             if (Array.isArray(s.tag)) lang = s.tag.join(' ');
+             else if (s.tag) lang = s.tag;
+             
+             if (!lang) {
+                 const nameUpper = (s.name || '').toUpperCase();
+                 if (nameUpper.includes('VOSTFR') || nameUpper.includes('VOST')) lang = 'VOSTFR';
+                 else if (nameUpper.includes('VF') || nameUpper.includes('FRENCH') || nameUpper.includes('TRUEFRENCH')) lang = 'VF';
+                 else if (nameUpper.includes('VO') || nameUpper.includes('EN')) lang = 'VO';
              }
              return { name: s.name, url: embedUrl, lang: lang };
         }).filter(s => s !== null);
