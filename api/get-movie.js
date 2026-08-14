@@ -17,9 +17,7 @@ module.exports = async (req, res) => {
             });
             const data = await response.json();
             return res.json(data);
-        } catch (error) {
-            return res.status(500).json({ error: 'Erreur serveur TV' });
-        }
+        } catch (error) { return res.status(500).json({ error: 'Erreur serveur TV' }); }
     }
 
     // ==========================================
@@ -56,7 +54,6 @@ module.exports = async (req, res) => {
             language: "fr", region: "FR", 
             type: type === 'tv' ? 'tv' : 'movie',
             ids: { tmdb_id: tmdb_id }, name: "",
-            // Gestion des saisons et épisodes si c'est une série
             episode: type === 'tv' ? (parseInt(episode) || 1) : undefined, 
             season: type === 'tv' ? (parseInt(season) || 1) : undefined
         };
@@ -84,7 +81,14 @@ module.exports = async (req, res) => {
              let embedUrl = s.url;
              if (embedUrl.includes('dood.')) embedUrl = embedUrl.replace('/w/', '/e/');
              else if (embedUrl.includes('mixdrop.')) embedUrl = embedUrl.replace('/f/', '/e/');
-             return { name: s.name, url: embedUrl };
+             
+             // EXTRACTION DE LA LANGUE
+             let lang = s.lang || s.tag || '';
+             if(!lang) {
+                 if(s.name.toUpperCase().includes('VOSTFR')) lang = 'VOSTFR';
+                 else if(s.name.toUpperCase().includes('VF')) lang = 'VF';
+             }
+             return { name: s.name, url: embedUrl, lang: lang };
         }).filter(s => s !== null);
 
         if (embedSources.length > 0) {
