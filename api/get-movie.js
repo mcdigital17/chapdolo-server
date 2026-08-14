@@ -1,77 +1,49 @@
 module.exports = async (req, res) => {
-    const { tmdb_id, type, action } = req.query;
+    const { tmdb_id, type, action, season, episode } = req.query;
 
     // ==========================================
-    // PARTIE 1 : CATALOGUE TV LIVE (Liste des chaînes avec pagination)
+    // PARTIE 1 : CATALOGUE TV LIVE
     // ==========================================
     if (action === 'get_live_tv') {
-        const { cursor } = req.query; // On récupère le curseur envoyé par l'application
+        const { cursor } = req.query;
         try {
             const response = await fetch('http://178.239.115.119/mediaurl-catalog.json', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
                 body: JSON.stringify({
-                    adult: false,
-                    catalogId: "iptv",
-                    cursor: cursor ? parseInt(cursor) : null, // On renvoie le curseur à huhu.to
-                    filter: {},
-                    id: "",
-                    language: "fr",
-                    region: "FR",
-                    search: "",
-                    sort: "trending-region"
+                    adult: false, catalogId: "iptv", cursor: cursor ? parseInt(cursor) : null, 
+                    filter: {}, id: "", language: "fr", region: "FR", search: "", sort: "trending-region"
                 })
             });
             const data = await response.json();
             return res.json(data);
         } catch (error) {
-            console.error('Erreur get-tv:', error);
             return res.status(500).json({ error: 'Erreur serveur TV' });
         }
     }
 
     // ==========================================
-    // PARTIE 1.5 : FLUX TV LIVE (Si on demande de lire une chaîne Huhu)
+    // PARTIE 1.5 : FLUX TV LIVE
     // ==========================================
     if (action === 'get_live_stream') {
         const { channel_url } = req.query;
         try {
             const domainMatch = channel_url.match(/^(https?:\/\/[^\/]+)/);
             const domain = domainMatch ? domainMatch[1] : 'https://huhu.to';
-            
-            // ON UTILISE LA BONNE URL : mediaurl-resolve.json
             const response = await fetch(domain + '/mediaurl-resolve.json', {
                 method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json', 
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                    'Referer': domain + '/',
-                    'Origin': domain
-                },
-                body: JSON.stringify({ 
-                    language: "de", 
-                    region: "DE", 
-                    url: channel_url
-                })
+                headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Referer': domain + '/', 'Origin': domain },
+                body: JSON.stringify({ language: "de", region: "DE", url: channel_url })
             });
             const sources = await response.json();
-            
             let streamUrl = null;
             if (Array.isArray(sources)) {
                 streamUrl = sources.find(s => s.url && (s.url.includes('.m3u8') || s.url.includes('hls')))?.url;
                 if (!streamUrl) streamUrl = sources[0]?.url; 
-            } else if (sources.url) {
-                streamUrl = sources.url;
-            }
-
-            if (streamUrl) {
-                return res.json({ success: true, url: streamUrl });
-            } else {
-                return res.status(404).json({ error: 'Flux TV non trouvé' });
-            }
-        } catch (error) {
-            return res.status(500).json({ error: 'Erreur serveur TV stream' });
-        }
+            } else if (sources.url) { streamUrl = sources.url; }
+            if (streamUrl) return res.json({ success: true, url: streamUrl });
+            else return res.status(404).json({ error: 'Flux TV non trouvé' });
+        } catch (error) { return res.status(500).json({ error: 'Erreur serveur TV stream' }); }
     }
 
     // ==========================================
@@ -84,8 +56,9 @@ module.exports = async (req, res) => {
             language: "fr", region: "FR", 
             type: type === 'tv' ? 'tv' : 'movie',
             ids: { tmdb_id: tmdb_id }, name: "",
-            episode: type === 'tv' ? 1 : undefined, 
-            season: type === 'tv' ? 1 : undefined
+            // Gestion des saisons et épisodes si c'est une série
+            episode: type === 'tv' ? (parseInt(episode) || 1) : undefined, 
+            season: type === 'tv' ? (parseInt(season) || 1) : undefined
         };
 
         const huhuResponse = await fetch('http://178.239.115.119/mediaurl-source.json', {
@@ -98,7 +71,6 @@ module.exports = async (req, res) => {
         for (let s of sources) {
             if (!s.url || s.url === '') continue;
             if (s.url.includes('tape') || s.url.includes('stp')) continue;
-            
             if (s.url.includes('mixdrop.')) {
                 let embedUrl = s.url.replace('/f/', '/e/');
                 let mp4Url = await extractMixdropMp4(embedUrl);
@@ -116,23 +88,14 @@ module.exports = async (req, res) => {
         }).filter(s => s !== null);
 
         if (embedSources.length > 0) {
-            embedSources.sort((a, b) => {
-                if (a.name.includes('R2')) return -1;
-                if (b.name.includes('R2')) return 1;
-                return 0;
-            });
+            embedSources.sort((a, b) => { if (a.name.includes('R2')) return -1; if (b.name.includes('R2')) return 1; return 0; });
             return res.json({ success: true, type: 'embed', sources: embedSources });
         }
 
         res.status(404).json({ error: 'Aucun lecteur valide trouvé' });
-
-    } catch (e) {
-        console.error(e);
-        res.status(500).json({ error: 'Erreur serveur' });
-    }
+    } catch (e) { res.status(500).json({ error: 'Erreur serveur' }); }
 }
 
-// Fonction secrète pour extraire le .mp4 de Mixdrop
 async function extractMixdropMp4(url) {
     try {
         const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }});
@@ -146,7 +109,5 @@ async function extractMixdropMp4(url) {
         const hurlMatch = html.match(/hurl\s*=\s*["'](https?:\/\/[^"']+)["']/);
         if (hurlMatch) return hurlMatch[1];
         return null;
-    } catch(e) {
-        return null;
-    }
+    } catch(e) { return null; }
 }
