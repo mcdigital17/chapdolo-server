@@ -17,7 +17,7 @@ module.exports = async (req, res) => {
         const contentType = response.headers.get('content-type') || '';
         res.setHeader('Content-Type', contentType);
 
-        // Si c'est un fichier m3u8 (TV), on le lit et on renvoie les liens directs pour ne pas faire crasher Vercel
+        // Si c'est un fichier m3u8, on réécrit les segments pour passer par le proxy (obligatoire pour les Smart TVs)
         if (contentType.includes('mpegurl') || url.includes('.m3u8')) {
             let text = await response.text();
             const lines = text.split('\n');
@@ -25,9 +25,9 @@ module.exports = async (req, res) => {
                 const trimmed = line.trim();
                 if (!trimmed || trimmed.startsWith('#')) return line;
                 
-                // ON RENVOIE LES LIENS DIRECTS DES SEGMENTS (.ts) POUR NE PAS FAIRE PLANTER VERCEL
-                if (trimmed.startsWith('http')) return trimmed;
-                return new URL(trimmed, url).href;
+                if (trimmed.startsWith('http')) return `/api/proxy-stream?url=${encodeURIComponent(trimmed)}`;
+                const absoluteUrl = new URL(trimmed, url).href;
+                return `/api/proxy-stream?url=${encodeURIComponent(absoluteUrl)}`;
             });
             res.send(rewrittenLines.join('\n'));
         } else {
