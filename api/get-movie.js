@@ -34,11 +34,17 @@ module.exports = async (req, res) => {
                 body: JSON.stringify({ language: "de", region: "DE", url: channel_url })
             });
             const sources = await response.json();
+            
             let streamUrl = null;
             if (Array.isArray(sources)) {
-                streamUrl = sources.find(s => s.url && (s.url.includes('.m3u8') || s.url.includes('hls')))?.url;
-                if (!streamUrl) streamUrl = sources[0]?.url; 
-            } else if (sources.url) { streamUrl = sources.url; }
+                // ON FILTRE LES FAUX LIENS (VYPN, VAVOO) ET ON CHERCHE UN VRAI .M3U8
+                const validSources = sources.filter(s => s.url && !s.url.includes('vypn') && !s.url.includes('vavoo'));
+                streamUrl = validSources.find(s => s.url.includes('.m3u8') || s.url.includes('hls') || s.url.includes('.mp4'))?.url;
+                if (!streamUrl) streamUrl = validSources[0]?.url; 
+            } else if (sources.url && !sources.url.includes('vypn')) { 
+                streamUrl = sources.url; 
+            }
+
             if (streamUrl) return res.json({ success: true, url: streamUrl });
             else return res.status(404).json({ error: 'Flux TV non trouvé' });
         } catch (error) { return res.status(500).json({ error: 'Erreur serveur TV stream' }); }
@@ -82,7 +88,6 @@ module.exports = async (req, res) => {
              if (embedUrl.includes('dood.')) embedUrl = embedUrl.replace('/w/', '/e/');
              else if (embedUrl.includes('mixdrop.')) embedUrl = embedUrl.replace('/f/', '/e/');
              
-             // EXTRACTION AMÉLIORÉE DE LA LANGUE
              let lang = s.lang || s.language || s.audio || '';
              if (Array.isArray(s.tag)) lang = s.tag.join(' ');
              else if (s.tag) lang = s.tag;
