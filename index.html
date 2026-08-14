@@ -7,85 +7,99 @@
 
 <!-- LIGNES PWA -->
 <link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#00E5FF">
+<meta name="theme-color" content="#0A0B10">
 <link rel="apple-touch-icon" href="/icon-192.png">
 
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-
-<!-- DÉTECTION TV / PC POUR APPLIQUER LE ZOOM -->
-<script>
-  const userAgent = navigator.userAgent.toLowerCase();
-  if ((userAgent.includes('android') && !userAgent.includes('mobile')) || userAgent.includes('tv') || userAgent.includes('gonative')) {
-      document.documentElement.classList.add('tv-mode'); 
-  }
-</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
 
 <style>
-body { background-color: #0a0a0a; color: white; font-family: 'Inter', sans-serif; margin: 0; min-height: 100vh; display: flex; flex-direction: column; }
+:root {
+  --bg-main: #0A0B10;
+  --bg-card: #14161F;
+  --bg-surface: #1C1F2B;
+  --blue-primary: #00E5FF;
+  --blue-glow: rgba(0, 229, 255, 0.4);
+  --yellow-accent: #FFD700;
+  --yellow-glow: rgba(255, 215, 0, 0.4);
+  --red-adult: #FF3B30;
+  --text-main: #FFFFFF;
+  --text-dim: #A0A5B0;
+}
+
+body { background-color: var(--bg-main); background-image: radial-gradient(circle at 50% 0%, #1A1C28, #0A0B10); color: var(--text-main); font-family: 'Inter', sans-serif; margin: 0; min-height: 100vh; display: flex; flex-direction: column; }
 html.tv-mode body { zoom: 0.8; }
 
 .section { text-align: center; padding: 60px 20px; animation: fadeIn 0.5s ease; flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; }
 .section > * { width: 100%; max-width: 400px; box-sizing: border-box; }
 
-input, select { padding: 16px 20px; margin: 8px 0; border-radius: 6px; border: 1px solid #333; background: #111; color: white; font-size: 16px; width: 100%; transition: all 0.3s ease; box-sizing: border-box; }
-input:focus, select:focus { outline: none; border-color: #00E5FF; box-shadow: 0 0 0 2px rgba(0, 229, 255, 0.3); }
-button { padding: 16px 32px; font-size: 16px; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; margin: 8px 0; transition: all 0.2s ease; width: 100%; }
-button:active { transform: scale(0.96); }
+input, select { padding: 16px 20px; margin: 8px 0; border-radius: 8px; border: 1px solid #333; background: var(--bg-card); color: white; font-size: 16px; width: 100%; transition: all 0.3s ease; box-sizing: border-box; }
+input:focus, select:focus { outline: none; border-color: var(--yellow-accent); box-shadow: 0 0 0 3px var(--yellow-glow); }
+button { padding: 14px 28px; font-size: 16px; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; margin: 8px 0; transition: all 0.2s ease; width: 100%; }
+button:active { transform: scale(0.97); }
 
-.btn-primary { background: #00E5FF; color: black; box-shadow: 0 4px 15px rgba(0, 229, 255, 0.3); width: auto; padding: 16px 64px; }
-.btn-primary:hover { background: #33ECFF; box-shadow: 0 6px 20px rgba(0, 229, 255, 0.5); transform: translateY(-2px); }
-.btn-danger { background: #b2b2b2; color: black; } .btn-danger:hover { background: #fff; }
-.btn-secondary { background: rgba(255,255,255,0.1); color: white; border: 1px solid #444; } .btn-secondary:hover { background: rgba(255,255,255,0.2); border-color: #fff; }
-.btn-auto { background: #1a1a1a; color: #00E5FF; border: 1px solid #00E5FF; } .btn-auto:hover { background: #00E5FF; color: black; }
-.btn-warn { background: #e6b800; color: black; } .btn-success { background: #2ecc71; color: black; }
-.btn-delete { background: transparent; border: 1px solid #888; color: #888; } .btn-delete:hover { border-color: #ff4d4d; color: #ff4d4d; }
-.btn-lock { background: #1a1a1a; color: #ff4d4d; border: 1px solid #ff4d4d; } .btn-lock:hover { background: #ff4d4d; color: black; }
+.btn-primary { background: linear-gradient(135deg, #00E5FF, #00B8D4); color: black; box-shadow: 0 4px 15px var(--blue-glow); width: auto; padding: 16px 64px; }
+.btn-primary:hover { box-shadow: 0 6px 20px var(--blue-glow); transform: translateY(-2px); }
+.btn-danger { background: linear-gradient(135deg, #ff4d4d, #cc0000); color: white; } 
+.btn-secondary { background: var(--bg-surface); color: white; border: 1px solid #333; } 
+.btn-auto { background: transparent; color: var(--yellow-accent); border: 1px solid var(--yellow-accent); } 
+.btn-warn { background: var(--yellow-accent); color: black; } 
+.btn-success { background: linear-gradient(135deg, #2ecc71, #27ae60); color: white; box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3); }
+.btn-delete { background: transparent; border: 1px solid #555; color: #888; } 
+.btn-lock { background: var(--bg-card); color: var(--red-adult); border: 1px solid var(--red-adult); } 
 
-.modal-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(4px); }
+.modal-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(8px); }
 .hidden { display: none !important; }
 
-/* --- DESIGN PAGE DE CONNEXION (CINÉMATIQUE) --- */
-#login-screen { position: relative; overflow: hidden; background: radial-gradient(circle at 50% 30%, #151525, #000000); justify-content: center; }
-.login-glow { position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(0, 229, 255, 0.08) 0%, transparent 60%); animation: pulse 5s infinite alternate; pointer-events: none; }
+/* --- LOGIN --- */
+#login-screen { position: relative; overflow: hidden; background: radial-gradient(circle at 50% 30%, #1A1C28, #000000); justify-content: center; }
+.login-glow { position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(0, 229, 255, 0.05) 0%, transparent 60%); animation: pulse 5s infinite alternate; pointer-events: none; }
 @keyframes pulse { 0% { opacity: 0.4; transform: scale(1); } 100% { opacity: 0.8; transform: scale(1.1); } }
-.login-card { position: relative; z-index: 10; background: rgba(20, 20, 30, 0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); padding: 40px 30px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8); max-width: 380px; width: 100%; margin: 20px; }
-.login-card .logo-container { margin-bottom: 20px; }
-.channels-ticker { position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.8); padding: 15px 0; overflow: hidden; white-space: nowrap; z-index: 5; border-top: 1px solid #222; }
-.ticker-content { display: inline-block; animation: scroll 60s linear infinite; color: rgba(255,255,255,0.5); font-weight: 600; font-size: 16px; letter-spacing: 2px; }
+.login-card { position: relative; z-index: 10; background: rgba(28, 31, 43, 0.8); backdrop-filter: blur(20px); padding: 40px 30px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8); max-width: 380px; width: 100%; margin: 20px; }
+.channels-ticker { position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.9); padding: 15px 0; overflow: hidden; white-space: nowrap; z-index: 5; border-top: 1px solid #222; }
+.ticker-content { display: inline-block; animation: scroll 60s linear infinite; color: rgba(255,255,255,0.3); font-weight: 600; font-size: 14px; letter-spacing: 2px; }
 @keyframes scroll { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
 
+/* --- ADMIN --- */
 .stats-grid { display: flex; justify-content: center; gap: 20px; margin-bottom: 30px; flex-wrap: wrap; }
-.stat-card { background: #111; padding: 20px 40px; border-radius: 12px; text-align: center; min-width: 200px; }
-.stat-card h3 { color: #888; margin: 0 0 10px 0; font-size: 16px; text-transform: uppercase; letter-spacing: 1px; }
+.stat-card { background: var(--bg-card); padding: 20px 40px; border-radius: 12px; text-align: center; min-width: 200px; border: 1px solid #333; }
+.stat-card h3 { color: var(--text-dim); margin: 0 0 10px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
 .stat-card p { margin: 0; font-size: 42px; font-weight: 800; }
-.stat-total { border: 1px solid #00E5FF; box-shadow: 0 0 15px rgba(0, 229, 255, 0.1); } .stat-total p { color: #00E5FF; }
-.stat-online { border: 1px solid #2ecc71; box-shadow: 0 0 15px rgba(46, 204, 113, 0.1); } .stat-online p { color: #2ecc71; }
+.stat-total p { color: var(--blue-primary); } .stat-online p { color: #2ecc71; }
 
-.user-card { background: #111; border: 1px solid #222; padding: 20px; margin: 10px auto; max-width: 500px; border-radius: 8px; text-align: left; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; transition: border-color 0.3s; }
-.user-card:hover { border-color: #00E5FF; }
-.user-info { flex-basis: 100%; margin-bottom: 10px; }
-.user-info h4 { margin: 0 0 5px 0; color: #00E5FF; font-size: 18px; }
-.user-info p { margin: 0; font-size: 13px; color: #888; }
-.user-actions { display: flex; gap: 5px; flex-wrap: wrap; }
-.user-actions button { padding: 8px 12px; font-size: 12px; margin: 0; border-radius: 4px; }
+.user-card { background: var(--bg-card); border: 1px solid #333; padding: 20px; margin: 10px auto; max-width: 500px; border-radius: 10px; text-align: left; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; transition: border-color 0.3s; }
+.user-card:hover { border-color: var(--blue-primary); }
 
 .logo-container { display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 40px; cursor: pointer; user-select: none; }
-.logo-icon { width: 60px; height: 60px; background: #00E5FF; border-radius: 8px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 25px rgba(0, 229, 255, 0.4); transition: transform 0.3s, box-shadow 0.3s; }
+.logo-icon { width: 60px; height: 60px; background: linear-gradient(135deg, var(--blue-primary), #00B8D4); border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 25px var(--blue-glow); transition: transform 0.3s, box-shadow 0.3s; }
 .logo-icon::after { content: ''; border-left: 22px solid black; border-top: 14px solid transparent; border-bottom: 14px solid transparent; margin-left: 5px; }
-.logo-container:hover .logo-icon { transform: scale(1.1); box-shadow: 0 0 40px rgba(0, 229, 255, 0.8); }
+.logo-container:hover .logo-icon { transform: scale(1.1); }
 .logo-text { font-size: 56px; font-weight: 800; color: white; letter-spacing: -2px; text-shadow: 2px 2px 10px rgba(0,0,0,0.8); }
 
-.source-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-top: 40px; }
-.source-btn { padding: 24px 36px; font-size: 20px; font-weight: bold; border-radius: 8px; min-width: 160px; letter-spacing: 1px; position: relative; overflow: hidden; width: auto; }
-.source-btn::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, rgba(255,255,255,0.1), transparent); pointer-events: none; }
+/* --- ACCUEIL UI PREMIUM --- */
+.dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; max-width: 1000px; margin-top: 40px; }
+.dash-card { background: var(--bg-card); border: 1px solid #2A2D3A; border-radius: 12px; padding: 30px 20px; text-align: center; cursor: pointer; transition: all 0.3s ease; display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; }
+.dash-card:hover { border-color: var(--blue-primary); background: #1F2230; transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+.dash-card .icon { font-size: 48px; margin-bottom: 15px; }
+.dash-card h3 { margin: 0; font-size: 20px; color: white; }
+.dash-card p { margin: 5px 0 0 0; font-size: 14px; color: var(--text-dim); }
+.card-blue { border-bottom: 4px solid var(--blue-primary); }
+.card-blue:hover { box-shadow: 0 10px 30px var(--blue-glow); }
+.card-yellow { border-bottom: 4px solid var(--yellow-accent); }
+.card-yellow:hover { border-color: var(--yellow-accent); box-shadow: 0 10px 30px var(--yellow-glow); }
+.card-red { border-bottom: 4px solid var(--red-adult); }
+.card-red:hover { border-color: var(--red-adult); box-shadow: 0 10px 30px rgba(255, 59, 48, 0.3); }
 
-.tv-player-container { width: 100%; max-width: 1000px; margin: 20px auto; background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8); display: none; aspect-ratio: 16/9; position: relative; }
+.sources-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; margin-top: 40px; }
+.source-btn { padding: 16px 32px; font-size: 16px; font-weight: 600; border-radius: 8px; min-width: 140px; letter-spacing: 0.5px; position: relative; overflow: hidden; width: auto; background: var(--bg-surface); color: white; border: 1px solid #333; }
+.source-btn:hover { background: #252836; border-color: #555; }
+
+/* --- LECTEUR & LISTES --- */
+.tv-player-container { width: 100%; max-width: 1000px; margin: 20px auto; background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.8); display: none; aspect-ratio: 16/9; position: relative; border: 1px solid #222; }
 #tv-player { width: 100%; height: 100%; background: black; object-fit: contain; }
 #tv-player:focus { outline: none !important; }
 
-.iptv-container { margin-top: 30px; background: #111; border-radius: 12px; padding: 20px; border: 1px solid #222; transition: border-color 0.3s; width: 100%; max-width: 1200px; box-sizing: border-box; }
-.iptv-container.adult-mode { border-color: #ff4d4d; box-shadow: 0 0 15px rgba(255, 77, 77, 0.2); }
+.iptv-container { margin-top: 30px; background: var(--bg-card); border-radius: 12px; padding: 20px; border: 1px solid #2A2D3A; width: 100%; max-width: 1200px; box-sizing: border-box; }
 .search-bar { display: flex; justify-content: center; gap: 15px; margin-bottom: 30px; align-items: center; flex-wrap: wrap; }
 .search-bar button { border-radius: 50px !important; padding: 10px 20px !important; font-size: 14px !important; width: auto !important; margin: 0 !important; }
 
@@ -93,25 +107,24 @@ button:active { transform: scale(0.96); }
 .iptv-channels::-webkit-scrollbar { width: 8px; }
 .iptv-channels::-webkit-scrollbar-track { background: #111; border-radius: 4px; }
 .iptv-channels::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
-.channel-item { position: relative; background: #1a1a1a; border: 2px solid #2a2a2a; border-radius: 12px; height: 150px; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.2s ease; overflow: visible; }
-.channel-item:focus-within { border-color: #00E5FF; box-shadow: 0 0 20px rgba(0, 229, 255, 0.4); transform: scale(1.05); z-index: 10; background: #222; }
-.iptv-btn { background: transparent !important; border: none !important; width: 100%; height: 100%; display: flex !important; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border-radius: 12px; margin: 0 !important; padding: 15px !important; box-sizing: border-box; cursor: pointer; }
+.iptv-channels::-webkit-scrollbar-thumb:hover { background: var(--blue-primary); }
+
+.channel-item { position: relative; background: var(--bg-surface); border: 2px solid #2A2D3A; border-radius: 12px; height: 150px; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.2s ease; overflow: visible; }
+.channel-item:focus-within { border-color: var(--yellow-accent); box-shadow: 0 0 20px var(--yellow-glow); transform: scale(1.05); z-index: 10; background: #252836; }
+.iptv-btn { background: transparent !important; border: none !important; width: 100%; height: 100%; display: flex !important; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border-radius: 12px; margin: 0 !important; padding: 10px !important; box-sizing: border-box; cursor: pointer; }
 .iptv-btn:focus { outline: none !important; box-shadow: none !important; transform: none !important; background: transparent !important; }
 .iptv-btn.fav-btn { position: absolute !important; top: 8px; right: 8px; width: 32px !important; height: 32px !important; background: rgba(0,0,0,0.6) !important; border-radius: 50% !important; padding: 0 !important; font-size: 14px !important; display: flex !important; align-items: center !important; justify-content: center !important; z-index: 2; }
-.iptv-btn.fav-btn:focus { background: #00E5FF !important; color: black !important; }
-.ch-num { display: none; }
-.ch-logo { height: 50px; width: auto; max-width: 90px; object-fit: contain; border-radius: 3px; }
-.ch-name { color: #ccc; font-size: 14px; font-weight: 500; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90%; }
-.ch-name { color: #ccc; font-size: 14px; font-weight: 500; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90%; }
-/* NOUVEAU STYLE POUR LE PROGRAMME ET L'HORAIRE */
-.ch-prog { color: #00E5FF; font-size: 11px; font-weight: 600; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 95%; margin-top: 2px; }
-.ch-dur { color: #888; font-size: 10px; text-align: center; }
+.ch-logo { height: 45px; width: auto; max-width: 80px; object-fit: contain; border-radius: 3px; }
+.ch-name { color: white; font-size: 14px; font-weight: 600; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90%; }
+.ch-prog { color: var(--yellow-accent); font-size: 11px; font-weight: 500; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 95%; margin-top: 2px; }
+.ch-dur { color: var(--text-dim); font-size: 10px; text-align: center; }
+
 #site-iframe { width: 100%; height: 800px; border: none; margin-top: 20px; display: none; background: #000; }
 
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-.nav-bar { background: rgba(10, 10, 10, 0.95); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 50; border-bottom: 1px solid #222; backdrop-filter: blur(10px); }
+.nav-bar { background: rgba(10, 11, 16, 0.95); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 50; border-bottom: 1px solid #2A2D3A; backdrop-filter: blur(10px); }
 
-#clock { font-size: 24px; color: #00E5FF; font-weight: 600; text-shadow: 0 0 5px rgba(0, 229, 255, 0.3); margin-right: 20px; font-variant-numeric: tabular-nums; }
+#clock { font-size: 24px; color: var(--blue-primary); font-weight: 600; text-shadow: 0 0 5px var(--blue-glow); margin-right: 20px; font-variant-numeric: tabular-nums; }
 .nav-actions { display: flex; align-items: center; }
 
 html.tv-mode .nav-bar { padding: 5px 15px; }
@@ -121,40 +134,41 @@ html.tv-mode .logo-icon::after { border-left-width: 14px; border-top-width: 9px;
 html.tv-mode .nav-bar button { padding: 10px 15px; font-size: 14px; margin: 5px; }
 html.tv-mode #clock { font-size: 16px; margin-right: 10px; }
 html.tv-mode .iptv-channels { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; max-height: calc(100vh - 250px); }
-html.tv-mode .channel-item { height: 160px; }
+html.tv-mode .channel-item { height: 180px; }
 html.tv-mode .ch-logo { height: 60px; max-width: 100px; }
 html.tv-mode .ch-name { font-size: 16px; }
 html.tv-mode input, html.tv-mode select { padding: 10px 15px; font-size: 14px; }
 
+/* UX : ANNEAU DE FOCUS JAUNE POUR LA TELECOMMANDE */
 *:focus { outline: none !important; }
-button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; }
-#movie-grid > div:focus, #vod-grid > div:focus { outline: 3px solid #00E5FF !important; box-shadow: 0 0 15px rgba(0, 229, 255, 0.5); }
+button:focus, a:focus, select:focus, [tabindex="0"]:focus { box-shadow: 0 0 0 3px var(--bg-main), 0 0 0 5px var(--yellow-accent) !important; border-radius: 8px; }
+#movie-grid > div:focus, #vod-grid > div:focus { box-shadow: 0 0 0 3px var(--bg-main), 0 0 0 5px var(--yellow-accent) !important; border-radius: 8px; transform: scale(1.05); }
 
 .app-fullscreen #app-screen nav.nav-bar { display: none !important; }
 .app-fullscreen #player-section { position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; width: 100% !important; height: 100% !important; padding: 0 !important; margin: 0 !important; z-index: 9999 !important; background: black !important; animation: none !important; }
 .app-fullscreen .tv-player-container { position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; max-width: 100% !important; max-height: 100% !important; border-radius: 0 !important; box-shadow: none !important; display: block !important; aspect-ratio: auto !important; margin: 0 !important; }
 .app-fullscreen #tv-player { width: 100% !important; height: 100% !important; object-fit: contain !important; }
 .app-fullscreen #player-title { display: none !important; }
-#exit-fullscreen-btn { position: absolute; top: 20px; right: 20px; z-index: 10000; background: rgba(0, 0, 0, 0.7); color: white; border: 1px solid #00E5FF; padding: 15px 30px; border-radius: 8px; font-size: 18px; cursor: pointer; transition: opacity 0.5s; }
+#exit-fullscreen-btn { position: absolute; top: 20px; right: 20px; z-index: 10000; background: rgba(0, 0, 0, 0.7); color: white; border: 1px solid var(--blue-primary); padding: 15px 30px; border-radius: 8px; font-size: 18px; cursor: pointer; transition: opacity 0.5s; }
 #exit-fullscreen-btn.hidden-btn { opacity: 0; pointer-events: none; }
 
 .site-active #main-content { display: none !important; }
 .site-active #app-screen nav.nav-bar { display: none !important; } 
 .site-active #site-iframe { position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; width: 100% !important; height: 100% !important; z-index: 10 !important; border: none !important; margin: 0 !important; display: block !important; background: #000 !important; }
 
-#exit-site-btn { position: fixed !important; bottom: 20px !important; left: 20px !important; z-index: 100000 !important; background: rgba(0, 229, 255, 0.8) !important; color: black !important; border: none !important; width: 50px !important; height: 50px !important; border-radius: 50% !important; font-size: 24px !important; cursor: pointer !important; font-weight: 700 !important; box-shadow: 0 0 10px rgba(0, 229, 255, 0.5) !important; display: flex !important; align-items: center !important; justify-content: center !important; padding: 0 !important; opacity: 0 !important; pointer-events: none !important; transition: opacity 0.3s ease-in-out !important; }
+#exit-site-btn { position: fixed !important; bottom: 20px !important; left: 20px !important; z-index: 100000 !important; background: var(--red-adult) !important; color: white !important; border: none !important; width: 50px !important; height: 50px !important; border-radius: 50% !important; font-size: 24px !important; cursor: pointer !important; font-weight: 700 !important; box-shadow: 0 0 15px rgba(255, 59, 48, 0.5) !important; display: flex !important; align-items: center !important; justify-content: center !important; padding: 0 !important; opacity: 0 !important; pointer-events: none !important; transition: opacity 0.3s ease-in-out !important; }
 #exit-site-btn.visible { opacity: 1 !important; pointer-events: auto !important; }
 
 #video-error-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 5; text-align: center; }
-#video-error-overlay p { color: #ff4d4d; font-size: 24px; font-weight: bold; margin-bottom: 20px; text-shadow: 0 2px 4px black; }
+#video-error-overlay p { color: var(--red-adult); font-size: 24px; font-weight: bold; margin-bottom: 20px; text-shadow: 0 2px 4px black; }
 
 #custom-player-controls { position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; display: none; align-items: flex-end; justify-content: center; padding-bottom: 40px; background: linear-gradient(to top, rgba(0,0,0,0.7), transparent 60%); z-index: 4; }
 #custom-player-controls.active { display: flex !important; }
-.player-btn { background: rgba(0, 0, 0, 0.6); color: white; border: 2px solid #00E5FF; padding: 15px 30px; border-radius: 50px; font-size: 20px; cursor: pointer; margin: 0 10px; transition: all 0.2s; display: flex; align-items: center; gap: 10px; }
-.player-btn:focus { background: #00E5FF; color: black; box-shadow: 0 0 0 4px #00E5FF; outline: none; }
+.player-btn { background: rgba(0, 0, 0, 0.6); color: white; border: 2px solid var(--blue-primary); padding: 15px 30px; border-radius: 50px; font-size: 20px; cursor: pointer; margin: 0 10px; transition: all 0.2s; display: flex; align-items: center; gap: 10px; }
+.player-btn:focus { background: var(--blue-primary); color: black; box-shadow: 0 0 0 4px var(--blue-primary); outline: none; }
 
-#zap-overlay { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 120px; font-weight: 800; color: #00E5FF; text-shadow: 0 0 20px rgba(0, 229, 255, 0.8); z-index: 9998; display: none; pointer-events: none; background: rgba(0,0,0,0.8); padding: 20px 60px; border-radius: 20px; border: 4px solid #00E5FF; transition: color 0.2s, border-color 0.2s; }
-#zap-overlay.error { color: #ff4d4d !important; border-color: #ff4d4d !important; text-shadow: 0 0 20px rgba(255, 77, 77, 0.8); }
+#zap-overlay { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 120px; font-weight: 800; color: var(--yellow-accent); text-shadow: 0 0 20px var(--yellow-glow); z-index: 9998; display: none; pointer-events: none; background: rgba(0,0,0,0.8); padding: 20px 60px; border-radius: 20px; border: 4px solid var(--yellow-accent); }
+#zap-overlay.error { color: var(--red-adult) !important; border-color: var(--red-adult) !important; text-shadow: 0 0 20px rgba(255, 59, 48, 0.8); }
 </style>
 </head>
 <body>
@@ -166,11 +180,11 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
       <div class="logo-icon"></div>
       <div class="logo-text">CHAPDOLO</div>
     </div>
-    <p style="color:#aaa; font-size:16px; margin-bottom:30px; font-weight: 500;">Le Streaming À Pleine Puissance</p>
+    <p style="color:var(--text-dim); font-size:16px; margin-bottom:30px; font-weight: 500;">Le Streaming À Pleine Puissance</p>
     <input type="text" id="login-user" placeholder="Nom d'utilisateur">
     <input type="password" id="login-pass" placeholder="Mot de passe" style="margin-bottom: 24px;">
     <button class="btn-primary" onclick="login()" style="width: 100%; box-sizing: border-box;">Se Connecter</button>
-    <p id="login-error" style="color:#ff4d4d; margin-top:20px; min-height: 20px;"></p>
+    <p id="login-error" style="color:var(--red-adult); margin-top:20px; min-height: 20px;"></p>
   </div>
   <div class="channels-ticker">
     <div class="ticker-content">
@@ -180,8 +194,8 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
 </div>
 
 <div id="admin-modal" class="modal-bg hidden">
-  <div class="modal-box" style="background:#111; padding:40px; border-radius:12px; border:2px solid #00E5FF; text-align:center; box-shadow: 0 0 30px rgba(0,229,255,0.2);">
-    <h2 style="color:#00E5FF; margin-top:0;">Accès Administrateur</h2>
+  <div class="modal-box" style="background:var(--bg-card); padding:40px; border-radius:12px; border:2px solid var(--blue-primary); text-align:center; box-shadow: 0 0 30px var(--blue-glow);">
+    <h2 style="color:var(--blue-primary); margin-top:0;">Accès Administrateur</h2>
     <input type="password" id="admin-pass-modal" placeholder="Mot de passe Admin" style="width:80%;"><br>
     <button class="btn-primary" onclick="verifyAdmin()">Valider</button>
     <button class="btn-secondary" onclick="closeAdminModal()">Annuler</button>
@@ -189,11 +203,11 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
 </div>
 
 <div id="pin-modal" class="modal-bg hidden">
-  <div class="modal-box" style="background:#111; padding:40px; border-radius:12px; border:2px solid #ff4d4d; text-align:center; box-shadow: 0 0 30px rgba(255,77,77,0.2);">
-    <h2 style="color:#ff4d4d; margin-top:0;">🔒 Contrôle Parental</h2>
-    <p style="color:#888; margin-bottom:20px;">Entrez le code à 4 chiffres</p>
+  <div class="modal-box" style="background:var(--bg-card); padding:40px; border-radius:12px; border:2px solid var(--red-adult); text-align:center; box-shadow: 0 0 30px rgba(255,59,48,0.2);">
+    <h2 style="color:var(--red-adult); margin-top:0;">🔒 Contrôle Parental</h2>
+    <p style="color:var(--text-dim); margin-bottom:20px;">Entrez le code à 4 chiffres</p>
     <input type="password" id="pin-entry" maxlength="4" placeholder="****" style="text-align:center; font-size:24px; letter-spacing:10px; width:150px;"><br>
-    <p id="pin-error" style="color:#ff4d4d; height:20px; margin-top:10px;"></p>
+    <p id="pin-error" style="color:var(--red-adult); height:20px; margin-top:10px;"></p>
     <button class="btn-primary" onclick="verifyAdultPin()">Déverrouiller</button>
     <button class="btn-secondary" onclick="closePinModal()">Annuler</button>
   </div>
@@ -202,19 +216,19 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
 <div id="admin-screen" class="section hidden">
   <h1 style="color:white; margin-bottom:30px;">Panneau Administrateur</h1>
   <div class="stats-grid">
-     <div class="stat-card stat-total"><h3>Total Utilisateurs</h3><p id="stat-total-users">0</p></div>
-     <div class="stat-card stat-online"><h3>En Ligne</h3><p id="stat-online-users">0</p></div>
+     <div class="stat-card"><h3>Total Utilisateurs</h3><p id="stat-total-users">0</p></div>
+     <div class="stat-card"><h3>En Ligne</h3><p id="stat-online-users">0</p></div>
   </div>
   <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; width: 100%; max-width: 1000px;">
-     <div style="background:#111; padding:25px; border-radius:12px; width: 320px; border:1px solid #222; box-sizing: border-box;">
+     <div style="background:var(--bg-card); padding:25px; border-radius:12px; width: 320px; border:1px solid #333; box-sizing: border-box;">
         <h3 style="color:white;">Créer un accès</h3>
         <input type="text" id="new-username" placeholder="Nom d'utilisateur" style="width:100%;"><br>
         <input type="text" id="new-password" placeholder="Mot de passe" style="width:65%;">
         <button class="btn-auto" onclick="autoGenerate()">Auto</button><br>
         <button class="btn-primary" onclick="generateUser()">Créer l'accès</button>
-        <p id="admin-message" style="color:#00E5FF; font-size:14px; font-weight:bold; height:20px;">En attente...</p>
+        <p id="admin-message" style="color:var(--blue-primary); font-size:14px; font-weight:bold; height:20px;">En attente...</p>
      </div>
-     <div style="background:#111; padding:25px; border-radius:12px; width: 600px; border:1px solid #222; box-sizing: border-box;">
+     <div style="background:var(--bg-card); padding:25px; border-radius:12px; width: 600px; border:1px solid #333; box-sizing: border-box;">
         <h3 style="color:white;">Utilisateurs créés</h3>
         <div style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center;">
            <input type="text" id="user-search" placeholder="🔍 Rechercher un utilisateur..." style="margin: 0; padding: 10px 15px; font-size: 14px; border-radius: 50px;" oninput="renderUserList(this.value)">
@@ -223,16 +237,16 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
         <div id="user-list" style="margin-top:10px; max-height: 400px; overflow-y: auto;"></div>
      </div>
   </div>
-  <div style="margin-top: 30px; background:#111; padding:25px; border-radius:12px; max-width: 600px; width: 100%; margin-left: auto; margin-right: auto; border: 1px solid #00E5FF; box-shadow: 0 0 20px rgba(0,229,255,0.1); box-sizing: border-box;">
-     <h3 style="color:#00E5FF;">📺 Source IPTV (TV Live)</h3>
-     <p style="color:#888; font-size:14px;">Collez le lien m3u8 d'une source IPTV ici.</p>
+  <div style="margin-top: 30px; background:var(--bg-card); padding:25px; border-radius:12px; max-width: 600px; width: 100%; margin-left: auto; margin-right: auto; border: 1px solid var(--blue-primary); box-shadow: 0 0 20px var(--blue-glow); box-sizing: border-box;">
+     <h3 style="color:var(--blue-primary);">📺 Source IPTV (TV Live)</h3>
+     <p style="color:var(--text-dim); font-size:14px;">Collez le lien m3u8 d'une source IPTV ici.</p>
      <input type="text" id="iptv-url-input" placeholder="https://lien-vers-fichier-iptv.m3u" style="width: 100%; margin: 5px 0 15px 0;">
      <button class="btn-primary" onclick="saveAndLoadIPTV()">Sauvegarder & Charger</button>
      <p id="iptv-msg" style="font-size:14px;"></p>
   </div>
-  <div style="margin-top: 30px; background:#111; padding:25px; border-radius:12px; max-width: 600px; width: 100%; margin-left: auto; margin-right: auto; border: 1px solid #ff4d4d; box-shadow: 0 0 20px rgba(255,77,77,0.1); box-sizing: border-box;">
-     <h3 style="color:#ff4d4d;">🔒 Contrôle Parental (Adultes)</h3>
-     <p style="color:#888; font-size:14px;">Configurez le code PIN et le lien M3U réservé aux adultes (Synchronisé sur tous les appareils).</p>
+  <div style="margin-top: 30px; background:var(--bg-card); padding:25px; border-radius:12px; max-width: 600px; width: 100%; margin-left: auto; margin-right: auto; border: 1px solid var(--red-adult); box-shadow: 0 0 20px rgba(255,59,48,0.1); box-sizing: border-box;">
+     <h3 style="color:var(--red-adult);">🔒 Contrôle Parental (Adultes)</h3>
+     <p style="color:var(--text-dim); font-size:14px;">Configurez le code PIN et le lien M3U réservé aux adultes (Synchronisé sur tous les appareils).</p>
      <input type="text" id="iptv-pin-input" maxlength="4" placeholder="Code PIN (4 chiffres)" style="width: 100%; margin: 5px 0 15px 0; letter-spacing: 5px; text-align: center;">
      <input type="text" id="iptv-adult-url-input" placeholder="https://lien-vers-fichier-iptv-adulte.m3u" style="width: 100%; margin: 5px 0 15px 0;">
      <button class="btn-primary" onclick="saveAdultConfig()">Sauvegarder sur le serveur</button>
@@ -250,7 +264,7 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
   <nav class="nav-bar">
     <div class="logo-container" style="margin-bottom:0; cursor: default;">
        <div class="logo-icon" style="width:40px; height:40px;"></div>
-       <div class="logo-text" style="font-size:32px; color:#00E5FF;">CHAPDOLO</div>
+       <div class="logo-text" style="font-size:32px; color:var(--blue-primary);">CHAPDOLO</div>
     </div>
     <div class="nav-actions">
        <div id="clock"></div>
@@ -261,30 +275,42 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
 
   <div id="main-content" style="text-align: center; padding: 60px 20px; flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center;">
      <h2 style="color:white; font-size:44px; margin-bottom:10px;">Bienvenue sur Chapdolo</h2>
-     <p style="color:#888; font-size:20px; margin-bottom:40px;">Sélectionnez une source de streaming</p>
+     <p style="color:var(--text-dim); font-size:20px; margin-bottom:40px;">Sélectionnez une source de streaming</p>
      
-     <div class="source-grid">
-        <button class="source-btn btn-primary" onclick="loadSite('https://oha.to')">SOURCE 1</button>
-        <button class="source-btn btn-secondary" onclick="loadSite('https://huhu.to')">SOURCE 2</button>
-        <button class="source-btn btn-secondary" onclick="loadSite('https://vavoo.to')">SOURCE 3</button>
-        <button class="source-btn btn-lock" onclick="promptAdultPin()">🔒 ADULTES</button>
+     <!-- UI PREMIUM : CARTES DU TABLEAU DE BORD -->
+     <div class="dashboard-grid">
+        <div class="dash-card card-yellow" tabindex="0" onclick="showVodSection()">
+           <div class="icon">🎬</div>
+           <h3>Films & Séries</h3>
+           <p>Catalogue Premium</p>
+        </div>
+        <div class="dash-card card-blue" tabindex="0" onclick="showHuhuTvSection()">
+           <div class="icon">📺</div>
+           <h3>TV En Direct</h3>
+           <p>Chaînes Huhu & Oha</p>
+        </div>
+        <div class="dash-card card-blue" tabindex="0" onclick="showLiveTvSection()">
+           <div class="icon">📡</div>
+           <h3>Source IPTV</h3>
+           <p>Votre lien M3U</p>
+        </div>
+        <div class="dash-card card-red" tabindex="0" onclick="promptAdultPin()">
+           <div class="icon">🔒</div>
+           <h3>Adultes</h3>
+           <p>Accès restreint</p>
+        </div>
      </div>
 
-     <div style="margin-top: 40px; text-align: center;">
-        <button class="source-btn btn-success" onclick="showVodSection()" tabindex="0">🎬 FILMS & SÉRIES</button>
-     </div>
-
-     <div style="margin-top: 40px; text-align: center;">
-        <button class="source-btn btn-secondary" onclick="showLiveTvSection()" tabindex="0">📺 SOURCE IPTV</button>
-     </div>
-
-     <div style="margin-top: 40px; text-align: center;">
-        <button class="source-btn btn-primary" onclick="showHuhuTvSection()" tabindex="0">📺 TV EN DIRECT</button>
+     <!-- SOURCES EXTERNES -->
+     <div class="sources-list">
+        <button class="source-btn" onclick="loadSite('https://oha.to')">SOURCE OHA</button>
+        <button class="source-btn" onclick="loadSite('https://huhu.to')">SOURCE HUHU</button>
+        <button class="source-btn" onclick="loadSite('https://vavoo.to')">SOURCE VAVOO</button>
      </div>
   </div>
 
   <!-- Écran du catalogue Films & Séries -->
-  <div id="vod-section" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0a0a0a; z-index: 80; overflow-y: auto; padding: 80px 20px 20px 20px; box-sizing: border-box;">
+  <div id="vod-section" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-main); z-index: 80; overflow-y: auto; padding: 80px 20px 20px 20px; box-sizing: border-box;">
      <button class="btn-secondary" onclick="backToMain()" style="position: absolute; top: 20px; left: 20px; width: auto; margin: 0; padding: 10px 20px;">↩ Retour</button>
      <h2 style="color: white; text-align: center; margin-bottom: 20px;">🎬 Films & Séries Populaires</h2>
      
@@ -297,11 +323,11 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
      </div>
   </div>
 
-  <!-- Écran TV Live (Partagé entre Source IPTV et Huhu TV) -->
-  <div id="live-tv-section" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0a0a0a; z-index: 80; overflow-y: auto; padding: 80px 20px 20px 20px; box-sizing: border-box;">
+  <!-- Écran TV Live -->
+  <div id="live-tv-section" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-main); z-index: 80; overflow-y: auto; padding: 80px 20px 20px 20px; box-sizing: border-box;">
      <button class="btn-secondary" onclick="backToMain()" style="position: absolute; top: 20px; left: 20px; width: auto; margin: 0; padding: 10px 20px;">↩ Retour</button>
      <h2 style="color: white; text-align: center; margin-bottom: 20px;">📺 TV en Direct</h2>
-     <p id="iptv-status-msg" style="color:#888; display:none; text-align: center;">Chargement des chaînes TV en cours...</p>
+     <p id="iptv-status-msg" style="color:var(--text-dim); display:none; text-align: center;">Chargement des chaînes TV en cours...</p>
      
      <div id="iptv-container" class="iptv-container hidden" style="max-width: 1200px; margin: 0 auto;">
         <div class="search-bar">
@@ -312,7 +338,7 @@ button:focus, a:focus, select:focus { box-shadow: 0 0 0 2px #00E5FF !important; 
            <button id="sort-az-btn" class="btn-auto" tabindex="0" onclick="sortChannelsAZ()">🔤 Trier A-Z</button>
         </div>
         <div style="margin-bottom: 15px; text-align: center;">
-           <select id="iptv-category-filter" onchange="filterChannels()" style="padding: 10px 20px; border-radius: 50px; border: 1px solid #333; background: #1a1a1a; color: white; font-size: 14px; width: 100%; max-width: 300px; cursor: pointer;">
+           <select id="iptv-category-filter" onchange="filterChannels()" style="padding: 10px 20px; border-radius: 50px; border: 1px solid #333; background: var(--bg-card); color: white; font-size: 14px; width: 100%; max-width: 300px; cursor: pointer;">
               <option value="all">Toutes les catégories</option>
            </select>
         </div>
@@ -370,10 +396,8 @@ let channelButtons = [];
 let siteBtnTimeout;
 let currentAdminPass = ''; 
 let allUsersCache = {}; 
-let currentIframeContext = 'vod'; // 'vod' ou 'tv'
-let huhuNextCursor = null;
-let isLoadingHuhuTv = false;
-let visibleLimit = 100; // On charge par blocs de 100 pour ne pas faire planter la TV
+let currentIframeContext = 'vod';
+
 let adultPin = '';
 let adultUrl = '';
 
@@ -381,6 +405,9 @@ const TMDB_API_KEY = 'c36548e7fd5e79ae5a8ca67ac0717bc2';
 let searchMovieTimeout;
 let movieButtons = [];
 let searchVodTimeout;
+let huhuNextCursor = null;
+let isLoadingHuhuTv = false;
+let visibleLimit = 100;
 
 function updateClock() {
     const now = new Date();
@@ -517,23 +544,21 @@ function setupSpatialNavigation() {
         }
     });
 }
+
 function setupInfiniteScroll() {
     const container = document.getElementById('iptv-channels');
     container.addEventListener('scroll', () => {
-        // Si on est à 800px du bas de la liste
         if (container.scrollTop + container.clientHeight >= container.scrollHeight - 800) {
-            // Si la liste globale contient plus de chaînes que ce qu'on affiche, on en affiche plus !
             if (visibleLimit < currentChannelList.length) {
                 visibleLimit += 100;
                 renderChannels(currentChannelList);
-            } 
-            // Sinon, s'il y a un curseur Huhu.to, on va chercher la suite sur le serveur !
-            else if (huhuNextCursor && !isLoadingHuhuTv) {
+            } else if (huhuNextCursor && !isLoadingHuhuTv) {
                 fetchHuhuTvBatch();
             }
         }
     });
 }
+
 function setupMovieNavigation() {
     const movieGrid = document.getElementById('vod-grid');
     const movieSearchInput = document.getElementById('vod-search');
@@ -987,7 +1012,7 @@ async function loadIPTVList(url) {
                 const groupMatch = line.match(/group-title="([^"]+)"/); currentGroup = groupMatch ? groupMatch[1] : 'Non classé'; groups.add(currentGroup);
                 const logoMatch = line.match(/tvg-logo="([^"]+)"/); currentLogo = logoMatch ? logoMatch[1] : '';
             } else if (line.startsWith('http') && currentName) { 
-                channels.push({ name: currentName, url: line, group: currentGroup, logo: currentLogo }); 
+                channels.push({ name: currentName, url: line, group: currentGroup, logo: currentLogo, program: '', duration: '' }); 
                 currentName = ''; currentGroup = ''; currentLogo = '';
             } 
         } 
@@ -1003,7 +1028,7 @@ async function loadIPTVList(url) {
 }
 
 function filterChannels() { 
-visibleLimit = 100; // On remet la limite à 100 à chaque recherche  
+    visibleLimit = 100; 
     clearTimeout(searchTimeout); searchTimeout = setTimeout(() => { 
         const searchTerm = document.getElementById('iptv-search').value.toLowerCase(); 
         const selectedCat = document.getElementById('iptv-category-filter').value; 
@@ -1020,13 +1045,12 @@ function renderChannels(channelsToRender) {
     if (showFavsOnly && favorites.length === 0) { channelList.innerHTML = '<p style="color:#888;">Aucun favori pour le moment. Cliquez sur le cœur d\'une chaîne pour l\'ajouter !</p>'; return; }
     const currentRecents = isAdultMode ? adultRecents : recents;
     if (showRecentsOnly && currentRecents.length === 0) { channelList.innerHTML = '<p style="color:#888;">Aucun historique pour le moment. Lancez une chaîne pour la voir apparaître ici !</p>'; return; }
-    const limit = Math.min(channelsToRender.length, visibleLimit);  
+    const limit = Math.min(channelsToRender.length, visibleLimit); 
     for (let i = 0; i < limit; i++) { 
         const ch = channelsToRender[i]; 
         const itemDiv = document.createElement('div'); itemDiv.className = 'channel-item';
-        const btn = document.createElement('button'); btn.className = 'iptv-btn'; btn.setAttribute('tabindex', '0');
+        const btn = document.createElement('button'); btn.className = 'iptv-btn'; btn.setAttribute('tabindex', '0'); 
         
-        // ON GÈRE LE CLIC EN FONCTION DU TYPE DE CHAÎNE
         btn.onclick = () => {
             if (ch.url && (ch.url.includes('huhu.to') || ch.url.includes('oha.to'))) {
                 playHuhuChannel(ch.url, ch.name);
@@ -1040,7 +1064,6 @@ function renderChannels(channelsToRender) {
         if (ch.logo) { const img = document.createElement('img'); img.className = 'ch-logo'; img.src = ch.logo; img.onerror = () => img.style.display = 'none'; btn.appendChild(img); }
         const nameSpan = document.createElement('span'); nameSpan.className = 'ch-name'; nameSpan.innerText = ch.name; btn.appendChild(nameSpan);
         
-        // AFFICHAGE DU PROGRAMME ET DE L'HORAIRE
         if (ch.program) {
             const progSpan = document.createElement('span');
             progSpan.className = 'ch-prog';
@@ -1052,6 +1075,7 @@ function renderChannels(channelsToRender) {
             durSpan.innerText = ch.duration;
             btn.appendChild(durSpan);
         }
+        
         const favBtn = document.createElement('button'); favBtn.className = 'iptv-btn fav-btn'; favBtn.innerHTML = isFavorite(ch.url) ? '❤️' : '🤍'; favBtn.setAttribute('tabindex', '0'); favBtn.style.background = isFavorite(ch.url) ? '#2a0a0a' : 'transparent';
         favBtn.onclick = (e) => { e.stopPropagation(); toggleFavorite(ch); favBtn.innerHTML = isFavorite(ch.url) ? '❤️' : '🤍'; favBtn.style.background = isFavorite(ch.url) ? '#2a0a0a' : 'transparent'; if (showFavsOnly) renderChannels(favorites); };
         
@@ -1059,11 +1083,10 @@ function renderChannels(channelsToRender) {
         channelButtons.push(btn); channelButtons.push(favBtn); 
         if (i === 0 && document.activeElement !== document.getElementById('iptv-search')) { setTimeout(() => btn.focus(), 100); }
     } 
-        if (channelsToRender.length > visibleLimit) { 
-        const info = document.createElement('p'); 
-        info.innerText = `Défilez vers le bas pour charger plus de chaînes... (Total: ${channelsToRender.length})`; 
+    if (channelsToRender.length > visibleLimit) { 
+        const info = document.createElement('p'); info.innerText = `Défilez vers le bas pour charger plus de chaînes... (Total: ${channelsToRender.length})`; 
         info.style.color = "#00E5FF"; info.style.width = '100%'; info.style.marginTop = '15px'; info.style.marginBottom = '30px'; info.style.gridColumn = "1 / -1"; info.style.textAlign = 'center'; channelList.appendChild(info); 
-    }  
+    } 
 }
 
 function showVideoError() { clearTimeout(videoLoadTimeout); hidePlayerControls(); document.getElementById('video-error-overlay').style.display = 'flex'; }
@@ -1122,7 +1145,6 @@ function backToMain() {
     const isPlayerVisible = !player.classList.contains('hidden');
     const isSiteActive = document.body.classList.contains('site-active');
 
-    // 1. Si on est dans le lecteur vidéo (TV ou MP4)
     if (isPlayerVisible) {
         clearTimeout(videoLoadTimeout); clearTimeout(playerControlTimeout); hidePlayerControls();
         document.getElementById('video-error-overlay').style.display = 'none';
@@ -1134,7 +1156,6 @@ function backToMain() {
         return; 
     }
 
-    // 2. Si on est sur un film ou une chaîne en iframe (Site actif)
     if (isSiteActive) {
         document.body.classList.remove('site-active'); 
         destroySiteIframe(); 
@@ -1145,7 +1166,6 @@ function backToMain() {
         document.removeEventListener('touchstart', showSiteBtnTemporarily);
         clearTimeout(siteBtnTimeout);
         
-        // On revient à la page d'où on vient (Films ou TV)
         if (window.currentIframeContext === 'tv') {
             document.getElementById('live-tv-section').classList.remove('hidden');
         } else {
@@ -1154,7 +1174,6 @@ function backToMain() {
         return;
     }
 
-    // 3. Sinon (on quitte la section TV ou Films), on revient à l'accueil
     document.getElementById('vod-section').classList.add('hidden');
     document.getElementById('live-tv-section').classList.add('hidden');
     document.getElementById('movie-server-overlay').classList.add('hidden');
@@ -1163,7 +1182,7 @@ function backToMain() {
 }
 
 // ==========================================
-// SECTION FILMS & SÉRIES (TMDB + HUHU.TO)
+// SECTION FILMS & SÉRIES
 // ==========================================
 
 function renderVodItems(items) {
@@ -1300,7 +1319,7 @@ function changeMovieServer(index) {
     const server = window.currentMovieServers[index];
     if (!server) return;
     
-    window.currentIframeContext = 'vod'; // ON INDIQUE QU'ON EST DANS LES FILMS
+    window.currentIframeContext = 'vod';
     document.getElementById('movie-server-overlay').classList.add('hidden');
     
     const siteIframe = document.getElementById('site-iframe');
@@ -1319,7 +1338,7 @@ function changeMovieServer(index) {
 }
 
 // ==========================================
-// SECTION TV LIVE (SOURCE IPTV & HUHU)
+// SECTION TV LIVE
 // ==========================================
 
 function showLiveTvSection() {
@@ -1336,7 +1355,7 @@ async function showHuhuTvSection() {
     const channelList = document.getElementById('iptv-channels');
     const msg = document.getElementById('iptv-status-msg');
     
-    msg.style.display = 'none'; // ON CACHE LE TEXTE
+    msg.style.display = 'none'; 
     channelList.innerHTML = ''; 
     document.getElementById('iptv-search').value = '';
     iptvContainer.classList.add('hidden');
@@ -1419,15 +1438,13 @@ async function fetchHuhuTvBatch() {
 
 async function playHuhuChannel(channelUrl, channelName) {
     const msg = document.getElementById('iptv-status-msg');
-    msg.style.display = 'none'; // ON CACHE LE TEXTE
+    msg.style.display = 'none'; 
     
     try {
-        // On envoie l'URL de la chaîne à notre serveur Vercel
         const response = await fetch(`/api/get-movie?action=get_live_stream&channel_url=${encodeURIComponent(channelUrl)}`);
         const data = await response.json();
         
         if (data.success && data.url) {
-            // On lance la vidéo dans le lecteur Chapdolo avec le vrai lien .m3u8 !
             playChannel(data.url, channelName);
         } else {
             alert('Flux TV indisponible pour cette chaîne.');
