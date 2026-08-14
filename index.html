@@ -1317,16 +1317,15 @@ async function showHuhuTvSection() {
     document.getElementById('main-content').classList.add('hidden');
     document.getElementById('live-tv-section').classList.remove('hidden');
     
-    const msg = document.getElementById('iptv-status-msg');
     const iptvContainer = document.getElementById('iptv-container');
     const channelList = document.getElementById('iptv-channels');
+    const msg = document.getElementById('iptv-status-msg');
     
-    msg.style.display = 'block'; msg.style.color = '#e6b800'; msg.innerText = 'Chargement des chaînes Huhu.to...';
+    msg.style.display = 'none'; // ON CACHE LE TEXTE
     channelList.innerHTML = ''; 
     document.getElementById('iptv-search').value = '';
     iptvContainer.classList.add('hidden');
     
-    // On réinitialise tout
     globalChannels = [];
     huhuNextCursor = null;
     visibleLimit = 100;
@@ -1351,9 +1350,8 @@ async function fetchHuhuTvBatch() {
             }));
             
             globalChannels.push(...channels);
-            huhuNextCursor = data.nextCursor; // On sauvegarde le prochain curseur
+            huhuNextCursor = data.nextCursor; 
             
-            // Mettre à jour les catégories (une seule fois suffit)
             const catSelect = document.getElementById('iptv-category-filter');
             if (catSelect.options.length <= 1 && data.features && data.features.filter) {
                 let groups = data.features.filter.find(f => f.id === 'group');
@@ -1368,14 +1366,15 @@ async function fetchHuhuTvBatch() {
             msg.style.display = 'none';
             iptvContainer.classList.remove('hidden');
             
-            // On réaffiche la liste (soit les favoris, soit la liste globale)
             if (showFavsOnly) renderChannels(favorites);
             else if (showRecentsOnly) renderChannels(isAdultMode ? adultRecents : recents);
             else filterChannels();
         } else if (globalChannels.length === 0) {
+            msg.style.display = 'block';
             msg.style.color = '#ff4d4d'; msg.innerText = 'Aucune chaîne trouvée.';
         }
     } catch (e) {
+        msg.style.display = 'block';
         msg.style.color = '#ff4d4d'; msg.innerText = 'Erreur de chargement des chaînes.';
     }
     isLoadingHuhuTv = false;
@@ -1383,7 +1382,7 @@ async function fetchHuhuTvBatch() {
 
 async function playHuhuChannel(channelUrl, channelName) {
     const msg = document.getElementById('iptv-status-msg');
-    msg.style.display = 'block'; msg.style.color = '#e6b800'; msg.innerText = 'Connexion au flux Huhu.to...';
+    msg.style.display = 'none'; // ON CACHE LE TEXTE
     
     try {
         // On envoie l'URL de la chaîne à notre serveur Vercel
@@ -1391,15 +1390,12 @@ async function playHuhuChannel(channelUrl, channelName) {
         const data = await response.json();
         
         if (data.success && data.url) {
-            msg.style.display = 'none';
             // On lance la vidéo dans le lecteur Chapdolo avec le vrai lien .m3u8 !
             playChannel(data.url, channelName);
         } else {
-            msg.style.display = 'none';
             alert('Flux TV indisponible pour cette chaîne.');
         }
     } catch (e) {
-        msg.style.display = 'none';
         alert('Erreur réseau.');
     }
 }
