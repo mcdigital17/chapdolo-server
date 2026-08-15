@@ -27,9 +27,10 @@ module.exports = async (req, res) => {
             return res.status(403).send('Publicité bloquée');
         }
 
-        // ACCÉLÉRATION : Autoriser la lecture croisée (CORS) pour éviter les lenteurs de sécurité sur la TV
+        // ACCÉLÉRATION : Autoriser la lecture croisée (CORS) pour la TV + Cache
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Content-Type', contentType);
+        res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400');
 
         // Si c'est un fichier m3u8 (liste de segments), on doit réécrire les URLs
         if (contentType.includes('mpegurl') || url.includes('.m3u8')) {
@@ -44,18 +45,19 @@ module.exports = async (req, res) => {
                     finalUrl = new URL(trimmed, url).href;
                 }
                 
-                // ANTI-PUB : Si le segment vidéo est un lien VYPN/Vavoo, on le détruit
+                // ANTI-PUB : Si le segment est une pub VYPN/Vavoo, on le supprime proprement
                 if (finalUrl.includes('vypn') || finalUrl.includes('vavoo')) {
-                    return '# EXT-X-DISCONTINUITY'; // On remplace la pub par une commande de saut
+                    return ''; // On efface la ligne de la pub
                 }
                 
                 return `/api/proxy-stream?url=${encodeURIComponent(finalUrl)}`;
             });
-            res.send(rewrittenLines.join('\n'));
+            // On filtre les lignes vides pour ne pas casser le fichier m3u8
+            res.send(rewrittenLines.filter(l => l !== '').join('\n'));
         } else {
-            // FLUIDITÉ : Pour les segments vidéo (.ts, .mp4), on utilise le "Stream" + Mise en cache
-            res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400');
-            response.body.pipe(res);
+            // Pour les segments vidéo (.ts, .mp4), on utilise le Buffer classique (très stable sur Vercel)
+            const buffer = Buffer.from(await response.arrayBuffer());
+            res.send(buffer);
         }
     } catch (error) {
         console.error('Proxy Stream Error:', error);
