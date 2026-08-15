@@ -35,19 +35,12 @@ module.exports = async (req, res) => {
             });
             const sources = await response.json();
             
-            let streamUrl = null;
-            if (Array.isArray(sources)) {
-                // ON FILTRE LES FAUX LIENS (VYPN, VAVOO) ET ON CHERCHE UN VRAI .M3U8
-                const validSources = sources.filter(s => s.url && !s.url.includes('vypn') && !s.url.includes('vavoo'));
-                streamUrl = validSources.find(s => s.url.includes('.m3u8') || s.url.includes('hls') || s.url.includes('.mp4'))?.url;
-                if (!streamUrl) streamUrl = validSources[0]?.url; 
-            } else if (sources.url && !sources.url.includes('vypn')) { 
-                streamUrl = sources.url; 
-            }
+            // ON AFFICHE LA RÉPONSE BRUTE POUR VOIR CE QUE HUHU RENVOIE AUJOURD'HUI
+            return res.json({ success: true, raw_response: sources });
 
-            if (streamUrl) return res.json({ success: true, url: streamUrl });
-            else return res.status(404).json({ error: 'Flux TV non trouvé' });
-        } catch (error) { return res.status(500).json({ error: 'Erreur serveur TV stream' }); }
+        } catch (error) {
+            return res.status(500).json({ error: 'Erreur serveur TV stream' });
+        }
     }
 
     // ==========================================
