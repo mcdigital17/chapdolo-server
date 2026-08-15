@@ -43,8 +43,10 @@ module.exports = async (req, res) => {
             res.setHeader('Cache-Control', 'public, max-age=31536000');
             response.body.pipe(res);
         } 
-        // 3. SINON (pour les petits segments .ts de la TV), on utilise le buffer classique (très stable)
+        // 3. SINON (pour les petits segments .ts de la TV), on utilise le buffer classique avec Cache
         else {
+            // ON MET EN CACHE LES SEGMENTS SUR VERCEL POUR UN CHARGEMENT INSTANTANÉ
+            res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400');
             const buffer = Buffer.from(await response.arrayBuffer());
             res.send(buffer);
         }
