@@ -42,7 +42,10 @@ export default async function handler(req, res) {
             });
             res.send(rewrittenLines.join('\n'));
         } else {
-            // Pour les segments vidéo (.ts, .mp4, etc.), on renvoie juste les données
+        // Pour les petits segments .ts de la TV, on utilise le buffer classique avec Cache
+          else {
+            // ON MET EN CACHE LES SEGMENTS SUR VERCEL POUR UN CHARGEMENT INSTANTANÉ
+            res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400');
             const buffer = Buffer.from(await response.arrayBuffer());
             res.send(buffer);
         }
