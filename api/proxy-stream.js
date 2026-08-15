@@ -1,14 +1,18 @@
 module.exports = async (req, res) => {
-    const { url } = req.query;
+    const { url, referer } = req.query;
     if (!url) return res.status(400).send('URL manquante');
 
     try {
         const targetUrl = new URL(url);
+        
+        // Si on a un referer personnalisé, on l'utilise. Sinon, on prend l'origine du flux.
+        const ref = referer || (targetUrl.origin + '/');
+
         const response = await fetch(url, {
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                'Referer': targetUrl.origin + '/',
-                'Origin': targetUrl.origin
+                'Referer': ref,
+                'Origin': ref
             }
         });
 
@@ -17,7 +21,6 @@ module.exports = async (req, res) => {
         const contentType = response.headers.get('content-type') || '';
         res.setHeader('Content-Type', contentType);
 
-        // Si c'est un fichier m3u8, on réécrit les segments pour passer par le proxy (obligatoire pour les Smart TVs)
         if (contentType.includes('mpegurl') || url.includes('.m3u8')) {
             let text = await response.text();
             const lines = text.split('\n');
@@ -25,13 +28,16 @@ module.exports = async (req, res) => {
                 const trimmed = line.trim();
                 if (!trimmed || trimmed.startsWith('#')) return line;
                 
-                if (trimmed.startsWith('http')) return `/api/proxy-stream?url=${encodeURIComponent(trimmed)}`;
-                const absoluteUrl = new URL(trimmed, url).href;
-                return `/api/proxy-stream?url=${encodeURIComponent(absoluteUrl)}`;
+                let finalUrl = trimmed;
+                if (!trimmed.startsWith('http')) {
+                    finalUrl = new URL(trimmed, url).href;
+                }
+                
+                // On renvoie le segment en gardant le referer
+                return `/api/proxy-stream?url=${encodeURIComponent(finalUrl)}&referer=${encodeURIComponent(ref)}`;
             });
             res.send(rewrittenLines.join('\n'));
         } else {
-            // Pour les films MP4, on garde le stream
             res.setHeader('Cache-Control', 'public, max-age=31536000');
             response.body.pipe(res);
         }
