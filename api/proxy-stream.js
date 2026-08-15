@@ -18,11 +18,14 @@ module.exports = async (req, res) => {
 
         const contentType = response.headers.get('content-type') || '';
         
-        // LIGNE CRITIQUE POUR LA TV : Autoriser la lecture croisée (CORS)
+        // SÉCURITÉ ANTI-PUB : Si on reçoit une page Web au lieu d'une vidéo, on bloque !
+        if (contentType.includes('text/html')) {
+            return res.status(403).send('Publicité bloquée');
+        }
+
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Content-Type', contentType);
 
-        // 1. Si c'est un fichier m3u8 (TV), on le lit et on renvoie les segments via le proxy
         if (contentType.includes('mpegurl') || url.includes('.m3u8')) {
             let text = await response.text();
             const lines = text.split('\n');
@@ -38,14 +41,11 @@ module.exports = async (req, res) => {
             });
             res.send(rewrittenLines.join('\n'));
         } 
-        // 2. Si c'est un film MP4, on utilise le stream
         else if (url.includes('.mp4') || contentType.includes('mp4')) {
             res.setHeader('Cache-Control', 'public, max-age=31536000');
             response.body.pipe(res);
         } 
-        // 3. SINON (pour les petits segments .ts de la TV), on utilise le buffer classique avec Cache
         else {
-            // ON MET EN CACHE LES SEGMENTS SUR VERCEL POUR UN CHARGEMENT INSTANTANÉ
             res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400');
             const buffer = Buffer.from(await response.arrayBuffer());
             res.send(buffer);
