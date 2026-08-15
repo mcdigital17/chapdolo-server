@@ -28,7 +28,6 @@ module.exports = async (req, res) => {
         try {
             const domainMatch = channel_url.match(/^(https?:\/\/[^\/]+)/);
             const domain = domainMatch ? domainMatch[1] : 'https://huhu.to';
-            
             const response = await fetch(domain + '/mediaurl-resolve.json', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Referer': domain + '/', 'Origin': domain },
@@ -36,17 +35,24 @@ module.exports = async (req, res) => {
             });
             const sources = await response.json();
             
-            let streamUrl = null;
+            let streamUrls = [];
             if (Array.isArray(sources)) {
-                const validSources = sources.filter(s => s.url && !s.url.includes('vypn') && !s.url.includes('vavoo'));
-                streamUrl = validSources.find(s => s.url.includes('.m3u8') || s.url.includes('hls') || s.url.includes('.mp4'))?.url;
-                if (!streamUrl) streamUrl = validSources[0]?.url; 
-            } else if (sources.url && !sources.url.includes('vypn')) { 
-                streamUrl = sources.url; 
+                // FILTRE ULTRA-STRICT : On ignore les pubs ET on exige que l'URL finisse par .m3u8 ou .mp4
+                const validSources = sources.filter(s => {
+                    if (!s.url) return false;
+                    const u = s.url.toLowerCase();
+                    if (u.includes('vypn') || u.includes('vavoo') || u.includes('streamtape')) return false;
+                    return u.includes('.m3u8') || u.includes('.mp4') || u.includes('/hls/');
+                });
+                streamUrls = validSources.map(s => s.url);
+            } else if (sources.url) {
+                const u = sources.url.toLowerCase();
+                if (!u.includes('vypn') && !u.includes('vavoo') && (u.includes('.m3u8') || u.includes('.mp4') || u.includes('/hls/'))) { 
+                    streamUrls = [sources.url]; 
+                }
             }
 
-            // ON RENVOIE LE LIEN ET LE DOMAINE (POUR LE REFERER)
-            if (streamUrl) return res.json({ success: true, url: streamUrl, referer: domain });
+            if (streamUrls.length > 0) return res.json({ success: true, sources: streamUrls, referer: domain });
             else return res.status(404).json({ error: 'Flux TV non trouvé' });
         } catch (error) {
             return res.status(500).json({ error: 'Erreur serveur TV stream' });
