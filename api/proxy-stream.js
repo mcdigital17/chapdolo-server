@@ -4,8 +4,6 @@ module.exports = async (req, res) => {
 
     try {
         const targetUrl = new URL(url);
-        
-        // Si on a un referer personnalisé, on l'utilise. Sinon, on prend l'origine du flux.
         const ref = referer || (targetUrl.origin + '/');
 
         const response = await fetch(url, {
@@ -19,8 +17,12 @@ module.exports = async (req, res) => {
         if (!response.ok) return res.status(response.status).send('Erreur de flux');
 
         const contentType = response.headers.get('content-type') || '';
+        
+        // LIGNE CRITIQUE POUR LA TV : Autoriser la lecture croisée (CORS)
+        res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Content-Type', contentType);
 
+        // 1. Si c'est un fichier m3u8 (TV), on le lit et on renvoie les segments via le proxy
         if (contentType.includes('mpegurl') || url.includes('.m3u8')) {
             let text = await response.text();
             const lines = text.split('\n');
@@ -32,14 +34,19 @@ module.exports = async (req, res) => {
                 if (!trimmed.startsWith('http')) {
                     finalUrl = new URL(trimmed, url).href;
                 }
-                
-                // On renvoie le segment en gardant le referer
                 return `/api/proxy-stream?url=${encodeURIComponent(finalUrl)}&referer=${encodeURIComponent(ref)}`;
             });
             res.send(rewrittenLines.join('\n'));
-        } else {
+        } 
+        // 2. Si c'est un film MP4, on utilise le stream
+        else if (url.includes('.mp4') || contentType.includes('mp4')) {
             res.setHeader('Cache-Control', 'public, max-age=31536000');
             response.body.pipe(res);
+        } 
+        // 3. SINON (pour les petits segments .ts de la TV), on utilise le buffer classique (très stable)
+        else {
+            const buffer = Buffer.from(await response.arrayBuffer());
+            res.send(buffer);
         }
     } catch (error) {
         console.error('Proxy Stream Error:', error);
