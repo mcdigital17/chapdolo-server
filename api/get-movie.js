@@ -37,19 +37,20 @@ module.exports = async (req, res) => {
             
             let streamUrls = [];
             if (Array.isArray(sources)) {
-                // On filtre UNIQUEMENT les pubs connues, mais on accepte les autres liens
-                const validSources = sources.filter(s => s.url && !s.url.includes('vypn') && !s.url.includes('vavoo') && !s.url.includes('streamtape') && !s.url.includes('tape'));
+                // FILTRE ULTRA-STRICT : On ignore les pubs ET on exige que l'URL finisse par .m3u8 ou .mp4
+                const validSources = sources.filter(s => {
+                    if (!s.url) return false;
+                    const u = s.url.toLowerCase();
+                    if (u.includes('vypn') || u.includes('vavoo') || u.includes('streamtape')) return false;
+                    return u.includes('.m3u8') || u.includes('.mp4') || u.includes('/hls/');
+                });
                 streamUrls = validSources.map(s => s.url);
-            } else if (sources && sources.url && !sources.url.includes('vypn') && !sources.url.includes('vavoo')) { 
-                streamUrls = [sources.url]; 
+            } else if (sources.url) {
+                const u = sources.url.toLowerCase();
+                if (!u.includes('vypn') && !u.includes('vavoo') && (u.includes('.m3u8') || u.includes('.mp4') || u.includes('/hls/'))) { 
+                    streamUrls = [sources.url]; 
+                }
             }
-
-            if (streamUrls.length > 0) return res.json({ success: true, sources: streamUrls, referer: domain });
-            else return res.status(404).json({ error: 'Flux TV non trouvé' });
-        } catch (error) {
-            return res.status(500).json({ error: 'Erreur serveur TV stream' });
-        }
-    }
 
             if (streamUrls.length > 0) return res.json({ success: true, sources: streamUrls, referer: domain });
             else return res.status(404).json({ error: 'Flux TV non trouvé' });
