@@ -35,24 +35,17 @@ module.exports = async (req, res) => {
             });
             const sources = await response.json();
             
-            let streamUrls = [];
+            let streamUrl = null;
             if (Array.isArray(sources)) {
-                // FILTRE ULTRA-STRICT : On ignore les pubs ET on exige que l'URL finisse par .m3u8 ou .mp4
-                const validSources = sources.filter(s => {
-                    if (!s.url) return false;
-                    const u = s.url.toLowerCase();
-                    if (u.includes('vypn') || u.includes('vavoo') || u.includes('streamtape')) return false;
-                    return u.includes('.m3u8') || u.includes('.mp4') || u.includes('/hls/');
-                });
-                streamUrls = validSources.map(s => s.url);
-            } else if (sources.url) {
-                const u = sources.url.toLowerCase();
-                if (!u.includes('vypn') && !u.includes('vavoo') && (u.includes('.m3u8') || u.includes('.mp4') || u.includes('/hls/'))) { 
-                    streamUrls = [sources.url]; 
-                }
+                // On filtre les pubs (VYPN, Vavoo, Streamtape) et on prend le premier vrai flux
+                const validSources = sources.filter(s => s.url && !s.url.includes('vypn') && !s.url.includes('vavoo') && !s.url.includes('tape') && !s.url.includes('stp'));
+                streamUrl = validSources[0]?.url; 
+            } else if (sources && sources.url && !sources.url.includes('vypn') && !sources.url.includes('vavoo')) { 
+                streamUrl = sources.url; 
             }
 
-            if (streamUrls.length > 0) return res.json({ success: true, sources: streamUrls, referer: domain });
+            // ON RENVOIE UNE SEULE URL ET LE REFERER
+            if (streamUrl) return res.json({ success: true, url: streamUrl, referer: domain });
             else return res.status(404).json({ error: 'Flux TV non trouvé' });
         } catch (error) {
             return res.status(500).json({ error: 'Erreur serveur TV stream' });
