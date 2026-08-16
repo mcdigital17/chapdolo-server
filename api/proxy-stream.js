@@ -1,5 +1,3 @@
-const { Readable } = require('stream');
-
 module.exports = async (req, res) => {
     const { url } = req.query;
     if (!url) {
@@ -57,13 +55,9 @@ module.exports = async (req, res) => {
             // On filtre les lignes vides pour ne pas casser le fichier m3u8
             res.send(rewrittenLines.filter(l => l !== '').join('\n'));
         } else {
-            // FLUX CONTINU : On utilise le vrai Stream de Node.js pour ne jamais geler ni saturer Vercel
-            if (response.body) {
-                Readable.fromWeb(response.body).pipe(res);
-            } else {
-                const buffer = Buffer.from(await response.arrayBuffer());
-                res.send(buffer);
-            }
+            // MÉTHODE BUFFER : On télécharge le bout de vidéo et on l'envoie d'un coup (très rapide, évite le gel de Vercel)
+            const buffer = Buffer.from(await response.arrayBuffer());
+            res.send(buffer);
         }
     } catch (error) {
         console.error('Proxy Stream Error:', error);
