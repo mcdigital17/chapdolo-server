@@ -29,12 +29,12 @@ export default async function handler(req) {
 
     const contentType = response.headers.get('content-type') || '';
     
-    // ANTI-PUB
+    // ANTI-PUB : Si on reçoit une page Web au lieu d'une vidéo, on bloque net !
     if (contentType.includes('text/html')) {
       return new Response('Publicité bloquée', { status: 403 });
     }
 
-    // Si c'est un fichier m3u8, on réécrit les URLs
+    // Si c'est un fichier m3u8 (liste de segments), on réécrit les URLs
     if (contentType.includes('mpegurl') || url.includes('.m3u8')) {
       let text = await response.text();
       const lines = text.split('\n');
@@ -47,6 +47,7 @@ export default async function handler(req) {
           finalUrl = new URL(trimmed, url).href;
         }
         
+        // ANTI-PUB : Si le segment est une pub VYPN/Vavoo, on le supprime proprement
         if (finalUrl.includes('vypn') || finalUrl.includes('vavoo')) {
           return ''; 
         }
@@ -63,12 +64,17 @@ export default async function handler(req) {
         }
       });
     } else {
-      // POUR LES VIDÉOS : On renvoie le flux directement (Edge Function gère ça parfaitement sans geler)
-      const headers = new Headers(response.headers);
+      // MÉTHODE BUFFER : On télécharge le bout de vidéo entièrement, puis on l'envoie d'un coup
+      // C'est la méthode la plus stable pour les Smart TVs, elle évite que la vidéo se gèle en cours de route
+      const buffer = await response.arrayBuffer();
+      
+      const headers = new Headers();
+      headers.set('Content-Type', contentType || 'video/mp2t');
       headers.set('Access-Control-Allow-Origin', '*');
       headers.set('Cache-Control', 'public, max-age=86400');
+      headers.set('Accept-Ranges', 'bytes'); // Autorise la mise en mémoire tampon
       
-      return new Response(response.body, { headers });
+      return new Response(buffer, { headers });
     }
   } catch (error) {
     return new Response('Erreur serveur proxy', { status: 500 });
