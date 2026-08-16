@@ -1,4 +1,4 @@
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
     const { url } = req.query;
     if (!url) {
         return res.status(400).send('URL manquante');
@@ -6,6 +6,7 @@ module.exports = async (req, res) => {
 
     try {
         const targetUrl = new URL(url);
+        // On utilise l'origine de l'URL comme Referer pour tromper la sécurité
         const referer = targetUrl.origin + '/';
 
         const response = await fetch(url, {
@@ -21,16 +22,7 @@ module.exports = async (req, res) => {
         }
 
         const contentType = response.headers.get('content-type') || '';
-        
-        // ANTI-PUB : Si on reçoit une page Web au lieu d'une vidéo, on bloque net !
-        if (contentType.includes('text/html')) {
-            return res.status(403).send('Publicité bloquée');
-        }
-
-        // ACCÉLÉRATION : Autoriser la lecture croisée (CORS) pour la TV + Cache
-        res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Content-Type', contentType);
-        res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400');
 
         // Si c'est un fichier m3u8 (liste de segments), on doit réécrire les URLs
         if (contentType.includes('mpegurl') || url.includes('.m3u8')) {
@@ -40,22 +32,17 @@ module.exports = async (req, res) => {
                 const trimmed = line.trim();
                 if (!trimmed || trimmed.startsWith('#')) return line;
                 
-                let finalUrl = trimmed;
-                if (!trimmed.startsWith('http')) {
-                    finalUrl = new URL(trimmed, url).href;
+                // Si c'est une URL complète
+                if (trimmed.startsWith('http')) {
+                    return `/api/proxy-stream?url=${encodeURIComponent(trimmed)}`;
                 }
-                
-                // ANTI-PUB : Si le segment est une pub VYPN/Vavoo, on le supprime proprement
-                if (finalUrl.includes('vypn') || finalUrl.includes('vavoo')) {
-                    return ''; // On efface la ligne de la pub
-                }
-                
-                return `/api/proxy-stream?url=${encodeURIComponent(finalUrl)}`;
+                // Si c'est un chemin relatif, on le convertit en URL absolue puis on le proxy
+                const absoluteUrl = new URL(trimmed, url).href;
+                return `/api/proxy-stream?url=${encodeURIComponent(absoluteUrl)}`;
             });
-            // On filtre les lignes vides pour ne pas casser le fichier m3u8
-            res.send(rewrittenLines.filter(l => l !== '').join('\n'));
+            res.send(rewrittenLines.join('\n'));
         } else {
-            // Pour les segments vidéo (.ts, .mp4), on utilise le Buffer classique (très stable sur Vercel)
+            // Pour les segments vidéo (.ts, .mp4, etc.), on renvoie juste les données
             const buffer = Buffer.from(await response.arrayBuffer());
             res.send(buffer);
         }
