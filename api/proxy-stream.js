@@ -1,82 +1,45 @@
-export const config = {
-  runtime: 'edge',
-};
+module.exports = async (req, res) => {
+    const { url, referer } = req.query;
+    if (!url) return res.status(400).send('URL manquante');
 
-export default async function handler(req) {
-  const { searchParams } = new URL(req.url);
-  const url = searchParams.get('url');
-  const referer = searchParams.get('referer');
+    try {
+        const targetUrl = new URL(url);
+        const ref = referer || (targetUrl.origin + '/');
 
-  if (!url) {
-    return new Response('URL manquante', { status: 400 });
-  }
+        const response = await fetch(url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Referer': ref,
+                'Origin': ref
+            }
+        });
 
-  try {
-    const targetUrl = new URL(url);
-    const ref = referer || (targetUrl.origin + '/');
+        if (!response.ok) return res.status(response.status).send('Erreur de flux');
 
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Referer': ref,
-        'Origin': ref
-      }
-    });
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('text/html')) return res.status(403).send('Publicité bloquée');
 
-    if (!response.ok) {
-      return new Response('Erreur de flux', { status: response.status });
-    }
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Content-Type', contentType);
+        res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400');
 
-    const contentType = response.headers.get('content-type') || '';
-    
-    // ANTI-PUB : Si on reçoit une page Web au lieu d'une vidéo, on bloque net !
-    if (contentType.includes('text/html')) {
-      return new Response('Publicité bloquée', { status: 403 });
-    }
-
-    // Si c'est un fichier m3u8 (liste de segments), on réécrit les URLs
-    if (contentType.includes('mpegurl') || url.includes('.m3u8')) {
-      let text = await response.text();
-      const lines = text.split('\n');
-      const rewrittenLines = lines.map(line => {
-        const trimmed = line.trim();
-        if (!trimmed || trimmed.startsWith('#')) return line;
-        
-        let finalUrl = trimmed;
-        if (!trimmed.startsWith('http')) {
-          finalUrl = new URL(trimmed, url).href;
+        if (contentType.includes('mpegurl') || url.includes('.m3u8')) {
+            let text = await response.text();
+            const lines = text.split('\n');
+            const rewrittenLines = lines.map(line => {
+                const trimmed = line.trim();
+                if (!trimmed || trimmed.startsWith('#')) return line;
+                let finalUrl = trimmed;
+                if (!trimmed.startsWith('http')) finalUrl = new URL(trimmed, url).href;
+                if (finalUrl.includes('vypn') || finalUrl.includes('vavoo')) return '';
+                return `/api/proxy-stream?url=${encodeURIComponent(finalUrl)}&referer=${encodeURIComponent(ref)}`;
+            });
+            res.send(rewrittenLines.filter(l => l !== '').join('\n'));
+        } else {
+            const buffer = Buffer.from(await response.arrayBuffer());
+            res.send(buffer);
         }
-        
-        // ANTI-PUB : Si le segment est une pub VYPN/Vavoo, on le supprime proprement
-        if (finalUrl.includes('vypn') || finalUrl.includes('vavoo')) {
-          return ''; 
-        }
-        
-        return `/api/proxy-stream?url=${encodeURIComponent(finalUrl)}&referer=${encodeURIComponent(ref)}`;
-      });
-      const m3u8Text = rewrittenLines.filter(l => l !== '').join('\n');
-      
-      return new Response(m3u8Text, {
-        headers: {
-          'Content-Type': 'application/vnd.apple.mpegurl',
-          'Access-Control-Allow-Origin': '*',
-          'Cache-Control': 'public, max-age=86400'
-        }
-      });
-    } else {
-      // MÉTHODE BUFFER : On télécharge le bout de vidéo entièrement, puis on l'envoie d'un coup
-      // C'est la méthode la plus stable pour les Smart TVs, elle évite que la vidéo se gèle en cours de route
-      const buffer = await response.arrayBuffer();
-      
-      const headers = new Headers();
-      headers.set('Content-Type', contentType || 'video/mp2t');
-      headers.set('Access-Control-Allow-Origin', '*');
-      headers.set('Cache-Control', 'public, max-age=86400');
-      headers.set('Accept-Ranges', 'bytes'); // Autorise la mise en mémoire tampon
-      
-      return new Response(buffer, { headers });
+    } catch (error) {
+        res.status(500).send('Erreur serveur proxy');
     }
-  } catch (error) {
-    return new Response('Erreur serveur proxy', { status: 500 });
-  }
 }
