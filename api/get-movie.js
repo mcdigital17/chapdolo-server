@@ -2,7 +2,7 @@ module.exports = async (req, res) => {
     const { tmdb_id, type, action, season, episode } = req.query;
 
     // ==========================================
-    // PARTIE 1 : CATALOGUE TV LIVE
+    // PARTIE 1 : TV LIVE (Catalogue)
     // ==========================================
     if (action === 'get_live_tv') {
         const { cursor } = req.query;
@@ -10,10 +10,7 @@ module.exports = async (req, res) => {
             const response = await fetch('http://178.239.115.119/mediaurl-catalog.json', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
-                body: JSON.stringify({
-                    adult: false, catalogId: "iptv", cursor: cursor ? parseInt(cursor) : null, 
-                    filter: {}, id: "", language: "fr", region: "FR", search: "", sort: "trending-region"
-                })
+                body: JSON.stringify({ adult: false, catalogId: "iptv", cursor: cursor ? parseInt(cursor) : null, filter: {}, id: "", language: "fr", region: "FR", search: "", sort: "trending-region" })
             });
             const data = await response.json();
             return res.json(data);
@@ -21,7 +18,7 @@ module.exports = async (req, res) => {
     }
 
     // ==========================================
-    // PARTIE 1.5 : FLUX TV LIVE
+    // PARTIE 1.5 : TV LIVE (Flux)
     // ==========================================
     if (action === 'get_live_stream') {
         const { channel_url } = req.query;
@@ -34,26 +31,47 @@ module.exports = async (req, res) => {
                 body: JSON.stringify({ language: "de", region: "DE", url: channel_url })
             });
             const sources = await response.json();
-            
-            let streamUrl = null;
+            let streamUrls = [];
             if (Array.isArray(sources)) {
-                // On filtre les pubs (VYPN, Vavoo, Streamtape) et on prend le premier vrai flux
-                const validSources = sources.filter(s => s.url && !s.url.includes('vypn') && !s.url.includes('vavoo') && !s.url.includes('tape') && !s.url.includes('stp'));
-                streamUrl = validSources[0]?.url; 
+                const validSources = sources.filter(s => s.url && !s.url.includes('vypn') && !s.url.includes('vavoo') && !s.url.includes('tape'));
+                streamUrls = validSources.map(s => s.url);
             } else if (sources && sources.url && !sources.url.includes('vypn') && !sources.url.includes('vavoo')) { 
-                streamUrl = sources.url; 
+                streamUrls = [sources.url]; 
             }
-
-            // ON RENVOIE UNE SEULE URL ET LE REFERER
-            if (streamUrl) return res.json({ success: true, url: streamUrl, referer: domain });
+            if (streamUrls.length > 0) return res.json({ success: true, url: streamUrls[0], referer: domain });
             else return res.status(404).json({ error: 'Flux TV non trouvé' });
-        } catch (error) {
-            return res.status(500).json({ error: 'Erreur serveur TV stream' });
-        }
+        } catch (error) { return res.status(500).json({ error: 'Erreur serveur TV stream' }); }
     }
 
     // ==========================================
-    // PARTIE 2 : FILMS & SÉRIES
+    // PARTIE 2 : ANIMES (Franime)
+    // ==========================================
+    if (action === 'search_anime') {
+        const { query } = req.query;
+        try {
+            const response = await fetch(`https://api.franime.fr/animes?search=${encodeURIComponent(query)}`, { headers: { 'User-Agent': 'Mozilla/5.0', 'Origin': 'https://franime.fr', 'Referer': 'https://franime.fr/' } });
+            const data = await response.json();
+            return res.json(data);
+        } catch (e) { return res.status(500).json({ error: 'Erreur recherche anime' }); }
+    }
+    if (action === 'get_anime_catalog') {
+        try {
+            const response = await fetch('https://api.franime.fr/animes', { headers: { 'User-Agent': 'Mozilla/5.0', 'Origin': 'https://franime.fr', 'Referer': 'https://franime.fr/' } });
+            const data = await response.json();
+            return res.json(data);
+        } catch (e) { return res.status(500).json({ error: 'Erreur catalogue anime' }); }
+    }
+    if (action === 'get_anime_episodes') {
+        const { anime_id } = req.query;
+        try {
+            const response = await fetch(`https://api.franime.fr/anime/${anime_id}`, { headers: { 'User-Agent': 'Mozilla/5.0', 'Origin': 'https://franime.fr', 'Referer': 'https://franime.fr/' } });
+            const data = await response.json();
+            return res.json(data);
+        } catch (e) { return res.status(500).json({ error: 'Erreur épisodes anime' }); }
+    }
+
+    // ==========================================
+    // PARTIE 3 : FILMS & SÉRIES
     // ==========================================
     if (!tmdb_id) return res.status(400).json({ error: 'TMDB ID manquant' });
 
