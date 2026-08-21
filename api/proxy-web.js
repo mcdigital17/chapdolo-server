@@ -14,40 +14,21 @@ module.exports = async (req, res) => {
         });
 
         const contentType = response.headers.get('content-type') || '';
-        
-        // 1. Détruire la sécurité X-Frame-Options pour que la TV puisse l'afficher
-        res.removeHeader('X-Frame-Options');
-        res.removeHeader('Content-Security-Policy');
         res.setHeader('Content-Type', contentType);
-        res.setHeader('Access-Control-Allow-Origin', '*');
 
         if (contentType.includes('text/html')) {
             let html = await response.text();
             
+            // 1. Corriger les chemins relatifs
             const baseTag = `<base href="${targetUrl.origin}/">`;
             
-            // 2. Le script qui bloque les pubs ET ferme l'avertissement Franime
+            // 2. Le Bouclier Anti-Pubs Ultime
             const adBlockScript = `
             <script>
+                // A. Bloquer les pop-ups
                 window.open = function() { return null; };
                 
-                // Fermer automatiquement l'avertissement de sécurité de Franime
-                setInterval(function() {
-                    // Cherche un bouton qui contient le mot "Fermer" ou "Continue"
-                    const btns = document.querySelectorAll('button, a');
-                    btns.forEach(btn => {
-                        if (btn.textContent.includes('Fermer') || btn.textContent.includes('Continue') || btn.textContent.includes('close')) {
-                            btn.click();
-                        }
-                    });
-                    // Cherche la modale d'avertissement et la cache
-                    const modal = document.querySelector('div[class*="modal"], div[class*="Modal"], div[class*="overlay"]');
-                    if (modal && modal.textContent.includes('Avertissement')) {
-                        modal.style.display = 'none';
-                    }
-                }, 1000);
-                
-                // Bloquer les redirections de pub
+                // B. Intercepter les clics pour bloquer les redirections de pub
                 document.addEventListener('click', function(e) {
                     let el = e.target;
                     while (el && el.tagName !== 'A') el = el.parentElement;
@@ -60,6 +41,22 @@ module.exports = async (req, res) => {
                         }
                     }
                 }, true);
+
+                // C. LE TUEUR DE PUBS : Détruit les fausses notifications (Gmail, WhatsApp) et les boutons piégés
+                const observer = new MutationObserver(function() {
+                    document.querySelectorAll('div, iframe, img').forEach(el => {
+                        // Si l'élément a un z-index très élevé (par-dessus la vidéo) et qu'il n'est pas le lecteur vidéo lui-même
+                        let style = window.getComputedStyle(el);
+                        let zIndex = parseInt(style.zIndex);
+                        if (zIndex > 999 && !el.querySelector('video') && el.tagName !== 'VIDEO') {
+                            el.remove(); // On détruit la pub !
+                        }
+                    });
+                });
+                // On lance le détecteur dès que le body est prêt
+                document.addEventListener('DOMContentLoaded', function() {
+                    observer.observe(document.body, { childList: true, subtree: true });
+                });
             </script>`;
             
             if (html.includes('<head>')) {
@@ -70,8 +67,9 @@ module.exports = async (req, res) => {
 
             res.send(html);
         } else {
-            const buffer = Buffer.from(await response.arrayBuffer());
-            res.send(buffer);
+            // Pour les autres fichiers (CSS, JS, Vidéos), on les fait passer en "Stream"
+            res.setHeader('Cache-Control', 'public, max-age=31536000');
+            response.body.pipe(res);
         }
     } catch (error) {
         console.error('Proxy Web Error:', error);
