@@ -206,10 +206,6 @@ button:focus, a:focus, select:focus, [tabindex="0"]:focus { box-shadow: 0 0 0 3p
 </div>
 
 <script>
-// MIGRATION DES ANCIENNES DONNEES
-if(localStorage.getItem('chapdolo_favorites') && !localStorage.getItem('chapdolo_iptv_fav')) { localStorage.setItem('chapdolo_iptv_fav', localStorage.getItem('chapdolo_favorites')); }
-if(localStorage.getItem('chapdolo_recents') && !localStorage.getItem('chapdolo_iptv_recents')) { localStorage.setItem('chapdolo_iptv_recents', localStorage.getItem('chapdolo_recents')); }
-
 let currentLoggedUser='',hlsInstance=null,globalChannels=[],currentChannelList=[],searchTimeout,showFavsOnly=false,showRecentsOnly=false,videoLoadTimeout,currentChannelUrl='',currentChannelName='',playerControlTimeout,zapSequence='',zapTimeout,heartbeatInterval,channelButtons=[],siteBtnTimeout,currentAdminPass='',allUsersCache={},currentIframeContext='vod',adultPin='',adultUrl='',antiFreezeInterval;
 let tvContext='iptv'; // 'iptv', 'huhu', ou 'adult'
 let favorites=[];
@@ -217,8 +213,22 @@ let recents=[];
 let currentIsTV=true;
 
 function loadTvContextData() {
-    favorites = JSON.parse(localStorage.getItem('chapdolo_'+tvContext+'_fav')) || [];
-    recents = JSON.parse(localStorage.getItem('chapdolo_'+tvContext+'_recents')) || [];
+    let favKey = `chapdolo_${currentLoggedUser}_${tvContext}_fav`;
+    let recKey = `chapdolo_${currentLoggedUser}_${tvContext}_recents`;
+    
+    // Migration depuis l'ancien format si l'utilisateur n'a pas encore de données spécifiques
+    if (!localStorage.getItem(favKey)) {
+        let oldFav = localStorage.getItem(`chapdolo_${tvContext}_fav`) || localStorage.getItem('chapdolo_favorites');
+        if (oldFav) localStorage.setItem(favKey, oldFav);
+    }
+    if (!localStorage.getItem(recKey)) {
+        let oldRec = localStorage.getItem(`chapdolo_${tvContext}_recents`) || localStorage.getItem('chapdolo_recents');
+        if (oldRec) localStorage.setItem(recKey, oldRec);
+    }
+
+    favorites = JSON.parse(localStorage.getItem(favKey)) || [];
+    recents = JSON.parse(localStorage.getItem(recKey)) || [];
+    
     const favBtn = document.getElementById('fav-toggle-btn');
     if (favBtn) favBtn.innerText = showFavsOnly ? "📺" : "❤️";
     const recBtn = document.getElementById('recent-toggle-btn');
@@ -229,9 +239,9 @@ const TMDB_API_KEY='c36548e7fd5e79ae5a8ca67ac0717bc2';let searchMovieTimeout,mov
 
 function updateClock(){const n=new Date();const h=String(n.getHours()).padStart(2,'0');const m=String(n.getMinutes()).padStart(2,'0');const e=document.getElementById('clock');if(e)e.innerText=`${h}:${m}`}
 function isFavorite(u){return favorites.some(f=>f.url===u)}
-function toggleFavorite(c){if(isFavorite(c.url)){favorites=favorites.filter(f=>f.url!==c.url)}else{favorites.push(c)}localStorage.setItem('chapdolo_'+tvContext+'_fav',JSON.stringify(favorites))}
+function toggleFavorite(c){if(isFavorite(c.url)){favorites=favorites.filter(f=>f.url!==c.url)}else{favorites.push(c)}localStorage.setItem(`chapdolo_${currentLoggedUser}_${tvContext}_fav`,JSON.stringify(favorites))}
 function toggleShowFavorites(){showFavsOnly=!showFavsOnly;showRecentsOnly=false;document.getElementById('recent-toggle-btn').innerText="⏱";const b=document.getElementById('fav-toggle-btn');if(showFavsOnly){b.innerText="📺";document.getElementById('iptv-category-filter').value='all';renderChannels(favorites)}else{b.innerText="❤️";filterChannels()}}
-function addRecent(c){recents=recents.filter(r=>r.url!==c.url);recents.unshift(c);if(recents.length>10)recents=recents.slice(0,10);localStorage.setItem('chapdolo_'+tvContext+'_recents',JSON.stringify(recents))}
+function addRecent(c){recents=recents.filter(r=>r.url!==c.url);recents.unshift(c);if(recents.length>10)recents=recents.slice(0,10);localStorage.setItem(`chapdolo_${currentLoggedUser}_${tvContext}_recents`,JSON.stringify(recents))}
 function toggleShowRecents(){showRecentsOnly=!showRecentsOnly;showFavsOnly=false;document.getElementById('fav-toggle-btn').innerText="❤️";const b=document.getElementById('recent-toggle-btn');if(showRecentsOnly){b.innerText="📺";document.getElementById('iptv-category-filter').value='all';renderChannels(recents)}else{b.innerText="⏱";filterChannels()}}
 function sortChannelsAZ(){if(globalChannels.length===0)return;globalChannels.sort((a,b)=>{const nA=a.name.toLowerCase(),nB=b.name.toLowerCase();if(nA<nB)return-1;if(nA>nB)return 1;return 0});document.getElementById('iptv-search').value='';document.getElementById('iptv-category-filter').value='all';showFavsOnly=false;showRecentsOnly=false;document.getElementById('fav-toggle-btn').innerText="❤️";document.getElementById('recent-toggle-btn').innerText="⏱";renderChannels(globalChannels)}
 
