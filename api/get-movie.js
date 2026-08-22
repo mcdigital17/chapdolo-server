@@ -1,4 +1,4 @@
-*module.exports = async (req, res) => {
+module.exports = async (req, res) => {
     const { tmdb_id, type, action, season, episode } = req.query;
 
     // ==========================================
