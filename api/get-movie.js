@@ -7,7 +7,7 @@
     if (action === 'get_live_tv') {
         const { cursor } = req.query;
         try {
-            const response = await fetch('http://178.239.115.119/mediaurl-catalog.json', {
+            const response = await fetch('https://huhu.to/mediaurl-catalog.json', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
                 body: JSON.stringify({ adult: false, catalogId: "iptv", cursor: cursor ? parseInt(cursor) : null, filter: {}, id: "", language: "fr", region: "FR", search: "", sort: "trending-region" })
@@ -84,7 +84,7 @@
             season: type === 'tv' ? (parseInt(season) || 1) : undefined
         };
 
-        const huhuResponse = await fetch('http://178.239.115.119/mediaurl-source.json', {
+        const huhuResponse = await fetch('https://huhu.to/mediaurl-source.json', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
             body: JSON.stringify(requestBody)
