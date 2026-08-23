@@ -7,7 +7,7 @@ module.exports = async (req, res) => {
     if (action === 'get_live_tv') {
         const { cursor, search } = req.query;
         try {
-            const response = await fetch('http://178.239.115.119/mediaurl-catalog.json', {
+            const response = await fetch('https://huhu.to/mediaurl-catalog.json', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
                 body: JSON.stringify({ 
@@ -29,7 +29,7 @@ module.exports = async (req, res) => {
         const { channel_url } = req.query;
         try {
             const domainMatch = channel_url.match(/^(https?:\/\/[^\/]+)/);
-            const domain = domainMatch ? domainMatch[1] : 'http://178.239.115.119';
+            const domain = domainMatch ? domainMatch[1] : 'https://huhu.to';
             const response = await fetch(domain + '/mediaurl-resolve.json', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Referer': domain + '/', 'Origin': domain },
@@ -89,7 +89,7 @@ module.exports = async (req, res) => {
             season: type === 'tv' ? (parseInt(season) || 1) : undefined
         };
 
-        const huhuResponse = await fetch('http://178.239.115.119/mediaurl-source.json', {
+        const huhuResponse = await fetch('https://huhu.to/mediaurl-source.json', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
             body: JSON.stringify(requestBody)
