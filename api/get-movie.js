@@ -5,12 +5,17 @@ module.exports = async (req, res) => {
     // PARTIE 1 : TV LIVE (Catalogue)
     // ==========================================
     if (action === 'get_live_tv') {
-        const { cursor } = req.query;
+        const { cursor, search } = req.query;
         try {
             const response = await fetch('https://huhu.to/mediaurl-catalog.json', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
-                body: JSON.stringify({ adult: false, catalogId: "iptv", cursor: cursor ? parseInt(cursor) : null, filter: {}, id: "", language: "fr", region: "FR", search: "", sort: "trending-region" })
+                body: JSON.stringify({ 
+                    adult: false, catalogId: "iptv", cursor: cursor ? parseInt(cursor) : null, 
+                    filter: {}, id: "", language: "fr", region: "FR", 
+                    search: search || "", // ON ENVOIE LA RECHERCHE ICI
+                    sort: "trending-region" 
+                })
             });
             const data = await response.json();
             return res.json(data);
