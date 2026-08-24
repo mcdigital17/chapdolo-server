@@ -1,19 +1,19 @@
-export default async function handler(req, res) {
-    const { url } = req.query;
+module.exports = async (req, res) => {
+    const { url, referer } = req.query;
     if (!url) {
         return res.status(400).send('URL manquante');
     }
 
     try {
         const targetUrl = new URL(url);
-        // On utilise l'origine de l'URL comme Referer pour tromper la sécurité
-        const referer = targetUrl.origin + '/';
+        // On utilise le referer passé par get-movie.js (huhu.to) pour tromper la sécurité
+        const ref = referer || (targetUrl.origin + '/');
 
         const response = await fetch(url, {
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Referer': referer,
-                'Origin': targetUrl.origin
+                'Referer': ref,
+                'Origin': ref
             }
         });
 
@@ -22,7 +22,15 @@ export default async function handler(req, res) {
         }
 
         const contentType = response.headers.get('content-type') || '';
+        
+        // Sécurité anti-pub
+        if (contentType.includes('text/html')) {
+            return res.status(403).send('Publicité bloquée');
+        }
+
+        res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Content-Type', contentType);
+        res.setHeader('Cache-Control', 'public, max-age=86400');
 
         // Si c'est un fichier m3u8 (liste de segments), on doit réécrire les URLs
         if (contentType.includes('mpegurl') || url.includes('.m3u8')) {
@@ -32,15 +40,15 @@ export default async function handler(req, res) {
                 const trimmed = line.trim();
                 if (!trimmed || trimmed.startsWith('#')) return line;
                 
-                // Si c'est une URL complète
-                if (trimmed.startsWith('http')) {
-                    return `/api/proxy-stream?url=${encodeURIComponent(trimmed)}`;
+                let finalUrl = trimmed;
+                if (!trimmed.startsWith('http')) {
+                    finalUrl = new URL(trimmed, url).href;
                 }
-                // Si c'est un chemin relatif, on le convertit en URL absolue puis on le proxy
-                const absoluteUrl = new URL(trimmed, url).href;
-                return `/api/proxy-stream?url=${encodeURIComponent(absoluteUrl)}`;
+                
+                // On renvoie le segment en gardant le referer magique
+                return `/api/proxy-stream?url=${encodeURIComponent(finalUrl)}&referer=${encodeURIComponent(ref)}`;
             });
-            res.send(rewrittenLines.join('\n'));
+            res.send(rewrittenLines.filter(l => l !== '').join('\n'));
         } else {
             // Pour les segments vidéo (.ts, .mp4, etc.), on renvoie juste les données
             const buffer = Buffer.from(await response.arrayBuffer());
