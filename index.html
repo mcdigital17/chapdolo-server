@@ -443,7 +443,7 @@ async function fetchHuhuTvBatch(search=''){
     isLoadingHuhuTv=false;
 }
 
-async function playHuhuChannel(u,n){const m=document.getElementById('iptv-status-msg');m.style.display='none';try{const r=await fetch(`/api/get-movie?action=get_live_stream&channel_url=${encodeURIComponent(u)}`);const d=await r.json();if(d.success&&d.url){playChannel(d.url,n,d.referer,null,false,true)}else{alert('Flux indisponible.')}}catch(e){alert('Erreur réseau.')}}
+async function playHuhuChannel(u,n){const m=document.getElementById('iptv-status-msg');m.style.display='none';try{const r=await fetch(`/api/get-movie?action=get_live_stream&channel_url=${encodeURIComponent(u)}`);const d=await r.json();if(d.success&&d.url){playChannel(d.url,n,d.referer)}else{alert('Flux indisponible.')}}catch(e){alert('Erreur réseau.')}}
 </script>
 </body>
 </html>
