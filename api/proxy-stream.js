@@ -1,5 +1,3 @@
-const { Readable } = require('stream');
-
 module.exports = async (req, res) => {
     const { url, referer } = req.query;
     if (!url) {
@@ -34,9 +32,11 @@ module.exports = async (req, res) => {
 
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Content-Type', contentType);
-        res.setHeader('Cache-Control', 'public, max-age=86400');
 
+        // Si c'est un fichier m3u8 (Playlist TV), ON INTERDIT LE CACHE
         if (contentType.includes('mpegurl') || url.includes('.m3u8')) {
+            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+            
             let text = await response.text();
             const lines = text.split('\n');
             const rewrittenLines = lines.map(line => {
@@ -64,13 +64,10 @@ module.exports = async (req, res) => {
             });
             res.send(rewrittenLines.join('\n'));
         } else {
-            // FLUX CONTINU : La vidéo passe instantanément sans geler
-            if (response.body) {
-                Readable.fromWeb(response.body).pipe(res);
-            } else {
-                const buffer = Buffer.from(await response.arrayBuffer());
-                res.send(buffer);
-            }
+            // Pour les segments vidéo (.ts, .mp4), ON AUTORISE LE CACHE (très rapide)
+            res.setHeader('Cache-Control', 'public, max-age=86400');
+            const buffer = Buffer.from(await response.arrayBuffer());
+            res.send(buffer);
         }
     } catch (error) {
         console.error('Proxy Stream Error:', error);
