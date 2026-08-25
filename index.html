@@ -105,8 +105,23 @@ button:focus, a:focus, select:focus, [tabindex="0"]:focus { box-shadow: 0 0 0 3p
 
 #video-error-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 5; text-align: center; }
 #video-error-overlay p { color: var(--red-adult); font-size: 24px; font-weight: bold; margin-bottom: 20px; }
-#custom-player-controls { position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; display: none; align-items: flex-end; justify-content: center; padding-bottom: 40px; background: linear-gradient(to top, rgba(0,0,0,0.7), transparent 60%); z-index: 4; }
+#custom-player-controls { position: absolute; bottom: 0; left: 0; width: 100%; padding: 40px 30px 20px 30px; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent 100%); z-index: 4; display: none; align-items: center; justify-content: center; gap: 15px; flex-wrap: wrap; }
 #custom-player-controls.active { display: flex !important; }
+.player-btn { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); color: white; border: 1px solid rgba(255, 255, 255, 0.2); padding: 12px 24px; border-radius: 50px; font-size: 16px; font-weight: 500; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 8px; }
+.player-btn:hover { background: var(--blue-primary); color: black; border-color: var(--blue-primary); transform: translateY(-2px); box-shadow: 0 5px 15px var(--blue-glow); }
+.player-btn:focus { outline: none; box-shadow: 0 0 0 3px var(--yellow-accent) !important; }
+
+#player-channel-guide { position: absolute; top: 0; right: 0; width: 350px; height: 100%; background: rgba(10, 11, 16, 0.95); backdrop-filter: blur(20px); border-left: 1px solid #2A2D3A; z-index: 6; display: none; flex-direction: column; padding: 60px 0 20px 0; box-sizing: border-box; animation: slideInRight 0.3s ease; }
+@keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
+#player-channel-guide.visible { display: flex; }
+.guide-header { padding: 0 20px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2A2D3A; }
+.guide-list { flex: 1; overflow-y: auto; padding: 10px; }
+.guide-item { display: flex; align-items: center; gap: 15px; padding: 10px; border-radius: 8px; margin-bottom: 5px; cursor: pointer; transition: background 0.2s; }
+.guide-item:hover, .guide-item:focus { background: var(--bg-surface); outline: none; }
+.guide-item.active { background: rgba(0, 229, 255, 0.1); border-left: 3px solid var(--blue-primary); }
+.guide-logo { width: 40px; height: 40px; object-fit: contain; border-radius: 4px; background: #111; }
+.guide-info h4 { margin: 0; font-size: 14px; color: white; }
+.guide-info p { margin: 0; font-size: 11px; color: var(--text-dim); }
 .player-btn { background: rgba(0, 0, 0, 0.6); color: white; border: 2px solid var(--blue-primary); padding: 15px 30px; border-radius: 50px; font-size: 20px; cursor: pointer; margin: 0 10px; }
 #zap-overlay { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 120px; font-weight: 800; color: var(--yellow-accent); text-shadow: 0 0 20px var(--yellow-glow); z-index: 9998; display: none; pointer-events: none; background: rgba(0,0,0,0.8); padding: 20px 60px; border-radius: 20px; border: 4px solid var(--yellow-accent); }
 </style>
@@ -198,7 +213,22 @@ button:focus, a:focus, select:focus, [tabindex="0"]:focus { box-shadow: 0 0 0 3p
      <div class="tv-player-container" style="display:block; margin-top:0;">
         <video id="tv-player" autoplay></video>
         <div id="video-error-overlay"><p>⚠️ Erreur de lecture<br>Flux hors-ligne.</p><button class="btn-primary" onclick="backToMain()">Menu</button></div>
-        <div id="custom-player-controls"><button id="player-pause-btn" class="player-btn" onclick="togglePlayPause()" tabindex="0">⏸</button><button id="player-fav-btn" class="player-btn" onclick="toggleFavoriteFromPlayer()" tabindex="0">🤍</button><button class="player-btn" onclick="reloadChannel()" tabindex="0">🔄</button><button class="player-btn" onclick="backToMain()" tabindex="0">✕</button></div>
+        <div id="custom-player-controls">
+            <button id="player-pause-btn" class="player-btn" onclick="togglePlayPause()" tabindex="0">⏸ Pause</button>
+            <button id="player-channels-btn" class="player-btn" onclick="showPlayerChannelGuide()" tabindex="0">📺 Chaînes</button>
+            <button id="player-fav-btn" class="player-btn" onclick="toggleFavoriteFromPlayer()" tabindex="0">🤍 Favori</button>
+            <button class="player-btn" onclick="reloadChannel()" tabindex="0">🔄 Recharger</button>
+            <button class="player-btn" onclick="backToMain()" tabindex="0">✕ Quitter</button>
+        </div>
+        
+        <!-- PANNEAU DE NAVIGATION DES CHAÎNES -->
+        <div id="player-channel-guide">
+            <div class="guide-header">
+                <h3 style="margin:0; color:white;">Liste des Chaînes</h3>
+                <button class="player-btn" style="padding: 8px 15px;" onclick="hidePlayerChannelGuide()">✕</button>
+            </div>
+            <div id="guide-list" class="guide-list"></div>
+        </div>
      </div>
   </div>
   <iframe id="site-iframe"></iframe>
@@ -331,8 +361,47 @@ function appendChannelsToDOM(items){const l=document.getElementById('iptv-channe
 
 function showVideoError(){clearTimeout(videoLoadTimeout);hidePlayerControls();document.getElementById('video-error-overlay').style.display='flex'}
 function playChannel(u,n,ref=null,r=false,isTV=true){const v=document.getElementById('tv-player'),e=document.getElementById('video-error-overlay');e.style.display='none';document.getElementById('main-content').classList.add('hidden');destroySiteIframe();document.getElementById('player-section').classList.remove('hidden');document.getElementById('back-main-btn').classList.remove('hidden');document.getElementById('player-title').innerText=n;currentChannelUrl=u;currentChannelName=n;currentIsTV=isTV;const c=globalChannels.find(c=>c.url===u)||{name:n,url:u,group:'Non classé',logo:''};if(isTV && !r) addRecent(c);document.body.classList.add('app-fullscreen');const eb=document.getElementById('exit-fullscreen-btn');eb.classList.remove('hidden');setTimeout(()=>eb.classList.add('hidden-btn'),4000);window.history.pushState({page:'player'},'','#player');clearTimeout(videoLoadTimeout);videoLoadTimeout=setTimeout(()=>{if(v.readyState<3){showVideoError();if(hlsInstance){hlsInstance.destroy();hlsInstance=null}v.pause()}},30000);showPlayerControls();startAntiFreeze();let pu=`/api/proxy-stream?url=${encodeURIComponent(u)}`;if(ref)pu+=`&referer=${encodeURIComponent(ref)}`;if(u.includes('.mp4')){if(hlsInstance){hlsInstance.destroy();hlsInstance=null}v.src=u;v.play().catch(e=>console.error(e));v.addEventListener('loadedmetadata',function(){clearTimeout(videoLoadTimeout);v.play()});v.addEventListener('error',function(){showVideoError();clearTimeout(videoLoadTimeout)});return}if(Hls.isSupported()){if(hlsInstance)hlsInstance.destroy();const hlsConfig={enableWorker:false,lowLatencyMode:false,maxBufferLength:30,maxMaxBufferLength:60,manifestLoadingTimeOut:10000,manifestLoadingMaxRetry:4,levelLoadingTimeOut:10000,fragLoadingTimeOut:20000,fragLoadingMaxRetry:10,fragLoadingRetryDelay:500};hlsInstance=new Hls(hlsConfig);hlsInstance.loadSource(pu);hlsInstance.attachMedia(v);hlsInstance.on(Hls.Events.MANIFEST_PARSED,function(){clearTimeout(videoLoadTimeout);v.play().catch(e=>console.error(e))});hlsInstance.on(Hls.Events.ERROR,function(event,data){if(data.fatal){switch(data.type){case Hls.ErrorTypes.NETWORK_ERROR:hlsInstance.startLoad(-1);break;case Hls.ErrorTypes.MEDIA_ERROR:hlsInstance.recoverMedia();break;default:showVideoError();clearTimeout(videoLoadTimeout);if(hlsInstance){hlsInstance.destroy();hlsInstance=null}v.pause();break;}}});}else if(v.canPlayType('application/vnd.apple.mpegurl')){v.src=pu;v.addEventListener('loadedmetadata',function(){clearTimeout(videoLoadTimeout);v.play()});v.addEventListener('error',function(){showVideoError();clearTimeout(videoLoadTimeout)})}}
+function showPlayerChannelGuide() {
+    const guide = document.getElementById('player-channel-guide');
+    const list = document.getElementById('guide-list');
+    list.innerHTML = '';
+    
+    // On affiche les 100 premières chaînes de la liste actuelle
+    const channelsToShow = currentChannelList.slice(0, 100);
+    
+    channelsToShow.forEach((ch) => {
+        const item = document.createElement('div');
+        item.className = 'guide-item' + (ch.url === currentChannelUrl ? ' active' : '');
+        item.setAttribute('tabindex', '0');
+        item.innerHTML = `
+            ${ch.logo ? `<img src="${ch.logo}" class="guide-logo" onerror="this.style.display='none'">` : `<div class="guide-logo" style="display:flex;align-items:center;justify-content:center;">📺</div>`}
+            <div class="guide-info">
+                <h4>${ch.name}</h4>
+                <p>${ch.program || 'En cours...'}</p>
+            </div>
+        `;
+        item.onclick = () => {
+            if (ch.url && (ch.url.includes('huhu.to') || ch.url.includes('oha.to'))) {
+                playHuhuChannel(ch.url, ch.name);
+            } else {
+                playChannel(ch.url, ch.name, null, false, true);
+            }
+            hidePlayerChannelGuide();
+        };
+        list.appendChild(item);
+    });
+    
+    guide.classList.add('visible');
+    setTimeout(() => {
+        const firstItem = list.querySelector('.guide-item');
+        if (firstItem) firstItem.focus();
+    }, 100);
+}
 
-function backToMain(){clearInterval(antiFreezeInterval);const p=document.getElementById('player-section'),iv=!p.classList.contains('hidden'),sa=document.body.classList.contains('site-active');if(iv){clearTimeout(videoLoadTimeout);clearTimeout(playerControlTimeout);hidePlayerControls();document.getElementById('video-error-overlay').style.display='none';document.body.classList.remove('app-fullscreen');document.getElementById('exit-fullscreen-btn').classList.add('hidden');p.classList.add('hidden');const v=document.getElementById('tv-player');v.pause();v.src='';if(hlsInstance){hlsInstance.destroy();hlsInstance=null}return}if(sa){document.body.classList.remove('site-active');destroySiteIframe();const b=document.getElementById('exit-site-btn');b.classList.add('hidden');b.classList.remove('visible');clearTimeout(siteBtnTimeout);document.getElementById('main-content').classList.remove('hidden');document.getElementById('back-main-btn').classList.add('hidden');return}document.getElementById('vod-section').classList.add('hidden');document.getElementById('vod-details-section').classList.add('hidden');document.getElementById('anime-section').classList.add('hidden');document.getElementById('live-tv-section').classList.add('hidden');document.getElementById('movie-server-overlay').classList.add('hidden');document.getElementById('main-content').classList.remove('hidden');document.getElementById('back-main-btn').classList.add('hidden')}
+function hidePlayerChannelGuide() {
+    document.getElementById('player-channel-guide').classList.remove('visible');
+}
+function backToMain(){clearInterval(antiFreezeInterval);if(document.getElementById('player-channel-guide').classList.contains('visible')){hidePlayerChannelGuide();return;}const p=document.getElementById('player-section'),iv=!p.classList.contains('hidden'),sa=document.body.classList.contains('site-active');if(iv){clearTimeout(videoLoadTimeout);clearTimeout(playerControlTimeout);hidePlayerControls();document.getElementById('video-error-overlay').style.display='none';document.body.classList.remove('app-fullscreen');document.getElementById('exit-fullscreen-btn').classList.add('hidden');p.classList.add('hidden');const v=document.getElementById('tv-player');v.pause();v.src='';if(hlsInstance){hlsInstance.destroy();hlsInstance=null}return}if(sa){document.body.classList.remove('site-active');destroySiteIframe();const b=document.getElementById('exit-site-btn');b.classList.add('hidden');b.classList.remove('visible');clearTimeout(siteBtnTimeout);document.getElementById('main-content').classList.remove('hidden');document.getElementById('back-main-btn').classList.add('hidden');return}document.getElementById('vod-section').classList.add('hidden');document.getElementById('vod-details-section').classList.add('hidden');document.getElementById('anime-section').classList.add('hidden');document.getElementById('live-tv-section').classList.add('hidden');document.getElementById('movie-server-overlay').classList.add('hidden');document.getElementById('main-content').classList.remove('hidden');document.getElementById('back-main-btn').classList.add('hidden')}
 
 function appendVodItems(items){const g=document.getElementById('vod-grid');items.forEach(i=>{if(!i.poster_path)return;const d=document.createElement('div');d.setAttribute('tabindex','0');d.style.cursor='pointer';d.style.textAlign='center';d.innerHTML=`<img src="https://image.tmdb.org/t/p/w500${i.poster_path}" style="width: 100%; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);" alt="${i.title||i.name}"><p style="color: #ccc; font-size: 14px; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${i.title||i.name}</p>`;d.onclick=()=>showVodDetails(i.id,i.media_type);g.appendChild(d);movieButtons.push(d)})}
 async function fetchVodBatch(){if(isVodLoading||vodPage>vodTotalPages)return;isVodLoading=true;const g=document.getElementById('vod-grid');if(vodPage===1)g.innerHTML='<p style="color:#888; grid-column: 1 / -1; text-align:center;">Chargement...</p>';let u;if(vodMode==='trending')u=`https://api.themoviedb.org/3/trending/all/week?api_key=${TMDB_API_KEY}&language=fr-FR&page=${vodPage}`;else u=`https://api.themoviedb.org/3/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(vodQuery)}&language=fr-FR&page=${vodPage}`;try{const r=await fetch(u);const d=await r.json();vodTotalPages=d.total_pages;if(vodPage===1)g.innerHTML='';const v=d.results.filter(i=>(i.media_type==='movie'||i.media_type==='tv')&&i.poster_path);appendVodItems(v);vodPage++}catch(e){g.innerHTML='<p style="color:#ff4d4d;">Erreur.</p>'}isVodLoading=false}
