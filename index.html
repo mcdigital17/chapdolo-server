@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Chapdolo</title>
 
 <link rel="manifest" href="/manifest.json">
@@ -12,6 +12,16 @@
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
 
+<!-- DÉTECTION ET CORRECTION TV ANDROID -->
+<script>
+  const userAgent = navigator.userAgent.toLowerCase();
+  if ((userAgent.includes('android') && !userAgent.includes('mobile')) || userAgent.includes('tv') || userAgent.includes('gonative')) {
+      document.documentElement.classList.add('tv-mode'); 
+      // FORCE LA LARGEUR À 1920px POUR EMPÊCHER LA TV DE ZOOMER
+      document.querySelector('meta[name="viewport"]').setAttribute('content', 'width=1920, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+  }
+</script>
+
 <style>
 :root {
   --bg-main: #0A0B10; --bg-card: #14161F; --bg-surface: #1C1F2B;
@@ -20,7 +30,6 @@
   --red-adult: #FF3B30; --text-main: #FFFFFF; --text-dim: #A0A5B0;
 }
 body { background-color: var(--bg-main); background-image: radial-gradient(circle at 50% 0%, #1A1C28, #0A0B10); color: var(--text-main); font-family: 'Inter', sans-serif; margin: 0; min-height: 100vh; display: flex; flex-direction: column; }
-html.tv-mode body { zoom: 0.75; } /* ZOOM RÉDUIT POUR LA TV */
 .section { text-align: center; padding: 60px 20px; animation: fadeIn 0.5s ease; flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; }
 .section > * { width: 100%; max-width: 400px; box-sizing: border-box; }
 input, select { padding: 16px 20px; margin: 8px 0; border-radius: 8px; border: 1px solid #333; background: var(--bg-card); color: white; font-size: 16px; width: 100%; transition: all 0.3s ease; box-sizing: border-box; }
@@ -57,12 +66,11 @@ button:active { transform: scale(0.97); }
 .logo-icon::after { content: ''; border-left: 22px solid black; border-top: 14px solid transparent; border-bottom: 14px solid transparent; margin-left: 5px; }
 .logo-text { font-size: 56px; font-weight: 800; color: white; letter-spacing: -2px; }
 
-/* GRILLE DU TABLEAU DE BORD RÉDUITE */
-.dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; max-width: 900px; margin-top: 40px; }
-.dash-card { background: var(--bg-card); border: 1px solid #2A2D3A; border-radius: 12px; padding: 25px 20px; text-align: center; cursor: pointer; transition: all 0.3s ease; display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; }
+.dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; max-width: 1000px; margin-top: 40px; }
+.dash-card { background: var(--bg-card); border: 1px solid #2A2D3A; border-radius: 12px; padding: 30px 20px; text-align: center; cursor: pointer; transition: all 0.3s ease; display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; }
 .dash-card:hover { border-color: var(--blue-primary); background: #1F2230; transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-.dash-card .icon { font-size: 42px; margin-bottom: 15px; }
-.dash-card h3 { margin: 0; font-size: 18px; color: white; }
+.dash-card .icon { font-size: 48px; margin-bottom: 15px; }
+.dash-card h3 { margin: 0; font-size: 20px; color: white; }
 .card-blue { border-bottom: 4px solid var(--blue-primary); }
 .card-yellow { border-bottom: 4px solid var(--yellow-accent); }
 .card-red { border-bottom: 4px solid var(--red-adult); }
@@ -357,7 +365,6 @@ function setupGuideScroll() {
     });
 }
 
-// Navigation dans le panneau latéral
 document.addEventListener('keydown', function(e) {
     const guideList = document.getElementById('guide-list');
     if (!document.getElementById('player-channel-guide').classList.contains('visible')) return;
