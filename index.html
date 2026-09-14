@@ -12,13 +12,11 @@
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
 
-<!-- DÉTECTION ET CORRECTION TV ANDROID -->
+<!-- DÉTECTION TV / PC -->
 <script>
   const userAgent = navigator.userAgent.toLowerCase();
   if ((userAgent.includes('android') && !userAgent.includes('mobile')) || userAgent.includes('tv') || userAgent.includes('gonative')) {
       document.documentElement.classList.add('tv-mode'); 
-      // FORCE LA LARGEUR À 1920px POUR EMPÊCHER LA TV DE ZOOMER
-      document.querySelector('meta[name="viewport"]').setAttribute('content', 'width=1920, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
   }
 </script>
 
