@@ -84,9 +84,15 @@ module.exports = async (req, res) => {
             season: type === 'tv' ? (parseInt(season) || 1) : undefined
         };
 
+        // ON AJOUTE LES EN-TÊTES MAGIQUES (Referer et Origin) POUR EVITER LE BLOCAGE ANTI-ROBOT
         const huhuResponse = await fetch('https://huhu.to/mediaurl-source.json', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+            headers: { 
+                'Content-Type': 'application/json', 
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Referer': 'https://huhu.to/',
+                'Origin': 'https://huhu.to'
+            },
             body: JSON.stringify(requestBody)
         });
 
@@ -143,7 +149,13 @@ module.exports = async (req, res) => {
 
 async function extractMixdropMp4(url) {
     try {
-        const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }});
+        const res = await fetch(url, { 
+            headers: { 
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Referer': 'https://huhu.to/',
+                'Origin': 'https://huhu.to'
+            }
+        });
         if (!res.ok) return null;
         const html = await res.text();
         
