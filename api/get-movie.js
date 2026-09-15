@@ -71,104 +71,28 @@ module.exports = async (req, res) => {
     }
 
     // ==========================================
-    // PARTIE 3 : FILMS & SÉRIES
+    // PARTIE 3 : FILMS & SÉRIES (Moteur VidSrc)
     // ==========================================
     if (!tmdb_id) return res.status(400).json({ error: 'TMDB ID manquant' });
 
     try {
-        let requestBody = {
-            language: "fr", region: "FR", 
-            type: type === 'tv' ? 'tv' : 'movie',
-            ids: { tmdb_id: tmdb_id }, name: "",
-            episode: type === 'tv' ? (parseInt(episode) || 1) : undefined, 
-            season: type === 'tv' ? (parseInt(season) || 1) : undefined
-        };
-
-        // ON AJOUTE LES EN-TÊTES MAGIQUES (Referer et Origin) POUR EVITER LE BLOCAGE ANTI-ROBOT
-        const huhuResponse = await fetch('https://huhu.to/mediaurl-source.json', {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json', 
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                'Referer': 'https://huhu.to/',
-                'Origin': 'https://huhu.to'
-            },
-            body: JSON.stringify(requestBody)
-        });
-
-        if (!huhuResponse.ok) {
-            return res.status(404).json({ error: 'Huhu.to a refusé la requête (Anti-robot).' });
+        let embedUrl = '';
+        
+        // Si c'est une série, on construit l'URL avec la saison et l'épisode
+        if (type === 'tv') {
+            let s = parseInt(season) || 1;
+            let e = parseInt(episode) || 1;
+            embedUrl = `https://vidsrc.to/embed/tv/${tmdb_id}/${s}/${e}`;
+        } 
+        // Sinon, c'est un film
+        else {
+            embedUrl = `https://vidsrc.to/embed/movie/${tmdb_id}`;
         }
 
-        const sources = await huhuResponse.json();
+        // On renvoie le lien du lecteur VidSrc à l'application
+        return res.json({ success: true, type: 'embed', sources: [{ name: 'VidSrc (VF/VOSTFR)', url: embedUrl, lang: 'VF' }] });
 
-        if (!Array.isArray(sources) || sources.length === 0) {
-            return res.status(404).json({ error: 'Aucun serveur trouvé sur Huhu pour ce film.' });
-        }
-
-        for (let s of sources) {
-            if (!s.url || s.url === '') continue;
-            if (s.url.includes('tape') || s.url.includes('stp')) continue;
-            if (s.url.includes('mixdrop.')) {
-                let embedUrl = s.url.replace('/f/', '/e/');
-                let mp4Url = await extractMixdropMp4(embedUrl);
-                if (mp4Url) return res.json({ success: true, type: 'mp4', url: mp4Url });
-            }
-        }
-
-        const embedSources = sources.map(s => {
-             if (!s.url || s.url === '') return null;
-             if (s.url.includes('tape') || s.url.includes('stp')) return null;
-             let embedUrl = s.url;
-             if (embedUrl.includes('dood.')) embedUrl = embedUrl.replace('/w/', '/e/');
-             else if (embedUrl.includes('mixdrop.')) embedUrl = embedUrl.replace('/f/', '/e/');
-             
-             let lang = s.lang || s.language || s.audio || '';
-             if (Array.isArray(s.tag)) lang = s.tag.join(' ');
-             else if (s.tag) lang = s.tag;
-             
-             if (!lang) {
-                 const nameUpper = (s.name || '').toUpperCase();
-                 if (nameUpper.includes('VOSTFR') || nameUpper.includes('VOST')) lang = 'VOSTFR';
-                 else if (nameUpper.includes('VF') || nameUpper.includes('FRENCH') || nameUpper.includes('TRUEFRENCH')) lang = 'VF';
-                 else if (nameUpper.includes('VO') || nameUpper.includes('EN')) lang = 'VO';
-             }
-             return { name: s.name, url: embedUrl, lang: lang };
-        }).filter(s => s !== null);
-
-        if (embedSources.length > 0) {
-            embedSources.sort((a, b) => { if (a.name.includes('R2')) return -1; if (b.name.includes('R2')) return 1; return 0; });
-            return res.json({ success: true, type: 'embed', sources: embedSources });
-        }
-
-        res.status(404).json({ error: 'Tous les serveurs ont été bloqués ou sont vides.' });
     } catch (e) { 
-        res.status(500).json({ error: 'Erreur serveur interne: ' + e.message }); 
+        res.status(500).json({ error: 'Erreur serveur VOD: ' + e.message }); 
     }
-}
-
-async function extractMixdropMp4(url) {
-    try {
-        const res = await fetch(url, { 
-            headers: { 
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                'Referer': 'https://huhu.to/',
-                'Origin': 'https://huhu.to'
-            }
-        });
-        if (!res.ok) return null;
-        const html = await res.text();
-        
-        const match = html.match(/eval\(decodeURIComponent\('([^']+)'\)\)/);
-        if (match) {
-            let decoded = decodeURIComponent(match[1]);
-            const urlMatch = decoded.match(/(https?:\/\/[^\s"']+\.mp4[^\s"']*)/);
-            if (urlMatch) return urlMatch[1];
-        }
-        
-        const hurlMatch = html.match(/hurl\s*=\s*["'](https?:\/\/[^"']+)["']/);
-        if (hurlMatch) return hurlMatch[1];
-        
-        return null;
-    } catch(e) { return null; }
 }
