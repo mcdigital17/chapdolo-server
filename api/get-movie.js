@@ -1,22 +1,16 @@
 module.exports = async (req, res) => {
     const { tmdb_id, type, action, season, episode } = req.query;
-    // Cache Pro pour accélérer le chargement
-    res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=86400');
+
     // ==========================================
     // PARTIE 1 : TV LIVE (Catalogue)
     // ==========================================
     if (action === 'get_live_tv') {
-        const { cursor, search } = req.query;
+        const { cursor } = req.query;
         try {
             const response = await fetch('https://huhu.to/mediaurl-catalog.json', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
-                body: JSON.stringify({ 
-                    adult: false, catalogId: "iptv", cursor: cursor ? parseInt(cursor) : null, 
-                    filter: {}, id: "", language: "fr", region: "FR", 
-                    search: search || "", // ON ENVOIE LA RECHERCHE ICI
-                    sort: "trending-region" 
-                })
+                body: JSON.stringify({ adult: false, catalogId: "iptv", cursor: cursor ? parseInt(cursor) : null, filter: {}, id: "", language: "fr", region: "FR", search: "", sort: "trending-region" })
             });
             const data = await response.json();
             return res.json(data);
@@ -95,7 +89,16 @@ module.exports = async (req, res) => {
             headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
             body: JSON.stringify(requestBody)
         });
+
+        if (!huhuResponse.ok) {
+            return res.status(404).json({ error: 'Huhu.to a refusé la requête (Anti-robot).' });
+        }
+
         const sources = await huhuResponse.json();
+
+        if (!Array.isArray(sources) || sources.length === 0) {
+            return res.status(404).json({ error: 'Aucun serveur trouvé sur Huhu pour ce film.' });
+        }
 
         for (let s of sources) {
             if (!s.url || s.url === '') continue;
@@ -132,22 +135,28 @@ module.exports = async (req, res) => {
             return res.json({ success: true, type: 'embed', sources: embedSources });
         }
 
-        res.status(404).json({ error: 'Aucun lecteur valide trouvé' });
-    } catch (e) { res.status(500).json({ error: 'Erreur serveur' }); }
+        res.status(404).json({ error: 'Tous les serveurs ont été bloqués ou sont vides.' });
+    } catch (e) { 
+        res.status(500).json({ error: 'Erreur serveur interne: ' + e.message }); 
+    }
 }
 
 async function extractMixdropMp4(url) {
     try {
         const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }});
+        if (!res.ok) return null;
         const html = await res.text();
+        
         const match = html.match(/eval\(decodeURIComponent\('([^']+)'\)\)/);
         if (match) {
             let decoded = decodeURIComponent(match[1]);
             const urlMatch = decoded.match(/(https?:\/\/[^\s"']+\.mp4[^\s"']*)/);
             if (urlMatch) return urlMatch[1];
         }
+        
         const hurlMatch = html.match(/hurl\s*=\s*["'](https?:\/\/[^"']+)["']/);
         if (hurlMatch) return hurlMatch[1];
+        
         return null;
     } catch(e) { return null; }
 }
