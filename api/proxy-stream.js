@@ -1,3 +1,5 @@
+const { Readable } = require('stream');
+
 module.exports = async (req, res) => {
     const { url, referer } = req.query;
     if (!url) return res.status(400).send('URL manquante');
@@ -44,9 +46,14 @@ module.exports = async (req, res) => {
             });
             res.send(rewrittenLines.filter(l => l !== '').join('\n'));
         } else {
-            // FLUX CONTINU AUTORISÉ POUR VERCEL PRO (Plus de gel ni de crash mémoire)
+            // FLUX CONTINU PRO POUR VERCEL (Utilise Readable.fromWeb pour Node.js 18)
             res.setHeader('Cache-Control', 'public, max-age=86400');
-            response.body.pipe(res);
+            if (response.body) {
+                Readable.fromWeb(response.body).pipe(res);
+            } else {
+                const buffer = Buffer.from(await response.arrayBuffer());
+                res.send(buffer);
+            }
         }
     } catch (error) {
         console.error('Proxy Stream Error:', error);
