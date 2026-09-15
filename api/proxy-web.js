@@ -3,33 +3,58 @@ module.exports = async (req, res) => {
     if (!url) return res.status(400).send('URL manquante');
 
     try {
+        const targetUrl = new URL(url);
         const response = await fetch(url, {
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                'Referer': new URL(url).origin + '/'
+                'Referer': targetUrl.origin + '/'
             }
         });
 
-        let html = await response.text();
+        let contentType = response.headers.get('content-type') || '';
         
-        // Supprimer les sécurités qui bloquent les TV
-        html = html.replace(/<meta[^>]*http-equiv=["']X-Frame-Options["'][^>]*>/gi, '');
-        html = html.replace(/X-Frame-Options/gi, 'X-Frame-Options-Disabled');
+        if (contentType.includes('text/html')) {
+            let html = await response.text();
+            
+            const baseTag = `<base href="${targetUrl.origin}/">`;
+            const adBlockScript = `
+            <script>
+                window.open = function() { return null; };
+                document.addEventListener('click', function(e) {
+                    let el = e.target;
+                    while (el && el.tagName !== 'A') el = el.parentElement;
+                    if (el && el.href) {
+                        e.preventDefault(); 
+                        let finalUrl = el.href;
+                        if (el.getAttribute('href') && el.getAttribute('href').startsWith('/')) finalUrl = '${targetUrl.origin}' + el.getAttribute('href');
+                        if (finalUrl.includes('${targetUrl.hostname}')) {
+                            window.location.href = '/api/proxy-web?url=' + encodeURIComponent(finalUrl);
+                        }
+                    }
+                }, true);
+            </script>`;
+            
+            if (html.includes('<head>')) {
+                html = html.replace('<head>', `<head>${baseTag}${adBlockScript}`);
+            } else {
+                html = baseTag + adBlockScript + html;
+            }
 
-        res.setHeader('Content-Type', 'text/html');
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        
-        // Injecter un script pour bloquer les pubs
-        const adBlock = `<script>window.open=function(){return null;};document.addEventListener('click',function(e){let el=e.target;while(el&&el.tagName!=='A')el=el.parentElement;if(el&&el.href){e.preventDefault();window.location.href='/api/proxy-web?url='+encodeURIComponent(el.href);}},true);</script>`;
-        
-        if (html.includes('<head>')) {
-            html = html.replace('<head>', `<head>${adBlock}`);
+            // DÉTRUIRE LA SÉCURITÉ HTTP X-Frame-Options et CSP
+            res.removeHeader('X-Frame-Options');
+            res.removeHeader('Content-Security-Policy');
+            res.setHeader('Content-Type', 'text/html');
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            
+            res.send(html);
         } else {
-            html = adBlock + html;
+            res.setHeader('Content-Type', contentType);
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            const buffer = Buffer.from(await response.arrayBuffer());
+            res.send(buffer);
         }
-
-        res.send(html);
     } catch (error) {
+        console.error('Proxy Web Error:', error);
         res.status(500).send('Erreur proxy web');
     }
 }
