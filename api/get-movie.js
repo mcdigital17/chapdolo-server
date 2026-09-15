@@ -1,6 +1,7 @@
 module.exports = async (req, res) => {
     const { tmdb_id, type, action, season, episode } = req.query;
-
+    // Cache Pro pour accélérer le chargement
+    res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=86400');
     // ==========================================
     // PARTIE 1 : TV LIVE (Catalogue)
     // ==========================================
