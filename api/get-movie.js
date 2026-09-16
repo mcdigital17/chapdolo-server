@@ -71,7 +71,7 @@ module.exports = async (req, res) => {
     }
 
     // ==========================================
-    // PARTIE 3 : FILMS & SÉRIES (Moteur VidSrc)
+    // PARTIE 3 : FILMS & SÉRIES (Moteur 2Embed)
     // ==========================================
     if (!tmdb_id) return res.status(400).json({ error: 'TMDB ID manquant' });
 
@@ -82,15 +82,15 @@ module.exports = async (req, res) => {
         if (type === 'tv') {
             let s = parseInt(season) || 1;
             let e = parseInt(episode) || 1;
-            embedUrl = `https://vidsrc.to/embed/tv/${tmdb_id}/${s}/${e}`;
+            embedUrl = `https://www.2embed.cc/embedtv/${tmdb_id}&s=${s}&e=${e}`;
         } 
         // Sinon, c'est un film
         else {
-            embedUrl = `https://vidsrc.to/embed/movie/${tmdb_id}`;
+            embedUrl = `https://www.2embed.cc/embed/${tmdb_id}`;
         }
 
-        // On renvoie le lien du lecteur VidSrc à l'application
-        return res.json({ success: true, type: 'embed', sources: [{ name: 'VidSrc (VF/VOSTFR)', url: embedUrl, lang: 'VF' }] });
+        // On renvoie le lien du lecteur 2Embed à l'application
+        return res.json({ success: true, type: 'embed', sources: [{ name: 'Lecteur Standard (VF/VOSTFR)', url: embedUrl, lang: 'VF' }] });
 
     } catch (e) { 
         res.status(500).json({ error: 'Erreur serveur VOD: ' + e.message }); 
