@@ -475,12 +475,17 @@ function handleTvSearch() {
     searchHuhuTimeout = setTimeout(async () => {
         if (tvContext === 'huhu') {
             huhuSearchQuery = q;
-            globalChannels = [];
-            currentChannelList = [];
-            huhuNextCursor = null;
-            visibleLimit = 100;
-            document.getElementById('iptv-channels').innerHTML = '';
-            await fetchHuhuTvBatch(q);
+            // On filtre les chaînes déjà chargées
+            let f = globalChannels.filter(ch => ch.name.toLowerCase().includes(q.toLowerCase()));
+            renderChannels(f);
+            
+            // Si on a moins de 50 résultats et qu'il y a plus de chaînes à charger sur Huhu, on charge la suite
+            if (f.length < 50 && huhuNextCursor && !isLoadingHuhuTv) {
+                await fetchHuhuTvBatch();
+                // Après le chargement, on refiltre
+                f = globalChannels.filter(ch => ch.name.toLowerCase().includes(q.toLowerCase()));
+                renderChannels(f);
+            }
         } else {
             filterChannels();
         }
@@ -545,7 +550,7 @@ async function fetchHuhuTvBatch(search=''){
     isLoadingHuhuTv=true;
     const m=document.getElementById('iptv-status-msg'),c=document.getElementById('iptv-container');
     try{
-        const r=await fetch(`/api/get-movie?action=get_live_tv&cursor=${huhuNextCursor}&search=${encodeURIComponent(search)}`);
+        const r=await fetch(`/api/get-movie?action=get_live_tv&cursor=${huhuNextCursor}`);
         const d=await r.json();
         if(d.items&&d.items.length>0){
             let chs=d.items.map(i=>{
