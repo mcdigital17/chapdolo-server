@@ -112,10 +112,7 @@ button:focus, a:focus, select:focus, [tabindex="0"]:focus { box-shadow: 0 0 0 3p
 
 #video-error-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 5; text-align: center; }
 #video-error-overlay p { color: var(--red-adult); font-size: 24px; font-weight: bold; margin-bottom: 20px; }
-#video-loading-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: none; align-items: center; justify-content: center; z-index: 5; }
-#video-loading-overlay.visible { display: flex !important; }
-.loader-spinner { width: 80px; height: 80px; border-radius: 50%; background: conic-gradient(from 0deg, transparent 0%, var(--blue-primary) 40%, #2ecc71 70%, transparent 100%); -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 10px), #000 calc(100% - 9px)); mask: radial-gradient(farthest-side, transparent calc(100% - 10px), #000 calc(100% - 9px)); animation: spin 0.8s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
+
 #custom-player-controls { position: absolute; bottom: 0; left: 0; width: 100%; padding: 40px 30px 20px 30px; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent 100%); z-index: 4; display: none; align-items: center; justify-content: center; gap: 15px; flex-wrap: wrap; }
 #custom-player-controls.active { display: flex !important; }
 .player-btn { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); color: white; border: 1px solid rgba(255, 255, 255, 0.2); padding: 12px 24px; border-radius: 50px; font-size: 16px; font-weight: 500; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 8px; width: auto; margin: 0; }
@@ -224,9 +221,7 @@ button:focus, a:focus, select:focus, [tabindex="0"]:focus { box-shadow: 0 0 0 3p
      <div class="tv-player-container" style="display:block; margin-top:0;">
         <video id="tv-player" autoplay></video>
         <div id="video-error-overlay"><p>⚠️ Erreur de lecture<br>Flux hors-ligne.</p><button class="btn-primary" onclick="backToMain()">Menu</button></div>
-        <div id="video-loading-overlay">
-            <div class="loader-spinner"></div>
-        </div>
+        
         <div id="custom-player-controls">
             <button id="player-pause-btn" class="player-btn" onclick="togglePlayPause()" tabindex="0">⏸ Pause</button>
             <button id="player-channels-btn" class="player-btn" onclick="showPlayerChannelGuide()" tabindex="0">📺 Chaînes</button>
@@ -257,6 +252,10 @@ let currentIsTV=true;
 let huhuSearchQuery='';
 let guideVisibleLimit = 50;
 
+function openAnime(){if(document.documentElement.classList.contains('tv-mode')){window.open('https://franime.fr','_blank')}else{loadSite('https://franime.fr')}}
+
+function updateClock(){const n=new Date();const h=String(n.getHours()).padStart(2,'0');const m=String(n.getMinutes()).padStart(2,'0');const e=document.getElementById('clock');if(e)e.innerText=`${h}:${m}`}
+
 function loadTvContextData() {
     let favKey = `chapdolo_${currentLoggedUser}_${tvContext}_fav`;
     let recKey = `chapdolo_${currentLoggedUser}_${tvContext}_recents`;
@@ -277,10 +276,7 @@ function loadTvContextData() {
 }
 
 const TMDB_API_KEY='c36548e7fd5e79ae5a8ca67ac0717bc2';let searchMovieTimeout,movieButtons=[],searchVodTimeout,huhuNextCursor=null,isLoadingHuhuTv=false,visibleLimit=100,vodPage=1,vodTotalPages=1,isVodLoading=false,vodMode='trending',vodQuery='',currentVodId=null,currentVodType=null,currentVodTitle='',searchAnimeTimeout,animeButtons=[];
-function openAnime(){if(document.documentElement.classList.contains('tv-mode')){window.open('https://franime.fr','_blank')}else{loadSite('https://franime.fr')}}
 
-function updateClock(){
-function updateClock(){const n=new Date();const h=String(n.getHours()).padStart(2,'0');const m=String(n.getMinutes()).padStart(2,'0');const e=document.getElementById('clock');if(e)e.innerText=`${h}:${m}`}
 function isFavorite(u){return favorites.some(f=>f.url===u)}
 function toggleFavorite(c){if(isFavorite(c.url)){favorites=favorites.filter(f=>f.url!==c.url)}else{favorites.push(c)}localStorage.setItem(`chapdolo_${currentLoggedUser}_${tvContext}_fav`,JSON.stringify(favorites))}
 function toggleShowFavorites(){showFavsOnly=!showFavsOnly;showRecentsOnly=false;document.getElementById('recent-toggle-btn').innerText="⏱";const b=document.getElementById('fav-toggle-btn');if(showFavsOnly){b.innerText="📺";document.getElementById('iptv-category-filter').value='all';renderChannels(favorites)}else{b.innerText="❤️";filterChannels()}}
@@ -291,7 +287,7 @@ function sortChannelsAZ(){if(globalChannels.length===0)return;globalChannels.sor
 function getFlag(lang){if(!lang)return'🎬';lang=lang.toUpperCase();if(lang.includes('VOSTFR')||lang.includes('VOST'))return'🌐🇫🇷';if(lang.includes('VF')||lang.includes('FRENCH')||lang.includes('FR'))return'🇫🇷';if(lang.includes('VO')||lang.includes('EN')||lang.includes('US'))return'🇬🇧';if(lang.includes('DE'))return'🇩🇪';if(lang.includes('ES'))return'🇪🇸';if(lang.includes('IT'))return'🇮🇹';return'🌐'}
 
 function setupSpatialNavigation(){const c=document.getElementById('iptv-channels');const t=['iptv-search','iptv-category-filter','fav-toggle-btn','recent-toggle-btn','sort-az-btn'];c.addEventListener('keydown',function(e){const a=['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];if(!a.includes(e.key))return;const b=channelButtons;if(b.length===0)return;const cu=document.activeElement;let i=b.indexOf(cu);if(i===-1){e.preventDefault();b[0].focus();return}e.preventDefault();const r=cu.getBoundingClientRect();const cx=r.left+(r.width/2),cy=r.top+(r.height/2);let bI=-1,bS=Infinity;for(let j=0;j<b.length;j++){if(j===i)continue;const r2=b[j].getBoundingClientRect();let is=false,p1=0,p2=0;if(e.key==='ArrowDown'&&r2.top>r.top+2){is=true;p1=r2.top-r.top;p2=Math.abs((r2.left+r2.width/2)-cx)}else if(e.key==='ArrowUp'&&r2.bottom<r.bottom-2){is=true;p1=r.top-r2.top;p2=Math.abs((r2.left+r2.width/2)-cx)}else if(e.key==='ArrowRight'&&r2.left>r.left+2){is=true;p1=r2.left-r.left;p2=Math.abs((r2.top+r2.height/2)-cy)}else if(e.key==='ArrowLeft'&&r2.right<r.right-2){is=true;p1=r.left-r2.left;p2=Math.abs((r2.top+r2.height/2)-cy)}if(is){const s=(p2*10)+p1;if(s<bS){bS=s;bI=j}}}if(bI===-1){if(e.key==='ArrowUp')document.getElementById('iptv-category-filter').focus();return}b[bI].focus();const el=b[bI],eR=el.getBoundingClientRect(),cR=this.getBoundingClientRect();if(eR.top<cR.top)this.scrollTop-=(cR.top-eR.top+10);else if(eR.bottom>cR.bottom)this.scrollTop+=(eR.bottom-cR.bottom+10)});t.forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener('keydown',e=>{if(e.key==='ArrowDown'){e.preventDefault();if(channelButtons.length>0)channelButtons[0].focus()}})})}
-function setupInfiniteScroll(){const c=document.getElementById('iptv-channels');c.addEventListener('scroll',()=>{if(c.scrollTop+c.clientHeight>=c.scrollHeight-800){if(visibleLimit<currentChannelList.length){visibleLimit+=100;const itemsToAppend=currentChannelList.slice(visibleLimit-100,visibleLimit);appendChannelsToDOM(itemsToAppend)}else if(huhuNextCursor&&!isLoadingHuhuTv&&tvContext==='huhu'){fetchHuhuTvBatch(huhuSearchQuery)}}});const v=document.getElementById('vod-section');v.addEventListener('scroll',()=>{if(v.scrollTop+v.clientHeight>=v.scrollHeight-800){if(!isVodLoading&&vodPage<=vodTotalPages){fetchVodBatch()}}})}
+function setupInfiniteScroll(){const c=document.getElementById('iptv-channels');c.addEventListener('scroll',()=>{if(c.scrollTop+c.clientHeight>=c.scrollHeight-800){if(visibleLimit<currentChannelList.length){visibleLimit+=100;const itemsToAppend=currentChannelList.slice(visibleLimit-100,visibleLimit);appendChannelsToDOM(itemsToAppend)}else if(huhuNextCursor&&!isLoadingHuhuTv&&tvContext==='huhu'){fetchHuhuTvBatch()}}});const v=document.getElementById('vod-section');v.addEventListener('scroll',()=>{if(v.scrollTop+v.clientHeight>=v.scrollHeight-800){if(!isVodLoading&&vodPage<=vodTotalPages){fetchVodBatch()}}})}
 function setupMovieNavigation(){const grids=[document.getElementById('vod-grid'),document.getElementById('anime-grid')];grids.forEach(m=>{if(!m)return;m.addEventListener('keydown',function(e){const a=['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];if(!a.includes(e.key))return;const b=m.id==='vod-grid'?movieButtons:animeButtons;if(b.length===0)return;const cu=document.activeElement;let i=b.indexOf(cu);if(i===-1){e.preventDefault();b[0].focus();return}e.preventDefault();const r=cu.getBoundingClientRect();let bI=-1,bS=Infinity;for(let j=0;j<b.length;j++){if(j===i)continue;const r2=b[j].getBoundingClientRect();let is=false,p1=0,p2=0;if(e.key==='ArrowDown'&&r2.top>r.top+2){is=true;p1=r2.top-r.top;p2=Math.abs(r2.left-r.left)}else if(e.key==='ArrowUp'&&r2.bottom<r.bottom-2){is=true;p1=r.top-r2.top;p2=Math.abs(r2.left-r.left)}else if(e.key==='ArrowRight'&&r2.left>r.left+2){is=true;p1=r2.left-r.left;p2=Math.abs(r2.top-r.top)}else if(e.key==='ArrowLeft'&&r2.right<r.right-2){is=true;p1=r.left-r2.left;p2=Math.abs(r2.top-r.top)}if(is){const s=(p2*10)+p1;if(s<bS){bS=s;bI=j}}}if(bI!==-1)b[bI].focus()})})}
 
 function showPlayerControls(){const c=document.getElementById('custom-player-controls');const w=c.classList.contains('active');c.classList.add('active');const f=document.getElementById('player-fav-btn');if(f)f.innerHTML=isFavorite(currentChannelUrl)?'❤️':'🤍';if(!w)document.getElementById('player-pause-btn').focus();clearTimeout(playerControlTimeout);playerControlTimeout=setTimeout(()=>{const v=document.getElementById('tv-player');if(!v.paused)c.classList.remove('active')},4000)}
@@ -307,54 +303,25 @@ function showPlayerChannelGuide() {
     const list = document.getElementById('guide-list');
     list.innerHTML = '';
     guideVisibleLimit = 50;
-    
     const channelsToShow = currentChannelList.slice(0, guideVisibleLimit);
     appendGuideItems(channelsToShow);
-    
     guide.classList.add('visible');
     window.history.pushState({page:'guide'},'','#guide');
-    
-    setTimeout(() => {
-        const firstItem = list.querySelector('.guide-item');
-        if (firstItem) firstItem.focus();
-    }, 100);
+    setTimeout(() => { const firstItem = list.querySelector('.guide-item'); if (firstItem) firstItem.focus(); }, 100);
 }
-
-function hidePlayerChannelGuide() {
-    if (document.getElementById('player-channel-guide').classList.contains('visible')) {
-        window.history.back();
-    }
-}
-
+function hidePlayerChannelGuide() { if (document.getElementById('player-channel-guide').classList.contains('visible')) { window.history.back(); } }
 function appendGuideItems(items) {
     const list = document.getElementById('guide-list');
     if (!list) return;
-    
     items.forEach((ch) => {
         const item = document.createElement('div');
         item.className = 'guide-item' + (ch.url === currentChannelUrl ? ' active' : '');
         item.setAttribute('tabindex', '0');
-        item.innerHTML = `
-            ${ch.logo ? `<img src="${ch.logo}" class="guide-logo" onerror="this.style.display='none'">` : `<div class="guide-logo" style="display:flex;align-items:center;justify-content:center;">📺</div>`}
-            <div class="guide-info">
-                <h4>${ch.name}</h4>
-                <p>${ch.program || 'En cours...'}</p>
-            </div>
-        `;
-        item.onclick = () => {
-            window.history.back(); 
-            setTimeout(() => {
-                if (ch.url && (ch.url.includes('huhu.to') || ch.url.includes('oha.to'))) {
-                    playHuhuChannel(ch.url, ch.name);
-                } else {
-                    playChannel(ch.url, ch.name, null, false, true);
-                }
-            }, 50);
-        };
+        item.innerHTML = `${ch.logo ? `<img src="${ch.logo}" class="guide-logo" onerror="this.style.display='none'">` : `<div class="guide-logo" style="display:flex;align-items:center;justify-content:center;">📺</div>`}<div class="guide-info"><h4>${ch.name}</h4><p>${ch.program || 'En cours...'}</p></div>`;
+        item.onclick = () => { window.history.back(); setTimeout(() => { if (ch.url && (ch.url.includes('huhu.to') || ch.url.includes('oha.to'))) { playHuhuChannel(ch.url, ch.name); } else { playChannel(ch.url, ch.name, null, false, true); } }, 50); };
         list.appendChild(item);
     });
 }
-
 function setupGuideScroll() {
     const list = document.getElementById('guide-list');
     list.addEventListener('scroll', () => {
@@ -363,37 +330,25 @@ function setupGuideScroll() {
             if (currentGuideCount < currentChannelList.length) {
                 const nextItems = currentChannelList.slice(currentGuideCount, currentGuideCount + 50);
                 appendGuideItems(nextItems);
-            } else if (tvContext === 'huhu' && huhuNextCursor && !isLoadingHuhuTv) {
-                fetchHuhuTvBatch(huhuSearchQuery);
-            }
+            } else if (tvContext === 'huhu' && huhuNextCursor && !isLoadingHuhuTv) { fetchHuhuTvBatch(); }
         }
     });
 }
-
 document.addEventListener('keydown', function(e) {
     const guideList = document.getElementById('guide-list');
     if (!document.getElementById('player-channel-guide').classList.contains('visible')) return;
-    
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         e.preventDefault();
         const items = Array.from(guideList.querySelectorAll('.guide-item'));
         let currentIdx = items.indexOf(document.activeElement);
         if (currentIdx === -1) currentIdx = 0;
-        
-        if (e.key === 'ArrowDown') {
-            currentIdx = Math.min(currentIdx + 1, items.length - 1);
-        } else {
-            currentIdx = Math.max(currentIdx - 1, 0);
-        }
+        if (e.key === 'ArrowDown') currentIdx = Math.min(currentIdx + 1, items.length - 1); else currentIdx = Math.max(currentIdx - 1, 0);
         items[currentIdx].focus();
         items[currentIdx].scrollIntoView({ block: 'nearest' });
     }
 });
-
 document.addEventListener('keydown',function(e){const p=document.getElementById('player-section');if(p.classList.contains('hidden'))return;if(document.getElementById('video-error-overlay').style.display==='flex')return;if(document.getElementById('player-channel-guide').classList.contains('visible'))return;const t=['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Enter'];if(!t.includes(e.key))return;e.preventDefault();const c=document.getElementById('custom-player-controls');if(!c.classList.contains('active')){showPlayerControls();return}showPlayerControls();const b=Array.from(c.querySelectorAll('.player-btn'));let i=b.indexOf(document.activeElement);if(i===-1)i=0;if(e.key==='ArrowRight'){i=Math.min(i+1,b.length-1);b[i].focus()}else if(e.key==='ArrowLeft'){i=Math.max(i-1,0);b[i].focus()}else if(e.key==='Enter')b[i].click()});
-
-document.addEventListener('keydown',function(e){const a=!document.getElementById('app-screen').classList.contains('hidden');if(!a)return;if(document.activeElement.tagName==='INPUT'||document.activeElement.tagName==='SELECT')return;if(document.getElementById('video-error-overlay').style.display==='flex')return;if(e.key>='0'&&e.key<='9'){e.preventDefault();zapSequence+=e.key;const o=document.getElementById('zap-overlay');o.innerText=zapSequence;o.style.display='block';o.classList.remove('error');clearTimeout(zapTimeout);if(!document.getElementById('player-section').classList.contains('hidden'))hidePlayerControls();zapTimeout=setTimeout(()=>{const n=parseInt(zapSequence),t=n-1;if(t>=0&&t<currentChannelList.length){const c=currentChannelList[t];playChannel(c.url,c.name,null,false,true)}else{o.classList.add('error')}setTimeout(()=>{o.style.display='none';o.classList.remove('error')},600);zapSequence=''},1500)}});
-
+document.addEventListener('keydown',function(e){const a=!document.getElementById('app-screen').classList.contains('hidden');if(!a)return;if(document.activeElement.tagName==='INPUT'||document.activeElement.tagName==='SELECT')return;if(document.getElementById('video-error-overlay').style.display==='flex')return;if(e.key>='0'&&e.key<='9'){e.preventDefault();zapSequence+=e.key;const o=document.getElementById('zap-overlay');o.innerText=zapSequence;o.style.display='block';o.classList.remove('error');clearTimeout(zapTimeout);if(!document.getElementById('player-section').classList.contains('hidden'))hidePlayerControls();zapTimeout=setTimeout(()=>{const n=parseInt(zapSequence),t=n-1;if(t>=0&&t<currentChannelList.length){const c=currentChannelList[t];playChannel(c.url,c.name)}else{o.classList.add('error')}setTimeout(()=>{o.style.display='none';o.classList.remove('error')},600);zapSequence=''},1500)}});
 document.addEventListener('keydown',function(e){
     const isBackKey=e.key==='Escape'||e.key==='Backspace';
     if(!isBackKey)return;
@@ -416,38 +371,16 @@ document.addEventListener('DOMContentLoaded',setupSpatialNavigation);document.ad
 
 window.addEventListener('popstate',function(e){
     const guide = document.getElementById('player-channel-guide');
-    if (guide.classList.contains('visible')) {
-        guide.classList.remove('visible');
-        return;
-    }
-    
-    if (!document.getElementById('player-section').classList.contains('hidden')) {
-        backToMain();
-        return;
-    }
-    
-    if(document.activeElement===document.getElementById('iptv-search')){
-        document.getElementById('iptv-search').blur();
-        document.getElementById('iptv-search').value='';
-        filterChannels();
-        window.history.pushState({page:'app'},'','#app');
-        return;
-    }
-    
+    if (guide.classList.contains('visible')) { guide.classList.remove('visible'); return; }
+    if (!document.getElementById('player-section').classList.contains('hidden')) { backToMain(); return; }
+    if(document.activeElement===document.getElementById('iptv-search')){document.getElementById('iptv-search').blur();document.getElementById('iptv-search').value='';filterChannels();window.history.pushState({page:'app'},'','#app');return;}
     const isVod=!document.getElementById('vod-section').classList.contains('hidden')||!document.getElementById('vod-details-section').classList.contains('hidden');
     const isAnime=!document.getElementById('anime-section').classList.contains('hidden');
     const isTv=!document.getElementById('live-tv-section').classList.contains('hidden');
     const isSite=document.body.classList.contains('site-active');
     const isServer=!document.getElementById('movie-server-overlay').classList.contains('hidden');
-    
-    if(isVod||isAnime||isTv||isSite||isServer){
-        backToMain();
-        return;
-    }
-    
-    if (!document.getElementById('main-content').classList.contains('hidden')) {
-        window.history.pushState({page:'app'},'','#app');
-    }
+    if(isVod||isAnime||isTv||isSite||isServer){backToMain();return;}
+    if (!document.getElementById('main-content').classList.contains('hidden')) { window.history.pushState({page:'app'},'','#app'); }
 });
 
 document.addEventListener('DOMContentLoaded',()=>{updateClock();setInterval(updateClock,1000);const a=localStorage.getItem('chapdolo_admin'),u=localStorage.getItem('chapdolo_user'),s=localStorage.getItem('chapdolo_session');if(a==='true'){document.getElementById('login-screen').classList.add('hidden');document.getElementById('app-screen').classList.add('hidden');document.getElementById('admin-screen').classList.remove('hidden');document.getElementById('admin-modal').classList.remove('hidden')}else if(u&&s){currentLoggedUser=u;startHeartbeat();showApp()}});
@@ -477,14 +410,10 @@ function handleTvSearch() {
     searchHuhuTimeout = setTimeout(async () => {
         if (tvContext === 'huhu') {
             huhuSearchQuery = q;
-            // On filtre les chaînes déjà chargées
             let f = globalChannels.filter(ch => ch.name.toLowerCase().includes(q.toLowerCase()));
             renderChannels(f);
-            
-            // Si on a moins de 50 résultats et qu'il y a plus de chaînes à charger sur Huhu, on charge la suite
             if (f.length < 50 && huhuNextCursor && !isLoadingHuhuTv) {
                 await fetchHuhuTvBatch();
-                // Après le chargement, on refiltre
                 f = globalChannels.filter(ch => ch.name.toLowerCase().includes(q.toLowerCase()));
                 renderChannels(f);
             }
@@ -493,14 +422,13 @@ function handleTvSearch() {
         }
     }, 500);
 }
-
 function filterChannels(){visibleLimit=100;clearTimeout(searchTimeout);searchTimeout=setTimeout(()=>{const s=document.getElementById('iptv-search').value.toLowerCase(),c=document.getElementById('iptv-category-filter').value;let f=globalChannels;if(c!=='all')f=f.filter(ch=>ch.group===c);if(s)f=f.filter(ch=>ch.name.toLowerCase().includes(s));renderChannels(f)},300)}
 
 function renderChannels(chs){currentChannelList=chs;const l=document.getElementById('iptv-channels');l.innerHTML='';channelButtons=[];if(showFavsOnly&&favorites.length===0){l.innerHTML='<p style="color:#888;">Aucun favori.</p>';return}if(showRecentsOnly&&recents.length===0){l.innerHTML='<p style="color:#888;">Aucun historique.</p>';return}const lm=Math.min(chs.length,visibleLimit);appendChannelsToDOM(chs.slice(0,lm));if(chs.length>visibleLimit){const i=document.createElement('p');i.className='info-msg';i.innerText=`Défilez pour plus... (Total: ${chs.length})`;i.style.color="#00E5FF";i.style.width='100%';i.style.margin='15px 0 30px';i.style.textAlign='center';l.appendChild(i)}}
 function appendChannelsToDOM(items){const l=document.getElementById('iptv-channels');let info=l.querySelector('.info-msg');items.forEach(c=>{const d=document.createElement('div');d.className='channel-item';const b=document.createElement('button');b.className='iptv-btn';b.setAttribute('tabindex','0');b.onclick=()=>{if(c.url&&(c.url.includes('huhu.to')||c.url.includes('oha.to'))){playHuhuChannel(c.url,c.name)}else{playChannel(c.url,c.name,null,false,true)}};const n=document.createElement('span');n.style.display='none';n.innerText=(currentChannelList.indexOf(c)+1);b.appendChild(n);if(c.logo){const img=document.createElement('img');img.className='ch-logo';img.src=c.logo;img.onerror=()=>img.style.display='none';b.appendChild(img)}const ns=document.createElement('span');ns.className='ch-name';ns.innerText=c.name;b.appendChild(ns);if(c.program){const ps=document.createElement('span');ps.className='ch-prog';ps.innerText=c.program;b.appendChild(ps);const ds=document.createElement('span');ds.className='ch-dur';ds.innerText=c.duration;b.appendChild(ds)}const fb=document.createElement('button');fb.className='iptv-btn fav-btn';fb.innerHTML=isFavorite(c.url)?'❤️':'🤍';fb.setAttribute('tabindex','0');fb.style.background=isFavorite(c.url)?'#2a0a0a':'transparent';fb.onclick=e=>{e.stopPropagation();toggleFavorite(c);fb.innerHTML=isFavorite(c.url)?'❤️':'🤍';fb.style.background=isFavorite(c.url)?'#2a0a0a':'transparent';if(showFavsOnly)renderChannels(favorites)};d.appendChild(b);d.appendChild(fb);if(info)l.insertBefore(d,info);else l.appendChild(d);channelButtons.push(b);channelButtons.push(fb)});if(info&&currentChannelList.length<=visibleLimit)info.remove();else if(info)info.innerText=`Défilez pour plus... (Total: ${currentChannelList.length})`}
 
-function showVideoError(){clearTimeout(videoLoadTimeout);hidePlayerControls();document.getElementById('video-loading-overlay').classList.remove('visible');document.getElementById('video-error-overlay').style.display='flex'}
-function playChannel(u,n,ref=null,r=false,isTV=true){const v=document.getElementById('tv-player'),e=document.getElementById('video-error-overlay');e.style.display='none';document.getElementById('video-loading-overlay').classList.add('visible');document.getElementById('main-content').classList.add('hidden');destroySiteIframe();document.getElementById('player-section').classList.remove('hidden');document.getElementById('back-main-btn').classList.remove('hidden');document.getElementById('player-title').innerText=n;currentChannelUrl=u;currentChannelName=n;currentIsTV=isTV;const c=globalChannels.find(c=>c.url===u)||{name:n,url:u,group:'Non classé',logo:''};if(isTV && !r) addRecent(c);document.body.classList.add('app-fullscreen');const eb=document.getElementById('exit-fullscreen-btn');eb.classList.remove('hidden');setTimeout(()=>eb.classList.add('hidden-btn'),4000);window.history.pushState({page:'player'},'','#player');clearTimeout(videoLoadTimeout);videoLoadTimeout=setTimeout(()=>{if(v.readyState<3){showVideoError();if(hlsInstance){hlsInstance.destroy();hlsInstance=null}v.pause()}},30000);showPlayerControls();startAntiFreeze();let pu=`/api/proxy-stream?url=${encodeURIComponent(u)}`;if(ref)pu+=`&referer=${encodeURIComponent(ref)}`;if(u.includes('.mp4')){if(hlsInstance){hlsInstance.destroy();hlsInstance=null}v.src=u;v.play().catch(e=>console.error(e));v.addEventListener('loadedmetadata',function(){document.getElementById('video-loading-overlay').classList.remove('visible');clearTimeout(videoLoadTimeout);v.play()});v.addEventListener('error',function(){showVideoError();clearTimeout(videoLoadTimeout)});return}if(Hls.isSupported()){if(hlsInstance)hlsInstance.destroy();const hlsConfig={enableWorker:false,lowLatencyMode:false,startLevel:0,maxBufferLength:30,maxMaxBufferLength:60,manifestLoadingTimeOut:10000,manifestLoadingMaxRetry:4,levelLoadingTimeOut:10000,fragLoadingTimeOut:20000,fragLoadingMaxRetry:10,fragLoadingRetryDelay:500};hlsInstance=new Hls(hlsConfig);hlsInstance.loadSource(pu);hlsInstance.attachMedia(v);hlsInstance.on(Hls.Events.MANIFEST_PARSED,function(){document.getElementById('video-loading-overlay').classList.remove('visible');clearTimeout(videoLoadTimeout);v.play().catch(e=>console.error(e))});hlsInstance.on(Hls.Events.ERROR,function(event,data){if(data.fatal){switch(data.type){case Hls.ErrorTypes.NETWORK_ERROR:hlsInstance.startLoad(-1);break;case Hls.ErrorTypes.MEDIA_ERROR:hlsInstance.recoverMedia();break;default:showVideoError();clearTimeout(videoLoadTimeout);if(hlsInstance){hlsInstance.destroy();hlsInstance=null}v.pause();break;}}});}else if(v.canPlayType('application/vnd.apple.mpegurl')){v.src=pu;v.addEventListener('loadedmetadata',function(){document.getElementById('video-loading-overlay').classList.remove('visible');clearTimeout(videoLoadTimeout);v.play()});v.addEventListener('error',function(){showVideoError();clearTimeout(videoLoadTimeout)})}}
+function showVideoError(){clearTimeout(videoLoadTimeout);hidePlayerControls();document.getElementById('video-error-overlay').style.display='flex'}
+function playChannel(u,n,ref=null,r=false,isTV=true){const v=document.getElementById('tv-player'),e=document.getElementById('video-error-overlay');e.style.display='none';document.getElementById('main-content').classList.add('hidden');destroySiteIframe();document.getElementById('player-section').classList.remove('hidden');document.getElementById('back-main-btn').classList.remove('hidden');document.getElementById('player-title').innerText=n;currentChannelUrl=u;currentChannelName=n;currentIsTV=isTV;const c=globalChannels.find(c=>c.url===u)||{name:n,url:u,group:'Non classé',logo:''};if(isTV && !r) addRecent(c);document.body.classList.add('app-fullscreen');const eb=document.getElementById('exit-fullscreen-btn');eb.classList.remove('hidden');setTimeout(()=>eb.classList.add('hidden-btn'),4000);window.history.pushState({page:'player'},'','#player');clearTimeout(videoLoadTimeout);videoLoadTimeout=setTimeout(()=>{if(v.readyState<3){showVideoError();if(hlsInstance){hlsInstance.destroy();hlsInstance=null}v.pause()}},30000);showPlayerControls();startAntiFreeze();let pu=`/api/proxy-stream?url=${encodeURIComponent(u)}`;if(ref)pu+=`&referer=${encodeURIComponent(ref)}`;if(u.includes('.mp4')){if(hlsInstance){hlsInstance.destroy();hlsInstance=null}v.src=u;v.play().catch(e=>console.error(e));v.addEventListener('loadedmetadata',function(){clearTimeout(videoLoadTimeout);v.play()});v.addEventListener('error',function(){showVideoError();clearTimeout(videoLoadTimeout)});return}if(Hls.isSupported()){if(hlsInstance)hlsInstance.destroy();const hlsConfig={enableWorker:false,lowLatencyMode:false,startLevel:0,maxBufferLength:30,maxMaxBufferLength:60,manifestLoadingTimeOut:10000,manifestLoadingMaxRetry:4,levelLoadingTimeOut:10000,fragLoadingTimeOut:20000,fragLoadingMaxRetry:10,fragLoadingRetryDelay:500};hlsInstance=new Hls(hlsConfig);hlsInstance.loadSource(pu);hlsInstance.attachMedia(v);hlsInstance.on(Hls.Events.MANIFEST_PARSED,function(){clearTimeout(videoLoadTimeout);v.play().catch(e=>console.error(e))});hlsInstance.on(Hls.Events.ERROR,function(event,data){if(data.fatal){switch(data.type){case Hls.ErrorTypes.NETWORK_ERROR:hlsInstance.startLoad(-1);break;case Hls.ErrorTypes.MEDIA_ERROR:hlsInstance.recoverMedia();break;default:showVideoError();clearTimeout(videoLoadTimeout);if(hlsInstance){hlsInstance.destroy();hlsInstance=null}v.pause();break;}}});}else if(v.canPlayType('application/vnd.apple.mpegurl')){v.src=pu;v.addEventListener('loadedmetadata',function(){clearTimeout(videoLoadTimeout);v.play()});v.addEventListener('error',function(){showVideoError();clearTimeout(videoLoadTimeout)})}}
 
 function backToMain(){clearInterval(antiFreezeInterval);if(document.getElementById('player-channel-guide').classList.contains('visible')){hidePlayerChannelGuide();return;}const p=document.getElementById('player-section'),iv=!p.classList.contains('hidden'),sa=document.body.classList.contains('site-active');if(iv){clearTimeout(videoLoadTimeout);clearTimeout(playerControlTimeout);hidePlayerControls();document.getElementById('video-error-overlay').style.display='none';document.body.classList.remove('app-fullscreen');document.getElementById('exit-fullscreen-btn').classList.add('hidden');p.classList.add('hidden');const v=document.getElementById('tv-player');v.pause();v.src='';if(hlsInstance){hlsInstance.destroy();hlsInstance=null}return}if(sa){document.body.classList.remove('site-active');destroySiteIframe();const b=document.getElementById('exit-site-btn');b.classList.add('hidden');b.classList.remove('visible');clearTimeout(siteBtnTimeout);document.getElementById('main-content').classList.remove('hidden');document.getElementById('back-main-btn').classList.add('hidden');return}document.getElementById('vod-section').classList.add('hidden');document.getElementById('vod-details-section').classList.add('hidden');document.getElementById('anime-section').classList.add('hidden');document.getElementById('live-tv-section').classList.add('hidden');document.getElementById('movie-server-overlay').classList.add('hidden');document.getElementById('main-content').classList.remove('hidden');document.getElementById('back-main-btn').classList.add('hidden')}
 
@@ -525,26 +453,10 @@ async function showHuhuTvSection(){
     showFavsOnly=false;
     showRecentsOnly=false;
     loadTvContextData();
-    
-    const c=document.getElementById('iptv-container'),
-          l=document.getElementById('iptv-channels'),
-          m=document.getElementById('iptv-status-msg'),
-          cs=document.getElementById('iptv-category-filter');
-          
-    m.style.display='block';
-    m.innerText='Chargement...';
-    l.innerHTML='';
-    document.getElementById('iptv-search').value='';
-    cs.innerHTML='<option value="all">Tous les pays</option>';
-    c.classList.add('hidden');
-    
-    globalChannels=[];
-    currentChannelList=[];
-    huhuNextCursor=null;
-    visibleLimit=100;
-    huhuSearchQuery='';
-    
-    await fetchHuhuTvBatch('');
+    const c=document.getElementById('iptv-container'),l=document.getElementById('iptv-channels'),m=document.getElementById('iptv-status-msg'),cs=document.getElementById('iptv-category-filter');
+    m.style.display='block';m.innerText='Chargement...';l.innerHTML='';document.getElementById('iptv-search').value='';cs.innerHTML='<option value="all">Tous les pays</option>';c.classList.add('hidden');
+    globalChannels=[];currentChannelList=[];huhuNextCursor=null;visibleLimit=100;huhuSearchQuery='';
+    await fetchHuhuTvBatch();
 }
 
 async function fetchHuhuTvBatch(search=''){
@@ -555,59 +467,15 @@ async function fetchHuhuTvBatch(search=''){
         const r=await fetch(`/api/get-movie?action=get_live_tv&cursor=${huhuNextCursor}`);
         const d=await r.json();
         if(d.items&&d.items.length>0){
-            let chs=d.items.map(i=>{
-                let p='',d='';
-                if(i.epg&&i.epg.length>0){
-                    const n=Math.floor(Date.now()/1000);
-                    let cu=i.epg.find(e=>e.start<=n&&e.stop>n);
-                    if(!cu)cu=i.epg[0];
-                    if(cu){
-                        p=cu.name;
-                        const sD=new Date(cu.start*1000),eD=new Date(cu.stop*1000);
-                        const o={hour:'2-digit',minute:'2-digit'};
-                        d=`${sD.toLocaleTimeString('fr-FR',o)} - ${eD.toLocaleTimeString('fr-FR',o)}`;
-                    }
-                }
-                return{name:i.name,url:i.url,group:i.group,logo:i.logo,program:p,duration:d};
-            });
-            
-            globalChannels.push(...chs);
-            huhuNextCursor=d.nextCursor;
-            
+            let chs=d.items.map(i=>{let p='',d='';if(i.epg&&i.epg.length>0){const n=Math.floor(Date.now()/1000);let cu=i.epg.find(e=>e.start<=n&&e.stop>n);if(!cu)cu=i.epg[0];if(cu){p=cu.name;const sD=new Date(cu.start*1000),eD=new Date(cu.stop*1000);const o={hour:'2-digit',minute:'2-digit'};d=`${sD.toLocaleTimeString('fr-FR',o)} - ${eD.toLocaleTimeString('fr-FR',o)}`}}return{name:i.name,url:i.url,group:i.group,logo:i.logo,program:p,duration:d}});
+            globalChannels.push(...chs);huhuNextCursor=d.nextCursor;
             const cs=document.getElementById('iptv-category-filter');
-            if(cs.options.length<=1&&d.features&&d.features.filter){
-                let gs=d.features.filter.find(f=>f.id==='group');
-                if(gs&&gs.values)gs.values.forEach(g=>{const o=document.createElement('option');o.value=g;o.innerText=g;cs.appendChild(o)});
-            }
-            
-            m.style.display='none';
-            c.classList.remove('hidden');
-            
-            if(currentChannelList.length===0){
-                currentChannelList=globalChannels;
-                renderChannels(currentChannelList);
-            }else{
-                const cat=document.getElementById('iptv-category-filter').value;
-                const searchVal=document.getElementById('iptv-search').value.toLowerCase();
-                let itemsToRender=chs;
-                if(cat!=='all')itemsToRender=itemsToRender.filter(ch=>ch.group===cat);
-                if(searchVal)itemsToRender=itemsToRender.filter(ch=>ch.name.toLowerCase().includes(searchVal));
-                
-                if(itemsToRender.length>0){
-                    currentChannelList.push(...itemsToRender);
-                    appendChannelsToDOM(itemsToRender);
-                }
-            }
-        }else if(globalChannels.length===0){
-            m.style.display='block';
-            m.style.color='#ff4d4d';
-            m.innerText='Aucune chaîne trouvée.';
-        }
-    }catch(e){
-        m.style.display='block';
-        m.style.color='#ff4d4d';
-        m.innerText='Erreur.';
-    }
+            if(cs.options.length<=1&&d.features&&d.features.filter){let gs=d.features.filter.find(f=>f.id==='group');if(gs&&gs.values)gs.values.forEach(g=>{const o=document.createElement('option');o.value=g;o.innerText=g;cs.appendChild(o)})}
+            m.style.display='none';c.classList.remove('hidden');
+            if(currentChannelList.length===0){currentChannelList=globalChannels;renderChannels(currentChannelList)}
+            else{const cat=document.getElementById('iptv-category-filter').value;const searchVal=document.getElementById('iptv-search').value.toLowerCase();let itemsToRender=chs;if(cat!=='all')itemsToRender=itemsToRender.filter(ch=>ch.group===cat);if(searchVal)itemsToRender=itemsToRender.filter(ch=>ch.name.toLowerCase().includes(searchVal));if(itemsToRender.length>0){currentChannelList.push(...itemsToRender);appendChannelsToDOM(itemsToRender)}}
+        }else if(globalChannels.length===0){m.style.display='block';m.style.color='#ff4d4d';m.innerText='Aucune chaîne trouvée.';}
+    }catch(e){m.style.display='block';m.style.color='#ff4d4d';m.innerText='Erreur.';}
     isLoadingHuhuTv=false;
 }
 
