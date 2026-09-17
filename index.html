@@ -277,7 +277,9 @@ function loadTvContextData() {
 }
 
 const TMDB_API_KEY='c36548e7fd5e79ae5a8ca67ac0717bc2';let searchMovieTimeout,movieButtons=[],searchVodTimeout,huhuNextCursor=null,isLoadingHuhuTv=false,visibleLimit=100,vodPage=1,vodTotalPages=1,isVodLoading=false,vodMode='trending',vodQuery='',currentVodId=null,currentVodType=null,currentVodTitle='',searchAnimeTimeout,animeButtons=[];
+function openAnime(){if(document.documentElement.classList.contains('tv-mode')){window.open('https://franime.fr','_blank')}else{loadSite('https://franime.fr')}}
 
+function updateClock(){
 function updateClock(){const n=new Date();const h=String(n.getHours()).padStart(2,'0');const m=String(n.getMinutes()).padStart(2,'0');const e=document.getElementById('clock');if(e)e.innerText=`${h}:${m}`}
 function isFavorite(u){return favorites.some(f=>f.url===u)}
 function toggleFavorite(c){if(isFavorite(c.url)){favorites=favorites.filter(f=>f.url!==c.url)}else{favorites.push(c)}localStorage.setItem(`chapdolo_${currentLoggedUser}_${tvContext}_fav`,JSON.stringify(favorites))}
