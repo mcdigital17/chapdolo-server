@@ -71,26 +71,30 @@ module.exports = async (req, res) => {
     }
 
     // ==========================================
-    // PARTIE 3 : FILMS & SÉRIES (Moteur 2Embed)
+    // PARTIE 3 : FILMS & SÉRIES (Multi-Lecteurs)
     // ==========================================
     if (!tmdb_id) return res.status(400).json({ error: 'TMDB ID manquant' });
 
     try {
-        let embedUrl = '';
+        let sources = [];
         
-        // Si c'est une série, on construit l'URL avec la saison et l'épisode
+        // Si c'est une série
         if (type === 'tv') {
             let s = parseInt(season) || 1;
             let e = parseInt(episode) || 1;
-            embedUrl = `https://www.2embed.cc/embedtv/${tmdb_id}&s=${s}&e=${e}`;
+            sources.push({ name: 'Lecteur 1 (VF/VOSTFR)', url: `https://www.2embed.cc/embedtv/${tmdb_id}&s=${s}&e=${e}`, lang: 'Multi' });
+            sources.push({ name: 'Lecteur 2 (VF/VOSTFR)', url: `https://vidsrc.to/embed/tv/${tmdb_id}/${s}/${e}`, lang: 'Multi' });
+            sources.push({ name: 'Lecteur 3 (VF/VOSTFR)', url: `https://multiembed.mov/?video_id=${tmdb_id}&tmdb=1&s=${s}&e=${e}`, lang: 'Multi' });
         } 
         // Sinon, c'est un film
         else {
-            embedUrl = `https://www.2embed.cc/embed/${tmdb_id}`;
+            sources.push({ name: 'Lecteur 1 (VF/VOSTFR)', url: `https://www.2embed.cc/embed/${tmdb_id}`, lang: 'Multi' });
+            sources.push({ name: 'Lecteur 2 (VF/VOSTFR)', url: `https://vidsrc.to/embed/movie/${tmdb_id}`, lang: 'Multi' });
+            sources.push({ name: 'Lecteur 3 (VF/VOSTFR)', url: `https://multiembed.mov/?video_id=${tmdb_id}&tmdb=1`, lang: 'Multi' });
         }
 
-        // On renvoie le lien du lecteur 2Embed à l'application
-        return res.json({ success: true, type: 'embed', sources: [{ name: 'Lecteur Standard (VF/VOSTFR)', url: embedUrl, lang: 'VF' }] });
+        // On renvoie les lecteurs à l'application
+        return res.json({ success: true, type: 'embed', sources: sources });
 
     } catch (e) { 
         res.status(500).json({ error: 'Erreur serveur VOD: ' + e.message }); 
