@@ -28,9 +28,11 @@ module.exports = async (req, res) => {
             }
             
             return res.json(data);
-        } catch (error) { return res.status(500).json({ error: 'Erreur serveur TV' }); }
+        } catch (error) {
+            // ON AFFICHE L'ERREUR EXACTE POUR COMPRENDRE
+            return res.status(500).json({ error: 'Erreur serveur TV: ' + error.message });
+        }
     }
-
     // ==========================================
     // PARTIE 1.5 : TV LIVE (Flux)
     // ==========================================
