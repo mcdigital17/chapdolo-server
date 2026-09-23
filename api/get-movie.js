@@ -46,18 +46,32 @@ module.exports = async (req, res) => {
                     'Origin': 'https://huhu.to' 
                 }
             });
-            const sources = await response.json();
             
-            // ADAPTATION AUTOMATIQUE DU FORMAT
-            let actualSources = Array.isArray(sources) ? sources : (sources.sources || sources.data || []);
-            if (!Array.isArray(actualSources) && sources.url) actualSources = [sources];
-
-            let streamUrls = [];
-            const validSources = actualSources.filter(s => s.url && !s.url.includes('vypn') && !s.url.includes('vavoo') && !s.url.includes('tape'));
-            streamUrls = validSources.map(s => s.url);
+            const text = await response.text();
+            let sources;
+            try { sources = JSON.parse(text); } catch(e) { sources = text; }
             
-            if (streamUrls.length > 0) return res.json({ success: true, url: streamUrls[0], referer: 'https://huhu.to' });
-            else return res.status(404).json({ error: 'Flux TV non trouvé' });
+            let streamUrl = null;
+            
+            // Si c'est une URL directe en texte brut
+            if (typeof sources === 'string' && sources.startsWith('http')) {
+                streamUrl = sources;
+            } 
+            // Si c'est un tableau
+            else if (Array.isArray(sources)) {
+                const valid = sources.find(s => s.url && !s.url.includes('vypn') && !s.url.includes('vavoo'));
+                if (valid) streamUrl = valid.url;
+            } 
+            // Si c'est un objet
+            else if (sources && typeof sources === 'object') {
+                if (sources.url) streamUrl = sources.url;
+                else if (sources.stream && sources.stream[0] && sources.stream[0].url) streamUrl = sources.stream[0].url;
+                else if (sources.sources && sources.sources[0] && sources.sources[0].url) streamUrl = sources.sources[0].url;
+            }
+            
+            if (streamUrl) return res.json({ success: true, url: streamUrl, referer: 'https://huhu.to' });
+            else return res.status(404).json({ error: 'Flux introuvable. Réponse brute: ' + text.substring(0, 100) });
+            
         } catch (error) { return res.status(500).json({ error: 'Erreur serveur TV stream' }); }
     }
 
