@@ -7,10 +7,10 @@ module.exports = async (req, res) => {
     if (action === 'get_live_tv') {
         const { cursor } = req.query;
         try {
-            const response = await fetch('https://huhu.to/mediaurl-catalog.json', {
+            const response = await fetch('https://huhu.to/live/catalog/live/channels.json', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
-                body: JSON.stringify({ adult: false, catalogId: "iptv", cursor: cursor ? parseInt(cursor) : null, filter: {}, id: "", language: "fr", region: "FR", sort: "trending-region" })
+                body: JSON.stringify({ adult: false, cursor: cursor ? parseInt(cursor) : null, filter: {}, id: "", language: "fr", region: "FR", sort: "trending" })
             });
             const data = await response.json();
             return res.json(data);
@@ -23,12 +23,12 @@ module.exports = async (req, res) => {
     if (action === 'get_live_stream') {
         const { channel_url } = req.query;
         try {
-            const domainMatch = channel_url.match(/^(https?:\/\/[^\/]+)/);
-            const domain = domainMatch ? domainMatch[1] : 'https://huhu.to';
-            const response = await fetch(domain + '/mediaurl-resolve.json', {
+            // NOUVEAU CHEMIN POUR LIRE LA CHAÎNE
+            const resolveUrl = `https://huhu.to/live/resolve?region=FR&language=fr&url=${encodeURIComponent(channel_url)}`;
+            const response = await fetch(resolveUrl, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Referer': domain + '/', 'Origin': domain },
-                body: JSON.stringify({ language: "de", region: "DE", url: channel_url })
+                headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Referer': 'https://huhu.to/', 'Origin': 'https://huhu.to' },
+                body: JSON.stringify({})
             });
             const sources = await response.json();
             let streamUrls = [];
@@ -38,7 +38,7 @@ module.exports = async (req, res) => {
             } else if (sources && sources.url && !sources.url.includes('vypn') && !sources.url.includes('vavoo')) { 
                 streamUrls = [sources.url]; 
             }
-            if (streamUrls.length > 0) return res.json({ success: true, url: streamUrls[0], referer: domain });
+            if (streamUrls.length > 0) return res.json({ success: true, url: streamUrls[0], referer: 'https://huhu.to' });
             else return res.status(404).json({ error: 'Flux TV non trouvé' });
         } catch (error) { return res.status(500).json({ error: 'Erreur serveur TV stream' }); }
     }
@@ -78,7 +78,6 @@ module.exports = async (req, res) => {
     try {
         let sources = [];
         
-        // Si c'est une série
         if (type === 'tv') {
             let s = parseInt(season) || 1;
             let e = parseInt(episode) || 1;
@@ -86,14 +85,12 @@ module.exports = async (req, res) => {
             sources.push({ name: 'Lecteur 2 (VF/VOSTFR)', url: `https://vidsrc.to/embed/tv/${tmdb_id}/${s}/${e}`, lang: 'Multi' });
             sources.push({ name: 'Lecteur 3 (VF/VOSTFR)', url: `https://multiembed.mov/?video_id=${tmdb_id}&tmdb=1&s=${s}&e=${e}`, lang: 'Multi' });
         } 
-        // Sinon, c'est un film
         else {
             sources.push({ name: 'Lecteur 1 (VF/VOSTFR)', url: `https://www.2embed.cc/embed/${tmdb_id}`, lang: 'Multi' });
             sources.push({ name: 'Lecteur 2 (VF/VOSTFR)', url: `https://vidsrc.to/embed/movie/${tmdb_id}`, lang: 'Multi' });
             sources.push({ name: 'Lecteur 3 (VF/VOSTFR)', url: `https://multiembed.mov/?video_id=${tmdb_id}&tmdb=1`, lang: 'Multi' });
         }
 
-        // On renvoie les lecteurs à l'application
         return res.json({ success: true, type: 'embed', sources: sources });
 
     } catch (e) { 
