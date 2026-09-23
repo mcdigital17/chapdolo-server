@@ -453,33 +453,31 @@ function showLiveTvSection(){document.getElementById('main-content').classList.a
 async function showHuhuTvSection(){
     document.getElementById('main-content').classList.add('hidden');
     document.getElementById('live-tv-section').classList.remove('hidden');
-    tvContext='huhu';
+    tvContext='huhu'; // On garde le contexte pour les favoris
     document.getElementById('iptv-container').classList.remove('adult-mode');
     document.getElementById('live-tv-title').innerText='📺 TV International';
     showFavsOnly=false;
     showRecentsOnly=false;
     loadTvContextData();
     
-    const c=document.getElementById('iptv-container'),
-          l=document.getElementById('iptv-channels'),
-          m=document.getElementById('iptv-status-msg'),
-          cs=document.getElementById('iptv-category-filter');
+    // ON CHARGE UNE LISTE IPTV PUBLIQUE INTERNATIONALE (IPTV-ORG)
+    const iptvUrl = 'https://iptv-org.github.io/iptv/index.m3u';
+    
+    const m=document.getElementById('iptv-status-msg'),
+          c=document.getElementById('iptv-container'),
+          l=document.getElementById('iptv-channels');
           
     m.style.display='block';
-    m.innerText='Chargement...';
+    m.style.color='#e6b800';
+    m.innerText='Chargement des chaînes internationales...';
     l.innerHTML='';
     document.getElementById('iptv-search').value='';
-    cs.innerHTML='<option value="all">Tous les pays</option>';
     c.classList.add('hidden');
     
-    globalChannels=[];
-    currentChannelList=[];
-    huhuNextCursor=null;
-    visibleLimit=100;
-    huhuSearchQuery='';
-    
     window.history.pushState({page:'tv'},'','#tv');
-    await fetchHuhuTvBatch('');
+    
+    // On utilise la fonction de chargement M3U classique
+    loadIPTVList(iptvUrl);
 }
 
 async function fetchHuhuTvBatch(search=''){
