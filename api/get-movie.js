@@ -7,7 +7,7 @@ module.exports = async (req, res) => {
     if (action === 'get_live_tv') {
         const { cursor } = req.query;
         try {
-            let url = `https://huhu.to/live/catalog/channels.json?region=FR&language=fr&sort=trending`;
+            let url = `https://huhu.to/live/catalog/live/channels.json?region=FR&language=fr&sort=trending`;
             if (cursor) url += `&cursor=${cursor}`;
             
             const response = await fetch(url, {
@@ -28,10 +28,7 @@ module.exports = async (req, res) => {
             }
             
             return res.json(data);
-        } catch (error) {
-            // ON AFFICHE L'ERREUR EXACTE POUR COMPRENDRE
-            return res.status(500).json({ error: 'Erreur serveur TV: ' + error.message });
-        }
+        } catch (error) { return res.status(500).json({ error: 'Erreur serveur TV: ' + error.message }); }
     }
     // ==========================================
     // PARTIE 1.5 : TV LIVE (Flux)
