@@ -7,12 +7,26 @@ module.exports = async (req, res) => {
     if (action === 'get_live_tv') {
         const { cursor } = req.query;
         try {
-            const response = await fetch('https://huhu.to/live/catalog/live/channels.json', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
-                body: JSON.stringify({ adult: false, cursor: cursor ? parseInt(cursor) : null, filter: {}, id: "", language: "fr", region: "FR", sort: "trending" })
+            let url = `https://huhu.to/live/catalog/live/channels.json?region=FR&language=fr&sort=trending`;
+            if (cursor) url += `&cursor=${cursor}`;
+            
+            const response = await fetch(url, {
+                method: 'GET', 
+                headers: { 
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                    'Referer': 'https://huhu.to/',
+                    'Origin': 'https://huhu.to'
+                }
             });
             const data = await response.json();
+            
+            // ADAPTATION AUTOMATIQUE DU FORMAT
+            if (!data.items) {
+                if (data.channels) data.items = data.channels;
+                else if (Array.isArray(data)) data.items = data;
+                else data.items = [];
+            }
+            
             return res.json(data);
         } catch (error) { return res.status(500).json({ error: 'Erreur serveur TV' }); }
     }
@@ -23,21 +37,25 @@ module.exports = async (req, res) => {
     if (action === 'get_live_stream') {
         const { channel_url } = req.query;
         try {
-            // NOUVEAU CHEMIN POUR LIRE LA CHAÎNE
             const resolveUrl = `https://huhu.to/live/resolve?region=FR&language=fr&url=${encodeURIComponent(channel_url)}`;
             const response = await fetch(resolveUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Referer': 'https://huhu.to/', 'Origin': 'https://huhu.to' },
-                body: JSON.stringify({})
+                method: 'GET',
+                headers: { 
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 
+                    'Referer': 'https://huhu.to/', 
+                    'Origin': 'https://huhu.to' 
+                }
             });
             const sources = await response.json();
+            
+            // ADAPTATION AUTOMATIQUE DU FORMAT
+            let actualSources = Array.isArray(sources) ? sources : (sources.sources || sources.data || []);
+            if (!Array.isArray(actualSources) && sources.url) actualSources = [sources];
+
             let streamUrls = [];
-            if (Array.isArray(sources)) {
-                const validSources = sources.filter(s => s.url && !s.url.includes('vypn') && !s.url.includes('vavoo') && !s.url.includes('tape'));
-                streamUrls = validSources.map(s => s.url);
-            } else if (sources && sources.url && !sources.url.includes('vypn') && !sources.url.includes('vavoo')) { 
-                streamUrls = [sources.url]; 
-            }
+            const validSources = actualSources.filter(s => s.url && !s.url.includes('vypn') && !s.url.includes('vavoo') && !s.url.includes('tape'));
+            streamUrls = validSources.map(s => s.url);
+            
             if (streamUrls.length > 0) return res.json({ success: true, url: streamUrls[0], referer: 'https://huhu.to' });
             else return res.status(404).json({ error: 'Flux TV non trouvé' });
         } catch (error) { return res.status(500).json({ error: 'Erreur serveur TV stream' }); }
