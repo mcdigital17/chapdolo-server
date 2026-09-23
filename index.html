@@ -460,8 +460,8 @@ async function showHuhuTvSection(){
     showRecentsOnly=false;
     loadTvContextData();
     
-    // ON CHARGE UNE LISTE IPTV PUBLIQUE INTERNATIONALE (IPTV-ORG)
-    const iptvUrl = 'https://iptv-org.github.io/iptv/index.m3u';
+    // NOUVELLE LISTE IPTV DE HAUTE QUALITÉ (Mise à jour quotidiennement)
+    const iptvUrl = 'https://raw.githubusercontent.com/Free-TV/IPTV/master/playlists/playlist_tnt.m3u8';
     
     const m=document.getElementById('iptv-status-msg'),
           c=document.getElementById('iptv-container'),
@@ -469,7 +469,7 @@ async function showHuhuTvSection(){
           
     m.style.display='block';
     m.style.color='#e6b800';
-    m.innerText='Chargement des chaînes internationales...';
+    m.innerText='Chargement des chaînes TV...';
     l.innerHTML='';
     document.getElementById('iptv-search').value='';
     c.classList.add('hidden');
