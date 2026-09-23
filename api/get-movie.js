@@ -7,30 +7,23 @@ module.exports = async (req, res) => {
     if (action === 'get_live_tv') {
         const { cursor } = req.query;
         try {
-            let url = `https://huhu.to/live/catalog/live/channels.json?region=FR&language=fr&sort=trending`;
+            // URL EXACTE DE LA CAPTURE D'ÉCRAN
+            let url = `https://huhu.to/live/catalog/channels.json?region=FR&language=fr&sort=trending`;
             if (cursor) url += `&cursor=${cursor}`;
             
-            // En-têtes complets pour tromper Cloudflare
-            const headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Accept': 'application/json, text/plain, */*',
-                'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
-                'sec-fetch-dest': 'empty',
-                'sec-fetch-mode': 'cors',
-                'sec-fetch-site': 'same-origin',
-                'Referer': 'https://huhu.to/',
-                'Origin': 'https://huhu.to'
-            };
-
-            let response = await fetch(url, { method: 'GET', headers });
+            const response = await fetch(url, {
+                method: 'GET', 
+                headers: { 
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'Accept': 'application/json, text/plain, */*',
+                    'Accept-Language': 'fr-FR,fr;q=0.9',
+                    'Referer': 'https://huhu.to/'
+                }
+            });
             
-            // Si Huhu.to bloque, on utilise oha.to en secours
-            if (!response.ok) {
-                let ohaUrl = url.replace('huhu.to', 'oha.to');
-                response = await fetch(ohaUrl, { method: 'GET', headers });
-            }
-
-            const data = await response.json();
+            const text = await response.text();
+            let data;
+            try { data = JSON.parse(text); } catch(e) { data = { items: [] }; }
             
             // ADAPTATION AUTOMATIQUE DU FORMAT
             if (!data.items) {
@@ -40,7 +33,9 @@ module.exports = async (req, res) => {
             }
             
             return res.json(data);
-        } catch (error) { return res.status(500).json({ error: 'Erreur serveur TV: ' + error.message }); }
+        } catch (error) { 
+            return res.status(500).json({ error: 'Erreur serveur TV: ' + error.message }); 
+        }
     }
 
     // ==========================================
@@ -49,17 +44,13 @@ module.exports = async (req, res) => {
     if (action === 'get_live_stream') {
         const { channel_url } = req.query;
         try {
-            // On utilise oha.to pour le flux car huhu.to souvent bloque les requêtes POST
-            let resolveUrl = channel_url.replace('huhu.to', 'oha.to');
-            resolveUrl = `https://oha.to/live/resolve?region=FR&language=fr&url=${encodeURIComponent(resolveUrl)}`;
-            
+            const resolveUrl = `https://huhu.to/live/resolve?region=FR&language=fr&url=${encodeURIComponent(channel_url)}`;
             const response = await fetch(resolveUrl, {
                 method: 'GET',
                 headers: { 
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36', 
                     'Accept': 'application/json, text/plain, */*',
-                    'Referer': 'https://oha.to/', 
-                    'Origin': 'https://oha.to' 
+                    'Referer': 'https://huhu.to/'
                 }
             });
             
@@ -79,10 +70,9 @@ module.exports = async (req, res) => {
             else if (sources && typeof sources === 'object') {
                 if (sources.url) streamUrl = sources.url;
                 else if (sources.stream && sources.stream[0] && sources.stream[0].url) streamUrl = sources.stream[0].url;
-                else if (sources.sources && sources.sources[0] && sources.sources[0].url) streamUrl = sources.sources[0].url;
             }
             
-            if (streamUrl) return res.json({ success: true, url: streamUrl, referer: 'https://oha.to' });
+            if (streamUrl) return res.json({ success: true, url: streamUrl, referer: 'https://huhu.to' });
             else return res.status(404).json({ error: 'Flux introuvable. Réponse brute: ' + text.substring(0, 100) });
             
         } catch (error) { return res.status(500).json({ error: 'Erreur serveur TV stream: ' + error.message }); }
