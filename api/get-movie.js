@@ -1,41 +1,26 @@
 module.exports = async (req, res) => {
     const { tmdb_id, type, action, season, episode } = req.query;
-
+    // Cache Pro pour accélérer le chargement
+    res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=86400');
     // ==========================================
     // PARTIE 1 : TV LIVE (Catalogue)
     // ==========================================
     if (action === 'get_live_tv') {
-        const { cursor } = req.query;
+        const { cursor, search } = req.query;
         try {
-            // URL EXACTE DE LA CAPTURE D'ÉCRAN
-            let url = `https://huhu.to/live/catalog/channels.json?region=FR&language=fr&sort=trending`;
-            if (cursor) url += `&cursor=${cursor}`;
-            
-            const response = await fetch(url, {
-                method: 'GET', 
-                headers: { 
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                    'Accept': 'application/json, text/plain, */*',
-                    'Accept-Language': 'fr-FR,fr;q=0.9',
-                    'Referer': 'https://huhu.to/'
-                }
+            const response = await fetch('https://huhu.to/mediaurl-catalog.json', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+                body: JSON.stringify({ 
+                    adult: false, catalogId: "iptv", cursor: cursor ? parseInt(cursor) : null, 
+                    filter: {}, id: "", language: "fr", region: "FR", 
+                    search: search || "", // ON ENVOIE LA RECHERCHE ICI
+                    sort: "trending-region" 
+                })
             });
-            
-            const text = await response.text();
-            let data;
-            try { data = JSON.parse(text); } catch(e) { data = { items: [] }; }
-            
-            // ADAPTATION AUTOMATIQUE DU FORMAT
-            if (!data.items) {
-                if (data.channels) data.items = data.channels;
-                else if (Array.isArray(data)) data.items = data;
-                else data.items = [];
-            }
-            
+            const data = await response.json();
             return res.json(data);
-        } catch (error) { 
-            return res.status(500).json({ error: 'Erreur serveur TV: ' + error.message }); 
-        }
+        } catch (error) { return res.status(500).json({ error: 'Erreur serveur TV' }); }
     }
 
     // ==========================================
@@ -44,38 +29,24 @@ module.exports = async (req, res) => {
     if (action === 'get_live_stream') {
         const { channel_url } = req.query;
         try {
-            const resolveUrl = `https://huhu.to/live/resolve?region=FR&language=fr&url=${encodeURIComponent(channel_url)}`;
-            const response = await fetch(resolveUrl, {
-                method: 'GET',
-                headers: { 
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36', 
-                    'Accept': 'application/json, text/plain, */*',
-                    'Referer': 'https://huhu.to/'
-                }
+            const domainMatch = channel_url.match(/^(https?:\/\/[^\/]+)/);
+            const domain = domainMatch ? domainMatch[1] : 'https://huhu.to';
+            const response = await fetch(domain + '/mediaurl-resolve.json', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Referer': domain + '/', 'Origin': domain },
+                body: JSON.stringify({ language: "de", region: "DE", url: channel_url })
             });
-            
-            const text = await response.text();
-            let sources;
-            try { sources = JSON.parse(text); } catch(e) { sources = text; }
-            
-            let streamUrl = null;
-            
-            if (typeof sources === 'string' && sources.startsWith('http')) {
-                streamUrl = sources;
-            } 
-            else if (Array.isArray(sources)) {
-                const valid = sources.find(s => s.url && !s.url.includes('vypn') && !s.url.includes('vavoo'));
-                if (valid) streamUrl = valid.url;
-            } 
-            else if (sources && typeof sources === 'object') {
-                if (sources.url) streamUrl = sources.url;
-                else if (sources.stream && sources.stream[0] && sources.stream[0].url) streamUrl = sources.stream[0].url;
+            const sources = await response.json();
+            let streamUrls = [];
+            if (Array.isArray(sources)) {
+                const validSources = sources.filter(s => s.url && !s.url.includes('vypn') && !s.url.includes('vavoo') && !s.url.includes('tape'));
+                streamUrls = validSources.map(s => s.url);
+            } else if (sources && sources.url && !sources.url.includes('vypn') && !sources.url.includes('vavoo')) { 
+                streamUrls = [sources.url]; 
             }
-            
-            if (streamUrl) return res.json({ success: true, url: streamUrl, referer: 'https://huhu.to' });
-            else return res.status(404).json({ error: 'Flux introuvable. Réponse brute: ' + text.substring(0, 100) });
-            
-        } catch (error) { return res.status(500).json({ error: 'Erreur serveur TV stream: ' + error.message }); }
+            if (streamUrls.length > 0) return res.json({ success: true, url: streamUrls[0], referer: domain });
+            else return res.status(404).json({ error: 'Flux TV non trouvé' });
+        } catch (error) { return res.status(500).json({ error: 'Erreur serveur TV stream' }); }
     }
 
     // ==========================================
@@ -106,29 +77,77 @@ module.exports = async (req, res) => {
     }
 
     // ==========================================
-    // PARTIE 3 : FILMS & SÉRIES (Multi-Lecteurs)
+    // PARTIE 3 : FILMS & SÉRIES
     // ==========================================
     if (!tmdb_id) return res.status(400).json({ error: 'TMDB ID manquant' });
 
     try {
-        let sources = [];
-        
-        if (type === 'tv') {
-            let s = parseInt(season) || 1;
-            let e = parseInt(episode) || 1;
-            sources.push({ name: 'Lecteur 1 (VF/VOSTFR)', url: `https://www.2embed.cc/embedtv/${tmdb_id}&s=${s}&e=${e}`, lang: 'Multi' });
-            sources.push({ name: 'Lecteur 2 (VF/VOSTFR)', url: `https://vidsrc.to/embed/tv/${tmdb_id}/${s}/${e}`, lang: 'Multi' });
-            sources.push({ name: 'Lecteur 3 (VF/VOSTFR)', url: `https://multiembed.mov/?video_id=${tmdb_id}&tmdb=1&s=${s}&e=${e}`, lang: 'Multi' });
-        } 
-        else {
-            sources.push({ name: 'Lecteur 1 (VF/VOSTFR)', url: `https://www.2embed.cc/embed/${tmdb_id}`, lang: 'Multi' });
-            sources.push({ name: 'Lecteur 2 (VF/VOSTFR)', url: `https://vidsrc.to/embed/movie/${tmdb_id}`, lang: 'Multi' });
-            sources.push({ name: 'Lecteur 3 (VF/VOSTFR)', url: `https://multiembed.mov/?video_id=${tmdb_id}&tmdb=1`, lang: 'Multi' });
+        let requestBody = {
+            language: "fr", region: "FR", 
+            type: type === 'tv' ? 'tv' : 'movie',
+            ids: { tmdb_id: tmdb_id }, name: "",
+            episode: type === 'tv' ? (parseInt(episode) || 1) : undefined, 
+            season: type === 'tv' ? (parseInt(season) || 1) : undefined
+        };
+
+        const huhuResponse = await fetch('https://huhu.to/mediaurl-source.json', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+            body: JSON.stringify(requestBody)
+        });
+        const sources = await huhuResponse.json();
+
+        for (let s of sources) {
+            if (!s.url || s.url === '') continue;
+            if (s.url.includes('tape') || s.url.includes('stp')) continue;
+            if (s.url.includes('mixdrop.')) {
+                let embedUrl = s.url.replace('/f/', '/e/');
+                let mp4Url = await extractMixdropMp4(embedUrl);
+                if (mp4Url) return res.json({ success: true, type: 'mp4', url: mp4Url });
+            }
         }
 
-        return res.json({ success: true, type: 'embed', sources: sources });
+        const embedSources = sources.map(s => {
+             if (!s.url || s.url === '') return null;
+             if (s.url.includes('tape') || s.url.includes('stp')) return null;
+             let embedUrl = s.url;
+             if (embedUrl.includes('dood.')) embedUrl = embedUrl.replace('/w/', '/e/');
+             else if (embedUrl.includes('mixdrop.')) embedUrl = embedUrl.replace('/f/', '/e/');
+             
+             let lang = s.lang || s.language || s.audio || '';
+             if (Array.isArray(s.tag)) lang = s.tag.join(' ');
+             else if (s.tag) lang = s.tag;
+             
+             if (!lang) {
+                 const nameUpper = (s.name || '').toUpperCase();
+                 if (nameUpper.includes('VOSTFR') || nameUpper.includes('VOST')) lang = 'VOSTFR';
+                 else if (nameUpper.includes('VF') || nameUpper.includes('FRENCH') || nameUpper.includes('TRUEFRENCH')) lang = 'VF';
+                 else if (nameUpper.includes('VO') || nameUpper.includes('EN')) lang = 'VO';
+             }
+             return { name: s.name, url: embedUrl, lang: lang };
+        }).filter(s => s !== null);
 
-    } catch (e) { 
-        res.status(500).json({ error: 'Erreur serveur VOD: ' + e.message }); 
-    }
+        if (embedSources.length > 0) {
+            embedSources.sort((a, b) => { if (a.name.includes('R2')) return -1; if (b.name.includes('R2')) return 1; return 0; });
+            return res.json({ success: true, type: 'embed', sources: embedSources });
+        }
+
+        res.status(404).json({ error: 'Aucun lecteur valide trouvé' });
+    } catch (e) { res.status(500).json({ error: 'Erreur serveur' }); }
+}
+
+async function extractMixdropMp4(url) {
+    try {
+        const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }});
+        const html = await res.text();
+        const match = html.match(/eval\(decodeURIComponent\('([^']+)'\)\)/);
+        if (match) {
+            let decoded = decodeURIComponent(match[1]);
+            const urlMatch = decoded.match(/(https?:\/\/[^\s"']+\.mp4[^\s"']*)/);
+            if (urlMatch) return urlMatch[1];
+        }
+        const hurlMatch = html.match(/hurl\s*=\s*["'](https?:\/\/[^"']+)["']/);
+        if (hurlMatch) return hurlMatch[1];
+        return null;
+    } catch(e) { return null; }
 }
