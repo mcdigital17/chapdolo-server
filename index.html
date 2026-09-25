@@ -12,11 +12,14 @@
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
 
-<!-- DÉTECTION TV / PC / MOBILE -->
+<!-- DÉTECTION TV (Incluant Hisense Vidaa) / PC / MOBILE -->
 <script>
   const userAgent = navigator.userAgent.toLowerCase();
-  const isMobile = /android|iphone|ipad|ipod|mobile/i.test(userAgent);
-  if ((userAgent.includes('android') && !userAgent.includes('mobile')) || userAgent.includes('tv') || userAgent.includes('gonative')) {
+  const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+  // On détecte les mots-clés Vidaa, Hisense, SmartTV, ou un grand écran non-mobile
+  const isTV = !isMobile && (/tv|vidaa|hisense|smarttv|hbbtv|netcast|googletv|android tv/i.test(userAgent) || window.innerWidth > 1200);
+  
+  if (isTV) {
       document.documentElement.classList.add('tv-mode'); 
   }
   if (isMobile) {
@@ -140,6 +143,26 @@ button:focus, a:focus, select:focus, [tabindex="0"]:focus { box-shadow: 0 0 0 3p
 .guide-info p { margin: 0; font-size: 10px; color: var(--text-dim); }
 
 #zap-overlay { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 120px; font-weight: 800; color: var(--yellow-accent); text-shadow: 0 0 20px var(--yellow-glow); z-index: 9998; display: none; pointer-events: none; background: rgba(0,0,0,0.8); padding: 20px 60px; border-radius: 20px; border: 4px solid var(--yellow-accent); }
+
+/* MODE TV (Compatible Hisense Vidaa) */
+html.tv-mode body { font-size: 20px; } /* Agrandit la police de base pour la TV */
+html.tv-mode .dashboard-grid { grid-template-columns: repeat(3, 1fr); max-width: 1200px; }
+html.tv-mode .nav-bar { padding: 10px 40px; }
+html.tv-mode .logo-text { font-size: 28px; }
+html.tv-mode .logo-icon { width: 35px; height: 35px; }
+html.tv-mode .logo-icon::after { border-left-width: 15px; border-top-width: 10px; border-bottom-width: 10px; margin-left: 4px; }
+html.tv-mode .nav-bar button { padding: 12px 20px; font-size: 16px; margin: 5px; }
+html.tv-mode #clock { font-size: 20px; margin-right: 15px; }
+html.tv-mode .iptv-channels { grid-template-columns: repeat(4, 1fr); gap: 25px; max-height: calc(100vh - 300px); }
+html.tv-mode .channel-item { height: 200px; }
+html.tv-mode .ch-logo { height: 70px; max-width: 120px; }
+html.tv-mode .ch-name { font-size: 18px; }
+html.tv-mode .ch-prog { font-size: 14px; }
+html.tv-mode .ch-dur { font-size: 12px; }
+html.tv-mode .iptv-btn { padding: 15px !important; }
+html.tv-mode #vod-grid { grid-template-columns: repeat(5, 1fr); }
+html.tv-mode #vod-grid img { width: 100%; }
+html.tv-mode #vod-grid p { font-size: 16px; }
 
 /* RESPONSIVE DESIGN POUR MOBILE */
 html.mobile-mode body { zoom: 1; }
