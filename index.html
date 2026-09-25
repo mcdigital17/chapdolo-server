@@ -448,8 +448,30 @@ async function saveAdultConfig(){const p=document.getElementById('iptv-pin-input
 function loadAdultConfigUI(){document.getElementById('iptv-pin-input').value=adultPin||'';document.getElementById('iptv-adult-url-input').value=adultUrl||''}
 function promptAdultPin(){if(!adultUrl){alert("Aucune source adulte configurée.");return}document.getElementById('pin-entry').value='';document.getElementById('pin-error').innerText='';document.getElementById('pin-modal').classList.remove('hidden');setTimeout(()=>document.getElementById('pin-entry').focus(),100)}
 function closePinModal(){document.getElementById('pin-modal').classList.add('hidden')}
-function verifyAdultPin(){const e=document.getElementById('pin-entry').value;if(e===adultPin){closePinModal();tvContext='adult';document.getElementById('iptv-container').classList.add('adult-mode');document.getElementById('main-content').classList.add('hidden');document.getElementById('live-tv-section').classList.remove('hidden');document.getElementById('live-tv-title').innerText='🔒 TV Adulte';showFavsOnly=false;showRecentsOnly=false;loadTvContextData();loadIPTVList(adultUrl)}else{document.getElementById('pin-error').innerText="Code incorrect."}}
-
+function verifyAdultPin(){
+    const e=document.getElementById('pin-entry').value;
+    if(e===adultPin){
+        closePinModal();
+        tvContext='adult';
+        document.getElementById('iptv-container').classList.add('adult-mode');
+        document.getElementById('iptv-container').classList.remove('hidden');
+        document.getElementById('main-content').classList.add('hidden');
+        document.getElementById('live-tv-section').classList.remove('hidden');
+        document.getElementById('live-tv-title').innerText='🔒 TV Adulte';
+        
+        const m=document.getElementById('iptv-status-msg');
+        m.style.display='block';
+        m.style.color='#e6b800';
+        m.innerText='Chargement...';
+        
+        showFavsOnly=false;
+        showRecentsOnly=false;
+        loadTvContextData();
+        loadIPTVList(adultUrl);
+    }else{
+        document.getElementById('pin-error').innerText="Code incorrect.";
+    }
+}
 document.addEventListener('DOMContentLoaded',setupSpatialNavigation);document.addEventListener('DOMContentLoaded',setupInfiniteScroll);document.addEventListener('DOMContentLoaded',setupMovieNavigation);document.addEventListener('DOMContentLoaded',setupGuideScroll);
 
 window.addEventListener('popstate',function(e){
@@ -524,29 +546,44 @@ async function updateEpisodes(){const sS=document.getElementById('detail-season'
 async function launchVodPlayback(){let s=1,e=1;if(currentVodType==='tv'){s=document.getElementById('detail-season').value;e=document.getElementById('detail-episode').value}document.getElementById('vod-details-section').classList.add('hidden');document.getElementById('main-content').classList.add('hidden');document.getElementById('player-section').classList.add('hidden');const i=document.getElementById('site-iframe');i.style.display='none';try{const r=await fetch(`/api/get-movie?tmdb_id=${currentVodId}&type=${currentVodType}&season=${s}&episode=${e}`);const d=await r.json();if(d.success){if(d.type==='mp4'&&d.url){playChannel(d.url,currentVodTitle,null,false,false)}else if(d.sources&&d.sources.length>0){i.style.display='block';i.src='about:blank';window.currentMovieServers=d.sources;document.getElementById('movie-server-title').innerText=currentVodTitle+(currentVodType==='tv'?` (S${s} E${e})`:'');const b=document.getElementById('movie-server-buttons');b.innerHTML='';d.sources.forEach((src,idx)=>{const btn=document.createElement('button');btn.innerHTML=getFlag(src.lang)+' '+src.name;btn.className='btn-primary';btn.style.margin='5px';btn.onclick=()=>changeMovieServer(idx);b.appendChild(btn)});document.getElementById('movie-server-overlay').classList.remove('hidden')}}else{alert('Indisponible. Raison: ' + (d.error || 'Inconnue'));backToVodCatalog()}}catch(e){alert('Erreur réseau.');backToVodCatalog()}}
 function changeMovieServer(idx){const s=window.currentMovieServers[idx];if(!s)return;window.currentIframeContext='vod';document.getElementById('movie-server-overlay').classList.add('hidden');const i=document.getElementById('site-iframe');i.srcdoc='<div style="color:white;background:#000;height:100%;display:flex;align-items:center;justify-content:center;font-size:24px;">Chargement...</div>';const b=document.getElementById('exit-site-btn');b.classList.remove('hidden');b.classList.add('visible');document.body.classList.add('site-active');setTimeout(()=>{const u=s.url;i.removeAttribute('srcdoc');i.src=u},500)}
 
-function showLiveTvSection(){document.getElementById('main-content').classList.add('hidden');document.getElementById('live-tv-section').classList.remove('hidden');tvContext='iptv';document.getElementById('iptv-container').classList.remove('adult-mode');document.getElementById('live-tv-title').innerText='📡 TV Regional';showFavsOnly=false;showRecentsOnly=false;loadTvContextData();loadSavedIPTVForUser();window.history.pushState({page:'tv'},'','#tv')}
+function showLiveTvSection(){
+    document.getElementById('main-content').classList.add('hidden');
+    document.getElementById('live-tv-section').classList.remove('hidden');
+    tvContext='iptv';
+    document.getElementById('iptv-container').classList.remove('adult-mode');
+    document.getElementById('iptv-container').classList.remove('hidden');
+    document.getElementById('live-tv-title').innerText='📡 TV Regional';
+    
+    const m=document.getElementById('iptv-status-msg');
+    m.style.display='block';
+    m.style.color='#e6b800';
+    m.innerText='Chargement...';
+    
+    showFavsOnly=false;
+    showRecentsOnly=false;
+    loadTvContextData();
+    loadSavedIPTVForUser();
+    window.history.pushState({page:'tv'},'','#tv');
+}
 
 async function showHuhuTvSection(){
     document.getElementById('main-content').classList.add('hidden');
     document.getElementById('live-tv-section').classList.remove('hidden');
     tvContext='huhu';
     document.getElementById('iptv-container').classList.remove('adult-mode');
+    document.getElementById('iptv-container').classList.remove('hidden');
     document.getElementById('live-tv-title').innerText='📺 TV International';
     showFavsOnly=false;
     showRecentsOnly=false;
     loadTvContextData();
     
-    const c=document.getElementById('iptv-container'),
-          l=document.getElementById('iptv-channels'),
-          m=document.getElementById('iptv-status-msg'),
-          cs=document.getElementById('iptv-category-filter');
-          
+    const m=document.getElementById('iptv-status-msg');
     m.style.display='block';
-    m.innerText='Chargement...';
-    l.innerHTML='';
+    m.style.color='#e6b800';
+    m.innerText='Chargement des chaînes...';
+    document.getElementById('iptv-channels').innerHTML='';
     document.getElementById('iptv-search').value='';
-    cs.innerHTML='<option value="all">Tous les pays</option>';
-    c.classList.add('hidden');
+    document.getElementById('iptv-category-filter').innerHTML='<option value="all">Tous les pays</option>';
     
     globalChannels=[];
     currentChannelList=[];
