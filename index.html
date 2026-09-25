@@ -12,11 +12,15 @@
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
 
-<!-- DÉTECTION TV / PC -->
+<!-- DÉTECTION TV / PC / MOBILE -->
 <script>
   const userAgent = navigator.userAgent.toLowerCase();
+  const isMobile = /android|iphone|ipad|ipod|mobile/i.test(userAgent);
   if ((userAgent.includes('android') && !userAgent.includes('mobile')) || userAgent.includes('tv') || userAgent.includes('gonative')) {
       document.documentElement.classList.add('tv-mode'); 
+  }
+  if (isMobile) {
+      document.documentElement.classList.add('mobile-mode');
   }
 </script>
 
@@ -136,6 +140,30 @@ button:focus, a:focus, select:focus, [tabindex="0"]:focus { box-shadow: 0 0 0 3p
 .guide-info p { margin: 0; font-size: 10px; color: var(--text-dim); }
 
 #zap-overlay { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 120px; font-weight: 800; color: var(--yellow-accent); text-shadow: 0 0 20px var(--yellow-glow); z-index: 9998; display: none; pointer-events: none; background: rgba(0,0,0,0.8); padding: 20px 60px; border-radius: 20px; border: 4px solid var(--yellow-accent); }
+
+/* RESPONSIVE DESIGN POUR MOBILE */
+html.mobile-mode body { zoom: 1; }
+html.mobile-mode .dashboard-grid { grid-template-columns: 1fr; max-width: 100%; gap: 15px; }
+html.mobile-mode .dash-card { padding: 20px; }
+html.mobile-mode .dash-card .icon { font-size: 36px; margin-bottom: 10px; }
+html.mobile-mode .dash-card h3 { font-size: 18px; }
+html.mobile-mode .logo-text { font-size: 42px; }
+html.mobile-mode .logo-icon { width: 45px; height: 45px; }
+html.mobile-mode .logo-icon::after { border-left-width: 16px; border-top-width: 10px; border-bottom-width: 10px; margin-left: 4px; }
+html.mobile-mode .section h2 { font-size: 28px; margin-bottom: 20px; }
+html.mobile-mode .section > p { font-size: 16px; margin-bottom: 20px; }
+html.mobile-mode .nav-bar { padding: 10px 15px; }
+html.mobile-mode #clock { font-size: 18px; margin-right: 10px; }
+html.mobile-mode .nav-bar button { padding: 10px 15px; font-size: 14px; margin: 5px; }
+html.mobile-mode .search-bar input { width: 100% !important; max-width: 100% !important; }
+html.mobile-mode .iptv-channels { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+html.mobile-mode #zap-overlay { font-size: 80px; padding: 15px 40px; }
+html.mobile-mode .tv-player-container { max-width: 100%; border-radius: 0; border: none; }
+html.mobile-mode #custom-player-controls { padding: 20px 10px 10px; gap: 8px; }
+html.mobile-mode .player-btn { padding: 10px 16px; font-size: 14px; }
+html.mobile-mode .stat-card { padding: 15px 20px; min-width: 140px; }
+html.mobile-mode .stat-card p { font-size: 32px; }
+html.mobile-mode .stat-card h3 { font-size: 12px; }
 </style>
 </head>
 <body>
@@ -250,8 +278,16 @@ let currentIsTV=true;
 let huhuSearchQuery='';
 let guideVisibleLimit = 50;
 
-// FONCTION OPEN ANIME CORRIGÉE (PC DANS L'APPLI, TV DANS LE NAVIGATEUR)
-function openAnime(){if(document.documentElement.classList.contains('tv-mode')){window.open('https://franime.fr','_blank')}else{loadSite('https://franime.fr')}}
+// FONCTION OPEN ANIME (PC DANS L'APPLI, MOBILE ET TV DANS LE NAVIGATEUR)
+function openAnime(){
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const isTV = document.documentElement.classList.contains('tv-mode');
+    if (isMobile || isTV) {
+        window.open('https://franime.fr', '_blank');
+    } else {
+        loadSite('https://franime.fr');
+    }
+}
 
 function updateClock(){const n=new Date();const h=String(n.getHours()).padStart(2,'0');const m=String(n.getMinutes()).padStart(2,'0');const e=document.getElementById('clock');if(e)e.innerText=`${h}:${m}`}
 
@@ -429,7 +465,7 @@ function appendChannelsToDOM(items){const l=document.getElementById('iptv-channe
 function showVideoError(){clearTimeout(videoLoadTimeout);hidePlayerControls();document.getElementById('video-loading-overlay').classList.remove('visible');document.getElementById('video-error-overlay').style.display='flex'}
 function playChannel(u,n,ref=null,r=false,isTV=true){const v=document.getElementById('tv-player'),e=document.getElementById('video-error-overlay');e.style.display='none';document.getElementById('video-loading-overlay').classList.add('visible');document.getElementById('main-content').classList.add('hidden');destroySiteIframe();document.getElementById('player-section').classList.remove('hidden');document.getElementById('back-main-btn').classList.remove('hidden');document.getElementById('player-title').innerText=n;currentChannelUrl=u;currentChannelName=n;currentIsTV=isTV;const c=globalChannels.find(c=>c.url===u)||{name:n,url:u,group:'Non classé',logo:''};if(isTV && !r) addRecent(c);document.body.classList.add('app-fullscreen');const eb=document.getElementById('exit-fullscreen-btn');eb.classList.remove('hidden');setTimeout(()=>eb.classList.add('hidden-btn'),4000);window.history.pushState({page:'player'},'','#player');clearTimeout(videoLoadTimeout);videoLoadTimeout=setTimeout(()=>{if(v.readyState<3){showVideoError();if(hlsInstance){hlsInstance.destroy();hlsInstance=null}v.pause()}},30000);showPlayerControls();startAntiFreeze();let pu=`/api/proxy-stream?url=${encodeURIComponent(u)}`;if(ref)pu+=`&referer=${encodeURIComponent(ref)}`;if(u.includes('.mp4')){if(hlsInstance){hlsInstance.destroy();hlsInstance=null}v.src=u;v.play().catch(e=>console.error(e));v.addEventListener('loadedmetadata',function(){document.getElementById('video-loading-overlay').classList.remove('visible');clearTimeout(videoLoadTimeout);v.play()});v.addEventListener('error',function(){showVideoError();clearTimeout(videoLoadTimeout)});return}if(Hls.isSupported()){if(hlsInstance)hlsInstance.destroy();const hlsConfig={enableWorker:false,lowLatencyMode:false,startLevel:0,maxBufferLength:30,maxMaxBufferLength:60,manifestLoadingTimeOut:10000,manifestLoadingMaxRetry:4,levelLoadingTimeOut:10000,fragLoadingTimeOut:20000,fragLoadingMaxRetry:10,fragLoadingRetryDelay:500};hlsInstance=new Hls(hlsConfig);hlsInstance.loadSource(pu);hlsInstance.attachMedia(v);hlsInstance.on(Hls.Events.MANIFEST_PARSED,function(){document.getElementById('video-loading-overlay').classList.remove('visible');clearTimeout(videoLoadTimeout);v.play().catch(e=>console.error(e))});hlsInstance.on(Hls.Events.ERROR,function(event,data){if(data.fatal){switch(data.type){case Hls.ErrorTypes.NETWORK_ERROR:hlsInstance.startLoad(-1);break;case Hls.ErrorTypes.MEDIA_ERROR:hlsInstance.recoverMedia();break;default:showVideoError();clearTimeout(videoLoadTimeout);if(hlsInstance){hlsInstance.destroy();hlsInstance=null}v.pause();break;}}});}else if(v.canPlayType('application/vnd.apple.mpegurl')){v.src=pu;v.addEventListener('loadedmetadata',function(){document.getElementById('video-loading-overlay').classList.remove('visible');clearTimeout(videoLoadTimeout);v.play()});v.addEventListener('error',function(){showVideoError();clearTimeout(videoLoadTimeout)})}}
 
-function backToMain(){clearInterval(antiFreezeInterval);if(document.getElementById('player-channel-guide').classList.contains('visible')){hidePlayerChannelGuide();return;}const p=document.getElementById('player-section'),iv=!p.classList.contains('hidden'),sa=document.body.classList.contains('site-active');if(iv){clearTimeout(videoLoadTimeout);clearTimeout(playerControlTimeout);hidePlayerControls();document.getElementById('video-error-overlay').style.display='none';document.body.classList.remove('app-fullscreen');document.getElementById('exit-fullscreen-btn').classList.add('hidden');p.classList.add('hidden');const v=document.getElementById('tv-player');v.pause();v.src='';if(hlsInstance){hlsInstance.destroy();hlsInstance=null}return}if(sa){document.body.classList.remove('site-active');destroySiteIframe();const b=document.getElementById('exit-site-btn');b.classList.add('hidden');b.classList.remove('visible');clearTimeout(siteBtnTimeout);document.getElementById('main-content').classList.remove('hidden');document.getElementById('back-main-btn').classList.add('hidden');return}document.getElementById('vod-section').classList.add('hidden');document.getElementById('vod-details-section').classList.add('hidden');document.getElementById('anime-section').classList.add('hidden');document.getElementById('live-tv-section').classList.add('hidden');document.getElementById('movie-server-overlay').classList.add('hidden');document.getElementById('main-content').classList.remove('hidden');document.getElementById('back-main-btn').classList.add('hidden')}
+function backToMain(){clearInterval(antiFreezeInterval);if(document.getElementById('player-channel-guide').classList.contains('visible')){hidePlayerChannelGuide();return;}const p=document.getElementById('player-section'),iv=!p.classList.contains('hidden'),sa=document.body.classList.contains('site-active');if(iv){clearTimeout(videoLoadTimeout);clearTimeout(playerControlTimeout);hidePlayerControls();document.getElementById('video-error-overlay').style.display='none';document.body.classList.remove('app-fullscreen');document.getElementById('exit-fullscreen-btn').classList.add('hidden');p.classList.add('hidden');const v=document.getElementById('tv-player');v.pause();v.src='';if(hlsInstance){hlsInstance.destroy();hlsInstance=null}window.history.pushState({page:'app'},'','#app');return}if(sa){document.body.classList.remove('site-active');destroySiteIframe();const b=document.getElementById('exit-site-btn');b.classList.add('hidden');b.classList.remove('visible');clearTimeout(siteBtnTimeout);document.getElementById('main-content').classList.remove('hidden');document.getElementById('back-main-btn').classList.add('hidden');window.history.pushState({page:'app'},'','#app');return}document.getElementById('vod-section').classList.add('hidden');document.getElementById('vod-details-section').classList.add('hidden');document.getElementById('anime-section').classList.add('hidden');document.getElementById('live-tv-section').classList.add('hidden');document.getElementById('movie-server-overlay').classList.add('hidden');document.getElementById('main-content').classList.remove('hidden');document.getElementById('back-main-btn').classList.add('hidden');window.history.pushState({page:'app'},'','#app');}
 
 function appendVodItems(items){const g=document.getElementById('vod-grid');items.forEach(i=>{if(!i.poster_path)return;const d=document.createElement('div');d.setAttribute('tabindex','0');d.style.cursor='pointer';d.style.textAlign='center';d.innerHTML=`<img src="https://image.tmdb.org/t/p/w500${i.poster_path}" style="width: 100%; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);" alt="${i.title||i.name}"><p style="color: #ccc; font-size: 14px; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${i.title||i.name}</p>`;d.onclick=()=>showVodDetails(i.id,i.media_type);g.appendChild(d);movieButtons.push(d)})}
 async function fetchVodBatch(){if(isVodLoading||vodPage>vodTotalPages)return;isVodLoading=true;const g=document.getElementById('vod-grid');if(vodPage===1)g.innerHTML='<p style="color:#888; grid-column: 1 / -1; text-align:center;">Chargement...</p>';let u;if(vodMode==='trending')u=`https://api.themoviedb.org/3/trending/all/week?api_key=${TMDB_API_KEY}&language=fr-FR&page=${vodPage}`;else u=`https://api.themoviedb.org/3/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(vodQuery)}&language=fr-FR&page=${vodPage}`;try{const r=await fetch(u);const d=await r.json();vodTotalPages=d.total_pages;if(vodPage===1)g.innerHTML='';const v=d.results.filter(i=>(i.media_type==='movie'||i.media_type==='tv')&&i.poster_path);appendVodItems(v);vodPage++}catch(e){g.innerHTML='<p style="color:#ff4d4d;">Erreur.</p>'}isVodLoading=false}
