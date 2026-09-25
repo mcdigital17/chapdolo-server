@@ -98,7 +98,10 @@ button:active { transform: scale(0.97); }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 .nav-bar { background: rgba(10, 11, 16, 0.95); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 50; border-bottom: 1px solid #2A2D3A; backdrop-filter: blur(10px); }
 #clock { font-size: 24px; color: var(--blue-primary); font-weight: 600; text-shadow: 0 0 5px var(--blue-glow); margin-right: 20px; font-variant-numeric: tabular-nums; }
-
+/* ICÔNES SVG (Compatibles TV Hisense Vidaa) */
+.icon-svg { width: 48px; height: 48px; fill: currentColor; }
+.icon-small { width: 20px; height: 20px; vertical-align: middle; }
+.btn-icon { width: 16px; height: 16px; vertical-align: middle; display: inline-block; }
 *:focus { outline: none !important; }
 button:focus, a:focus, select:focus, [tabindex="0"]:focus { box-shadow: 0 0 0 3px var(--bg-main), 0 0 0 5px var(--yellow-accent) !important; border-radius: 8px; }
 #movie-grid > div:focus, #vod-grid > div:focus, #anime-grid > div:focus { box-shadow: 0 0 0 3px var(--bg-main), 0 0 0 5px var(--yellow-accent) !important; border-radius: 8px; transform: scale(1.05); }
@@ -229,18 +232,32 @@ html.mobile-mode .stat-card h3 { font-size: 12px; }
 
   <div id="main-content" style="text-align: center; padding: 60px 20px; flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center;">
      <h2 style="color:white; font-size:44px; margin-bottom:10px;">Bienvenue sur Chapdolo</h2>
-     <div class="dashboard-grid">
-        <div class="dash-card card-yellow" tabindex="0" onclick="showVodSection()"><div class="icon">🎬</div><h3>Films & Séries</h3></div>
-        <div class="dash-card card-yellow" tabindex="0" onclick="openAnime()"><div class="icon">🇯🇵</div><h3>Animes</h3></div>
-        <div class="dash-card card-blue" tabindex="0" onclick="showHuhuTvSection()"><div class="icon">📺</div><h3>TV International</h3></div>
-        <div class="dash-card card-blue" tabindex="0" onclick="showLiveTvSection()"><div class="icon">📡</div><h3>TV Regional</h3></div>
-        <div class="dash-card card-red" tabindex="0" onclick="promptAdultPin()"><div class="icon">🔒</div><h3>Adultes</h3></div>
+        <div class="dashboard-grid">
+        <div class="dash-card card-yellow" tabindex="0" onclick="showVodSection()">
+           <svg class="icon-svg" viewBox="0 0 24 24" fill="white"><path d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V4h-4z"/></svg>
+           <h3>Films & Séries</h3>
+        </div>
+        <div class="dash-card card-yellow" tabindex="0" onclick="openAnime()">
+           <svg class="icon-svg" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
+           <h3>Animes</h3>
+        </div>
+        <div class="dash-card card-blue" tabindex="0" onclick="showHuhuTvSection()">
+           <svg class="icon-svg" viewBox="0 0 24 24" fill="white"><path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 14H3V5h18v12z"/></svg>
+           <h3>TV International</h3>
+        </div>
+        <div class="dash-card card-blue" tabindex="0" onclick="showLiveTvSection()">
+           <svg class="icon-svg" viewBox="0 0 24 24" fill="white"><path d="M12 10c-3.87 0-7 3.13-7 7h2c0-2.76 2.24-5 5-5s5 2.24 5 5h2c0-3.87-3.13-7-7-7zm0-9C7.03 1 3 5.03 3 10h2c0-3.87 3.13-7 7-7s7 3.13 7 7h2c0-4.97-4.03-9-9-9zm0 6c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+           <h3>TV Regional</h3>
+        </div>
+        <div class="dash-card card-red" tabindex="0" onclick="promptAdultPin()">
+           <svg class="icon-svg" viewBox="0 0 24 24" fill="white"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6zm9 14H6V10h12v10zm-6-3c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"/></svg>
+           <h3>Adultes</h3>
+        </div>
      </div>
-  </div>
 
   <div id="vod-section" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-main); z-index: 80; overflow-y: auto; padding: 80px 20px 20px 20px; box-sizing: border-box;">
      <button class="btn-secondary" onclick="backToMain()" style="position: absolute; top: 20px; left: 20px; width: auto; margin: 0; padding: 10px 20px;">↩ Retour</button>
-     <h2 style="color: white; text-align: center; margin-bottom: 20px;">🎬 Films & Séries</h2>
+     <h2 style="color: white; text-align: center; margin-bottom: 20px;">Films & Séries</h2>
      <div style="text-align: center; margin-bottom: 40px;"><input type="text" id="vod-search" tabindex="0" placeholder="🔍 Rechercher..." style="width: 100%; max-width: 500px; margin: 0 auto; padding: 12px 20px; border-radius: 50px; display: block;" oninput="searchVod()"></div>
      <div id="vod-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 25px; max-width: 1200px; margin: 0 auto;"></div>
   </div>
@@ -253,10 +270,18 @@ html.mobile-mode .stat-card h3 { font-size: 12px; }
 
   <div id="live-tv-section" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-main); z-index: 80; overflow-y: auto; padding: 80px 20px 20px 20px; box-sizing: border-box;">
      <button class="btn-secondary" onclick="backToMain()" style="position: absolute; top: 20px; left: 20px; width: auto; margin: 0; padding: 10px 20px;">↩ Retour</button>
-     <h2 id="live-tv-title" style="color: white; text-align: center; margin-bottom: 20px;">📺 TV en Direct</h2>
+     <h2 id="live-tv-title" style="color: white; text-align: center; margin-bottom: 20px;">TV en Direct</h2>
      <p id="iptv-status-msg" style="color:var(--text-dim); display:none; text-align: center;"></p>
      <div id="iptv-container" class="iptv-container hidden" style="max-width: 1200px; margin: 0 auto;">
-        <div class="search-bar"><button class="btn-secondary" tabindex="0" onclick="document.getElementById('iptv-search').focus()">🔍</button><input type="text" id="iptv-search" tabindex="-1" placeholder="🔍 Chaîne..." style="width: 300px; margin: 0; padding: 10px 20px; border-radius: 50px;" oninput="handleTvSearch()"><button id="fav-toggle-btn" class="btn-auto" tabindex="0" onclick="toggleShowFavorites()">❤️</button><button id="recent-toggle-btn" class="btn-auto" tabindex="0" onclick="toggleShowRecents()">⏱</button><button id="sort-az-btn" class="btn-auto" tabindex="0" onclick="sortChannelsAZ()">🔤</button></div>
+       <div class="search-bar">
+           <button class="btn-secondary" tabindex="0" onclick="document.getElementById('iptv-search').focus()">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="white"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+           </button>
+           <input type="text" id="iptv-search" tabindex="-1" placeholder="Rechercher une chaine..." style="width: 300px; margin: 0; padding: 10px 20px; border-radius: 50px;" oninput="handleTvSearch()">
+           <button id="fav-toggle-btn" class="btn-auto" tabindex="0" onclick="toggleShowFavorites()">Favoris</button>
+           <button id="recent-toggle-btn" class="btn-auto" tabindex="0" onclick="toggleShowRecents()">Historique</button>
+           <button id="sort-az-btn" class="btn-auto" tabindex="0" onclick="sortChannelsAZ()">Trier A-Z</button>
+        </div>
         <div style="text-align: center; margin-bottom: 15px;"><select id="iptv-category-filter" onchange="filterChannels()" style="padding: 10px 20px; border-radius: 50px; width: 100%; max-width: 300px;"><option value="all">Tous les pays</option></select></div>
         <div id="iptv-channels" class="iptv-channels"></div>
      </div>
@@ -272,11 +297,11 @@ html.mobile-mode .stat-card h3 { font-size: 12px; }
             <div class="loader-spinner"></div>
         </div>
         <div id="custom-player-controls">
-            <button id="player-pause-btn" class="player-btn" onclick="togglePlayPause()" tabindex="0">⏸ Pause</button>
-            <button id="player-channels-btn" class="player-btn" onclick="showPlayerChannelGuide()" tabindex="0">📺 Chaînes</button>
-            <button id="player-fav-btn" class="player-btn" onclick="toggleFavoriteFromPlayer()" tabindex="0">🤍 Favori</button>
-            <button class="player-btn" onclick="reloadChannel()" tabindex="0">🔄 Recharger</button>
-            <button class="player-btn" onclick="backToMain()" tabindex="0">✕ Quitter</button>
+            <button id="player-pause-btn" class="player-btn" onclick="togglePlayPause()" tabindex="0">Pause</button>
+            <button id="player-channels-btn" class="player-btn" onclick="showPlayerChannelGuide()" tabindex="0">Chaines</button>
+            <button id="player-fav-btn" class="player-btn" onclick="toggleFavoriteFromPlayer()" tabindex="0">Favori</button>
+            <button class="player-btn" onclick="reloadChannel()" tabindex="0">Recharger</button>
+            <button class="player-btn" onclick="backToMain()" tabindex="0">Quitter</button>
         </div>
         
         <div id="player-channel-guide">
@@ -328,18 +353,18 @@ function loadTvContextData() {
     favorites = JSON.parse(localStorage.getItem(favKey)) || [];
     recents = JSON.parse(localStorage.getItem(recKey)) || [];
     const favBtn = document.getElementById('fav-toggle-btn');
-    if (favBtn) favBtn.innerText = showFavsOnly ? "📺" : "❤️";
+    if (favBtn) favBtn.innerText = showFavsOnly ? "Toutes les chaines" : "Favoris";
     const recBtn = document.getElementById('recent-toggle-btn');
-    if (recBtn) recBtn.innerText = showRecentsOnly ? "📺" : "⏱";
+    if (recBtn) recBtn.innerText = showRecentsOnly ? "Toutes les chaines" : "Historique";
 }
 
 const TMDB_API_KEY='c36548e7fd5e79ae5a8ca67ac0717bc2';let searchMovieTimeout,movieButtons=[],searchVodTimeout,huhuNextCursor=null,isLoadingHuhuTv=false,visibleLimit=100,vodPage=1,vodTotalPages=1,isVodLoading=false,vodMode='trending',vodQuery='',currentVodId=null,currentVodType=null,currentVodTitle='';
 
 function isFavorite(u){return favorites.some(f=>f.url===u)}
 function toggleFavorite(c){if(isFavorite(c.url)){favorites=favorites.filter(f=>f.url!==c.url)}else{favorites.push(c)}localStorage.setItem(`chapdolo_${currentLoggedUser}_${tvContext}_fav`,JSON.stringify(favorites))}
-function toggleShowFavorites(){showFavsOnly=!showFavsOnly;showRecentsOnly=false;document.getElementById('recent-toggle-btn').innerText="⏱";const b=document.getElementById('fav-toggle-btn');if(showFavsOnly){b.innerText="📺";document.getElementById('iptv-category-filter').value='all';renderChannels(favorites)}else{b.innerText="❤️";filterChannels()}}
+function toggleShowFavorites(){showFavsOnly=!showFavsOnly;showRecentsOnly=false;document.getElementById('recent-toggle-btn').innerText="Historique";const b=document.getElementById('fav-toggle-btn');if(showFavsOnly){b.innerText="Toutes les chaines";document.getElementById('iptv-category-filter').value='all';renderChannels(favorites)}else{b.innerText="Favoris";filterChannels()}}
 function addRecent(c){recents=recents.filter(r=>r.url!==c.url);recents.unshift(c);if(recents.length>10)recents=recents.slice(0,10);localStorage.setItem(`chapdolo_${currentLoggedUser}_${tvContext}_recents`,JSON.stringify(recents))}
-function toggleShowRecents(){showRecentsOnly=!showRecentsOnly;showFavsOnly=false;document.getElementById('fav-toggle-btn').innerText="❤️";const b=document.getElementById('recent-toggle-btn');if(showRecentsOnly){b.innerText="📺";document.getElementById('iptv-category-filter').value='all';renderChannels(recents)}else{b.innerText="⏱";filterChannels()}}
+function toggleShowRecents(){showRecentsOnly=!showRecentsOnly;showFavsOnly=false;document.getElementById('fav-toggle-btn').innerText="Favoris";const b=document.getElementById('recent-toggle-btn');if(showRecentsOnly){b.innerText="Toutes les chaines";document.getElementById('iptv-category-filter').value='all';renderChannels(recents)}else{b.innerText="Historique";filterChannels()}}
 function sortChannelsAZ(){if(globalChannels.length===0)return;globalChannels.sort((a,b)=>{const nA=a.name.toLowerCase(),nB=b.name.toLowerCase();if(nA<nB)return-1;if(nA>nB)return 1;return 0});document.getElementById('iptv-search').value='';document.getElementById('iptv-category-filter').value='all';showFavsOnly=false;showRecentsOnly=false;document.getElementById('fav-toggle-btn').innerText="❤️";document.getElementById('recent-toggle-btn').innerText="⏱";renderChannels(globalChannels)}
 
 function getFlag(lang){if(!lang)return'🎬';lang=lang.toUpperCase();if(lang.includes('VOSTFR')||lang.includes('VOST'))return'🌐🇫🇷';if(lang.includes('VF')||lang.includes('FRENCH')||lang.includes('FR'))return'🇫🇷';if(lang.includes('VO')||lang.includes('EN')||lang.includes('US'))return'🇬🇧';if(lang.includes('DE'))return'🇩🇪';if(lang.includes('ES'))return'🇪🇸';if(lang.includes('IT'))return'🇮🇹';return'🌐'}
@@ -351,7 +376,7 @@ function setupMovieNavigation(){const m=document.getElementById('vod-grid');if(!
 function showPlayerControls(){const c=document.getElementById('custom-player-controls');const w=c.classList.contains('active');c.classList.add('active');const f=document.getElementById('player-fav-btn');if(f)f.innerHTML=isFavorite(currentChannelUrl)?'❤️':'🤍';if(!w)document.getElementById('player-pause-btn').focus();clearTimeout(playerControlTimeout);playerControlTimeout=setTimeout(()=>{const v=document.getElementById('tv-player');if(!v.paused)c.classList.remove('active')},4000)}
 function hidePlayerControls(){document.getElementById('custom-player-controls').classList.remove('active')}
 function togglePlayPause(){const v=document.getElementById('tv-player'),b=document.getElementById('player-pause-btn');if(v.paused){v.play();b.innerText="⏸ Pause"}else{v.pause();b.innerText="▶ Lecture"}showPlayerControls()}
-function toggleFavoriteFromPlayer(){if(!currentIsTV){showPlayerControls();return;}const c=globalChannels.find(c=>c.url===currentChannelUrl)||{name:currentChannelName,url:currentChannelUrl,group:'Non classé',logo:''};toggleFavorite(c);const f=document.getElementById('player-fav-btn');if(f)f.innerHTML=isFavorite(currentChannelUrl)?'❤️':'🤍';showPlayerControls()}
+function toggleFavoriteFromPlayer(){if(!currentIsTV){showPlayerControls();return;}const c=globalChannels.find(c=>c.url===currentChannelUrl)||{name:currentChannelName,url:currentChannelUrl,group:'Non classé',logo:''};toggleFavorite(c);const f=document.getElementById('player-fav-btn');    if(f)f.innerHTML=isFavorite(currentChannelUrl)?'<svg class="btn-icon" viewBox="0 0 24 24" fill="#ff4d4d"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>':'<svg class="btn-icon" viewBox="0 0 24 24" fill="white"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>';showPlayerControls()}
 function reloadChannel(){showPlayerControls();if(currentChannelUrl)playChannel(currentChannelUrl,currentChannelName,null,true,true)}
 
 function startAntiFreeze(){clearInterval(antiFreezeInterval);antiFreezeInterval=setInterval(()=>{const v=document.getElementById('tv-player'),p=document.getElementById('player-section');if(!p.classList.contains('hidden')&&v.paused&&v.readyState>=3&&!document.getElementById('video-error-overlay').style.display.includes('flex')){v.play().catch(e=>console.log("Tentative de relance..."))}},5000)}
@@ -482,7 +507,7 @@ function handleTvSearch() {
 function filterChannels(){visibleLimit=100;clearTimeout(searchTimeout);searchTimeout=setTimeout(()=>{const s=document.getElementById('iptv-search').value.toLowerCase(),c=document.getElementById('iptv-category-filter').value;let f=globalChannels;if(c!=='all')f=f.filter(ch=>ch.group===c);if(s)f=f.filter(ch=>ch.name.toLowerCase().includes(s));renderChannels(f)},300)}
 
 function renderChannels(chs){currentChannelList=chs;const l=document.getElementById('iptv-channels');l.innerHTML='';channelButtons=[];if(showFavsOnly&&favorites.length===0){l.innerHTML='<p style="color:#888;">Aucun favori.</p>';return}if(showRecentsOnly&&recents.length===0){l.innerHTML='<p style="color:#888;">Aucun historique.</p>';return}const lm=Math.min(chs.length,visibleLimit);appendChannelsToDOM(chs.slice(0,lm));if(chs.length>visibleLimit){const i=document.createElement('p');i.className='info-msg';i.innerText=`Défilez pour plus... (Total: ${chs.length})`;i.style.color="#00E5FF";i.style.width='100%';i.style.margin='15px 0 30px';i.style.textAlign='center';l.appendChild(i)}}
-function appendChannelsToDOM(items){const l=document.getElementById('iptv-channels');let info=l.querySelector('.info-msg');items.forEach(c=>{const d=document.createElement('div');d.className='channel-item';const b=document.createElement('button');b.className='iptv-btn';b.setAttribute('tabindex','0');b.onclick=()=>{if(c.url&&(c.url.includes('huhu.to')||c.url.includes('oha.to'))){playHuhuChannel(c.url,c.name)}else{playChannel(c.url,c.name,null,false,true)}};const n=document.createElement('span');n.style.display='none';n.innerText=(currentChannelList.indexOf(c)+1);b.appendChild(n);if(c.logo){const img=document.createElement('img');img.className='ch-logo';img.src=c.logo;img.onerror=()=>img.style.display='none';b.appendChild(img)}const ns=document.createElement('span');ns.className='ch-name';ns.innerText=c.name;b.appendChild(ns);if(c.program){const ps=document.createElement('span');ps.className='ch-prog';ps.innerText=c.program;b.appendChild(ps);const ds=document.createElement('span');ds.className='ch-dur';ds.innerText=c.duration;b.appendChild(ds)}const fb=document.createElement('button');fb.className='iptv-btn fav-btn';fb.innerHTML=isFavorite(c.url)?'❤️':'🤍';fb.setAttribute('tabindex','0');fb.style.background=isFavorite(c.url)?'#2a0a0a':'transparent';fb.onclick=e=>{e.stopPropagation();toggleFavorite(c);fb.innerHTML=isFavorite(c.url)?'❤️':'🤍';fb.style.background=isFavorite(c.url)?'#2a0a0a':'transparent';if(showFavsOnly)renderChannels(favorites)};d.appendChild(b);d.appendChild(fb);if(info)l.insertBefore(d,info);else l.appendChild(d);channelButtons.push(b);channelButtons.push(fb)});if(info&&currentChannelList.length<=visibleLimit)info.remove();else if(info)info.innerText=`Défilez pour plus... (Total: ${currentChannelList.length})`}
+function appendChannelsToDOM(items){const l=document.getElementById('iptv-channels');let info=l.querySelector('.info-msg');items.forEach(c=>{const d=document.createElement('div');d.className='channel-item';const b=document.createElement('button');b.className='iptv-btn';b.setAttribute('tabindex','0');b.onclick=()=>{if(c.url&&(c.url.includes('huhu.to')||c.url.includes('oha.to'))){playHuhuChannel(c.url,c.name)}else{playChannel(c.url,c.name,null,false,true)}};const n=document.createElement('span');n.style.display='none';n.innerText=(currentChannelList.indexOf(c)+1);b.appendChild(n);if(c.logo){const img=document.createElement('img');img.className='ch-logo';img.src=c.logo;img.onerror=()=>img.style.display='none';b.appendChild(img)}const ns=document.createElement('span');ns.className='ch-name';ns.innerText=c.name;b.appendChild(ns);if(c.program){const ps=document.createElement('span');ps.className='ch-prog';ps.innerText=c.program;b.appendChild(ps);const ds=document.createElement('span');ds.className='ch-dur';ds.innerText=c.duration;b.appendChild(ds)}const fb=document.createElement('button');fb.className='iptv-btn fav-btn';fb.innerHTML=isFavorite(c.url)?'<svg class="btn-icon" viewBox="0 0 24 24" fill="#ff4d4d"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>':'<svg class="btn-icon" viewBox="0 0 24 24" fill="white"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>';fb.setAttribute('tabindex','0');fb.style.background=isFavorite(c.url)?'rgba(255,77,77,0.2)':'transparent';fb.onclick=e=>{e.stopPropagation();toggleFavorite(c);fb.innerHTML=isFavorite(c.url)?'<svg class="btn-icon" viewBox="0 0 24 24" fill="#ff4d4d"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>':'<svg class="btn-icon" viewBox="0 0 24 24" fill="white"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>';fb.style.background=isFavorite(c.url)?'#2a0a0a':'transparent';if(showFavsOnly)renderChannels(favorites)};d.appendChild(b);d.appendChild(fb);if(info)l.insertBefore(d,info);else l.appendChild(d);channelButtons.push(b);channelButtons.push(fb)});if(info&&currentChannelList.length<=visibleLimit)info.remove();else if(info)info.innerText=`Défilez pour plus... (Total: ${currentChannelList.length})`}
 
 function showVideoError(){clearTimeout(videoLoadTimeout);hidePlayerControls();document.getElementById('video-loading-overlay').classList.remove('visible');document.getElementById('video-error-overlay').style.display='flex'}
 function playChannel(u,n,ref=null,r=false,isTV=true){const v=document.getElementById('tv-player'),e=document.getElementById('video-error-overlay');e.style.display='none';document.getElementById('video-loading-overlay').classList.add('visible');document.getElementById('main-content').classList.add('hidden');destroySiteIframe();document.getElementById('player-section').classList.remove('hidden');document.getElementById('back-main-btn').classList.remove('hidden');document.getElementById('player-title').innerText=n;currentChannelUrl=u;currentChannelName=n;currentIsTV=isTV;const c=globalChannels.find(c=>c.url===u)||{name:n,url:u,group:'Non classé',logo:''};if(isTV && !r) addRecent(c);document.body.classList.add('app-fullscreen');const eb=document.getElementById('exit-fullscreen-btn');eb.classList.remove('hidden');setTimeout(()=>eb.classList.add('hidden-btn'),4000);window.history.pushState({page:'player'},'','#player');clearTimeout(videoLoadTimeout);videoLoadTimeout=setTimeout(()=>{if(v.readyState<3){showVideoError();if(hlsInstance){hlsInstance.destroy();hlsInstance=null}v.pause()}},30000);showPlayerControls();startAntiFreeze();let pu=`/api/proxy-stream?url=${encodeURIComponent(u)}`;if(ref)pu+=`&referer=${encodeURIComponent(ref)}`;if(u.includes('.mp4')){if(hlsInstance){hlsInstance.destroy();hlsInstance=null}v.src=u;v.play().catch(e=>console.error(e));v.addEventListener('loadedmetadata',function(){document.getElementById('video-loading-overlay').classList.remove('visible');clearTimeout(videoLoadTimeout);v.play()});v.addEventListener('error',function(){showVideoError();clearTimeout(videoLoadTimeout)});return}if(Hls.isSupported()){if(hlsInstance)hlsInstance.destroy();const hlsConfig={enableWorker:false,lowLatencyMode:false,startLevel:0,maxBufferLength:30,maxMaxBufferLength:60,manifestLoadingTimeOut:10000,manifestLoadingMaxRetry:4,levelLoadingTimeOut:10000,fragLoadingTimeOut:20000,fragLoadingMaxRetry:10,fragLoadingRetryDelay:500};hlsInstance=new Hls(hlsConfig);hlsInstance.loadSource(pu);hlsInstance.attachMedia(v);hlsInstance.on(Hls.Events.MANIFEST_PARSED,function(){document.getElementById('video-loading-overlay').classList.remove('visible');clearTimeout(videoLoadTimeout);v.play().catch(e=>console.error(e))});hlsInstance.on(Hls.Events.ERROR,function(event,data){if(data.fatal){switch(data.type){case Hls.ErrorTypes.NETWORK_ERROR:hlsInstance.startLoad(-1);break;case Hls.ErrorTypes.MEDIA_ERROR:hlsInstance.recoverMedia();break;default:showVideoError();clearTimeout(videoLoadTimeout);if(hlsInstance){hlsInstance.destroy();hlsInstance=null}v.pause();break;}}});}else if(v.canPlayType('application/vnd.apple.mpegurl')){v.src=pu;v.addEventListener('loadedmetadata',function(){document.getElementById('video-loading-overlay').classList.remove('visible');clearTimeout(videoLoadTimeout);v.play()});v.addEventListener('error',function(){showVideoError();clearTimeout(videoLoadTimeout)})}}
